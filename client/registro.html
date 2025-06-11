@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Registro – Mielissimo</title>
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+
+  <header>
+    <div class="logo">
+      <img src="assets/logoCanva.png" alt="Logo de Mielissimo" />
+    </div>
+    <nav>
+      <ul>
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="carrito.html">Carrito</a></li>
+        <li><a href="login.html">Iniciar sesión</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="form-container">
+    <h1>Crear una cuenta</h1>
+    <form id="registroForm">
+      <label for="nombre">Nombre completo</label>
+      <input type="text" id="nombre" name="nombre" required>
+
+      <label for="email">Correo electrónico</label>
+      <input type="email" id="email" name="email" required>
+
+      <label for="password">Contraseña</label>
+      <input type="password" id="password" name="password" required>
+
+      <label for="confirmPassword">Repetir contraseña</label>
+      <input type="password" id="confirmPassword" name="confirmPassword" required>
+
+      <button type="submit">Registrarse</button>
+    </form>
+    <p>¿Ya tenés cuenta? <a href="login.html">Iniciar sesión</a></p>
+  </main>
+
+  <footer>
+    <p>© 2025 Mielissimo – Villa Mercedes</p>
+  </footer>
+
+</body>
+</html>
