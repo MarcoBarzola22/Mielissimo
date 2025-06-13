@@ -175,3 +175,12 @@ form button:hover {
   text-align: center;
   margin-top: 1rem;
 }
+
+button.eliminar {
+  background-color: #ff5e5e;
+  margin-top: 0.5rem;
+}
+
+button.eliminar:hover {
+  background-color: #e04040;
+}
