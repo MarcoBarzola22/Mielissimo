@@ -8,16 +8,17 @@ function cargarProductos() {
       const contenedor = document.querySelector('.productos');
       contenedor.innerHTML = ''; // limpiamos antes de renderizar
       productos.forEach(producto => {
-        contenedor.innerHTML += `
-          <div class="producto">
-            <img src="${producto.imagen}" alt="${producto.nombre}">
-            <h2>${producto.nombre}</h2>
-            <p>$${parseFloat(producto.precio).toFixed(2)}</p>
-            <button class="agregar" onclick="agregarAlCarrito(${producto.id})">Agregar al carrito</button>
-            <button class="eliminar" onclick="eliminarProducto(${producto.id})">🗑 Eliminar</button>
-          </div>
-        `;
-      });
+  contenedor.innerHTML += `
+    <div class="producto">
+      <img src="http://localhost:3000${producto.imagen}" alt="${producto.nombre}">
+      <h2>${producto.nombre}</h2>
+      <p>$${parseFloat(producto.precio).toFixed(2)}</p>
+      <button class="agregar" onclick="agregarAlCarrito(${producto.id})">Agregar al carrito</button>
+      <button class="eliminar" onclick="eliminarProducto(${producto.id})">🗑 Eliminar</button>
+    </div>
+  `;
+});
+
     })
     .catch(error => {
       console.error('Error al cargar productos:', error);

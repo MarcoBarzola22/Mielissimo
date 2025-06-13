@@ -1,12 +1,28 @@
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
+const multer = require('multer');
+const path = require('path');
 
 const app = express();
 const PORT = 3000;
 
+// Configuración de Multer para guardar imágenes en /uploads
+const storage = multer.diskStorage({
+  destination: path.join(__dirname, 'uploads'),
+  filename: (req, file, cb) => {
+    const nombreUnico = Date.now() + '-' + file.originalname;
+    cb(null, nombreUnico);
+  }
+});
+const upload = multer({ storage });
+
+// Middlewares
 app.use(cors());
 app.use(express.json());
+// Hacer pública la carpeta 'uploads' para acceder desde el frontend
+app.use('/uploads', express.static('uploads'));
+
 
 // Conexión a MySQL
 const db = mysql.createConnection({
@@ -24,7 +40,7 @@ db.connect((err) => {
   }
 });
 
-// Ruta para obtener productos
+// Obtener productos
 app.get('/api/productos', (req, res) => {
   const sql = 'SELECT id, nombre, precio, imagen, stock FROM productos';
   db.query(sql, (err, resultados) => {
@@ -37,7 +53,7 @@ app.get('/api/productos', (req, res) => {
   });
 });
 
-// Ruta DELETE para eliminar un producto por ID
+// Eliminar producto por ID
 app.delete('/api/productos/:id', (req, res) => {
   const productoId = req.params.id;
   const sql = 'DELETE FROM productos WHERE id = ?';
@@ -52,18 +68,17 @@ app.delete('/api/productos/:id', (req, res) => {
   });
 });
 
+// Agregar nuevo producto (con imagen)
+app.post('/api/productos', upload.single('imagen'), (req, res) => {
+  const { nombre, precio, stock } = req.body;
+  const imagen = req.file ? `/uploads/${req.file.filename}` : null;
 
-// Ruta para agregar un nuevo producto
-app.post('/api/productos', (req, res) => {
-  const { nombre, precio, imagen, stock } = req.body;
-
-  // Validación básica
   if (!nombre || !precio || !imagen || stock === undefined) {
-    return res.status(400).json({ error: 'Faltan datos del producto' });
+    return res.status(400).json({ error: 'Faltan datos del producto o imagen' });
   }
 
   const sql = 'INSERT INTO productos (nombre, precio, imagen, stock) VALUES (?, ?, ?, ?)';
-  const valores = [nombre, precio, imagen, stock];
+  const valores = [nombre, parseFloat(precio), imagen, parseInt(stock)];
 
   db.query(sql, valores, (err, resultado) => {
     if (err) {
@@ -74,7 +89,6 @@ app.post('/api/productos', (req, res) => {
     }
   });
 });
-
 
 // Iniciar servidor
 app.listen(PORT, () => {
