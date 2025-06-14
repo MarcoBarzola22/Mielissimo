@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
 const bcrypt = require('bcrypt'); // ✅ necesario para validar claves cifradas
+const path = require('path');
 
 const app = express();
 const PORT = 3000;
@@ -10,6 +11,9 @@ const PORT = 3000;
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static('uploads')); // permite servir imágenes cargadas
+app.use(express.static(path.join(__dirname, '..', 'client')));
+
+
 
 // Conexión a MySQL
 const db = mysql.createConnection({
@@ -104,28 +108,26 @@ app.post('/api/admin/login', (req, res) => {
   const { usuario, clave } = req.body;
 
   const sql = 'SELECT * FROM admins WHERE usuario = ?';
-  db.query(sql, [usuario], async (err, resultados) => {
+  db.query(sql, [usuario], (err, resultados) => {
     if (err) {
-      console.error('Error al buscar admin:', err);
       return res.status(500).json({ error: 'Error en el servidor' });
     }
 
     if (resultados.length === 0) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
+      return res.status(401).json({ error: 'Usuario no encontrado' });
     }
 
     const admin = resultados[0];
 
-    // Comparamos la contraseña ingresada con la hasheada
-    const esValida = await bcrypt.compare(clave, admin.clave);
-    if (!esValida) {
-      return res.status(401).json({ error: 'Credenciales inválidas' });
-    }
+    bcrypt.compare(clave, admin.clave, (err, esValida) => {
+      if (err || !esValida) {
+        return res.status(401).json({ error: 'Credenciales incorrectas' });
+      }
 
-    // Si es válida, se guarda algo en localStorage del lado del frontend
-    res.status(200).json({ mensaje: 'Login exitoso', usuario: admin.usuario });
+      res.status(200).json({ mensaje: 'Login exitoso' });
+    });
   });
-});
+});;
 
 // Iniciar servidor
 app.listen(PORT, () => {
