@@ -1,28 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
-const multer = require('multer');
-const path = require('path');
+const bcrypt = require('bcrypt'); // ✅ necesario para validar claves cifradas
 
 const app = express();
 const PORT = 3000;
 
-// Configuración de Multer para guardar imágenes en /uploads
-const storage = multer.diskStorage({
-  destination: path.join(__dirname, 'uploads'),
-  filename: (req, file, cb) => {
-    const nombreUnico = Date.now() + '-' + file.originalname;
-    cb(null, nombreUnico);
-  }
-});
-const upload = multer({ storage });
-
 // Middlewares
 app.use(cors());
 app.use(express.json());
-// Hacer pública la carpeta 'uploads' para acceder desde el frontend
-app.use('/uploads', express.static('uploads'));
-
+app.use('/uploads', express.static('uploads')); // permite servir imágenes cargadas
 
 // Conexión a MySQL
 const db = mysql.createConnection({
@@ -53,7 +40,28 @@ app.get('/api/productos', (req, res) => {
   });
 });
 
-// Eliminar producto por ID
+// Agregar producto
+app.post('/api/productos', (req, res) => {
+  const { nombre, precio, imagen, stock } = req.body;
+
+  if (!nombre || !precio || !imagen || stock === undefined) {
+    return res.status(400).json({ error: 'Faltan datos del producto' });
+  }
+
+  const sql = 'INSERT INTO productos (nombre, precio, imagen, stock) VALUES (?, ?, ?, ?)';
+  const valores = [nombre, precio, imagen, stock];
+
+  db.query(sql, valores, (err, resultado) => {
+    if (err) {
+      console.error('Error al insertar producto:', err);
+      res.status(500).json({ error: 'Error al insertar el producto' });
+    } else {
+      res.status(201).json({ mensaje: 'Producto agregado con éxito', id: resultado.insertId });
+    }
+  });
+});
+
+// Eliminar producto
 app.delete('/api/productos/:id', (req, res) => {
   const productoId = req.params.id;
   const sql = 'DELETE FROM productos WHERE id = ?';
@@ -68,25 +76,54 @@ app.delete('/api/productos/:id', (req, res) => {
   });
 });
 
-// Agregar nuevo producto (con imagen)
-app.post('/api/productos', upload.single('imagen'), (req, res) => {
-  const { nombre, precio, stock } = req.body;
-  const imagen = req.file ? `/uploads/${req.file.filename}` : null;
+// Editar producto
+app.put('/api/productos/:id', (req, res) => {
+  const { id } = req.params;
+  const { nombre, precio, imagen, stock } = req.body;
 
   if (!nombre || !precio || !imagen || stock === undefined) {
-    return res.status(400).json({ error: 'Faltan datos del producto o imagen' });
+    return res.status(400).json({ error: 'Faltan datos del producto' });
   }
 
-  const sql = 'INSERT INTO productos (nombre, precio, imagen, stock) VALUES (?, ?, ?, ?)';
-  const valores = [nombre, parseFloat(precio), imagen, parseInt(stock)];
+  const sql = 'UPDATE productos SET nombre = ?, precio = ?, imagen = ?, stock = ? WHERE id = ?';
+  const valores = [nombre, precio, imagen, stock, id];
 
   db.query(sql, valores, (err, resultado) => {
     if (err) {
-      console.error('Error al insertar producto:', err);
-      res.status(500).json({ error: 'Error al insertar el producto' });
+      console.error('Error al actualizar el producto:', err);
+      res.status(500).json({ error: 'Error al actualizar el producto' });
     } else {
-      res.status(201).json({ mensaje: 'Producto agregado con éxito', id: resultado.insertId });
+      res.json({ mensaje: 'Producto actualizado correctamente' });
     }
+  });
+});
+
+// 🔐 Ruta de login con validación segura desde base de datos
+// Ruta de login protegida
+app.post('/api/admin/login', (req, res) => {
+  const { usuario, clave } = req.body;
+
+  const sql = 'SELECT * FROM admins WHERE usuario = ?';
+  db.query(sql, [usuario], async (err, resultados) => {
+    if (err) {
+      console.error('Error al buscar admin:', err);
+      return res.status(500).json({ error: 'Error en el servidor' });
+    }
+
+    if (resultados.length === 0) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    const admin = resultados[0];
+
+    // Comparamos la contraseña ingresada con la hasheada
+    const esValida = await bcrypt.compare(clave, admin.clave);
+    if (!esValida) {
+      return res.status(401).json({ error: 'Credenciales inválidas' });
+    }
+
+    // Si es válida, se guarda algo en localStorage del lado del frontend
+    res.status(200).json({ mensaje: 'Login exitoso', usuario: admin.usuario });
   });
 });
 

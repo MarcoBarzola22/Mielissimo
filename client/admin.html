@@ -4,49 +4,53 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Panel de Administración – Mielissimo</title>
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- Protección con token -->
+  <script>
+    const token = localStorage.getItem("tokenAdmin");
+    if (!token) {
+      window.location.href = "login-admin.html";
+    }
+  </script>
 </head>
 <body>
-
   <header>
-    <div class="logo">
-      <img src="assets/logoCanva.png" alt="Logo de Mielissimo" />
-    </div>
-    <nav>
-      <ul>
-        <li><a href="index.html">Inicio</a></li>
-        <li><a href="carrito.html">Carrito</a></li>
-        <li><a href="#">Cerrar sesión</a></li>
-      </ul>
-    </nav>
+    <h1>Panel de Administración</h1>
+    <button onclick="cerrarSesion()">Cerrar sesión</button>
   </header>
 
-  <main>
-    <h1>Agregar nuevo producto</h1>
-    <form id="formulario-producto" method="POST" enctype="multipart/form-data">
-  <label>Nombre:</label>
-  <input type="text" name="nombre" required />
+  <main style="padding: 2rem;">
+    <!-- 🧾 Formulario para agregar productos -->
+    <section>
+      <h2>Agregar producto</h2>
+      <form id="formulario-producto">
+        <input type="text" name="nombre" placeholder="Nombre" required>
+        <input type="number" name="precio" step="0.01" placeholder="Precio" required>
+        <input type="text" name="imagen" placeholder="URL de la imagen o /uploads/nombre.jpg" required>
+        <input type="number" name="stock" placeholder="Stock" required>
+        <button type="submit">Agregar</button>
+      </form>
+      <p id="mensaje"></p>
+    </section>
 
-  <label>Precio:</label>
-  <input type="number" name="precio" step="0.01" required />
-
-  <label>Stock:</label>
-  <input type="number" name="stock" required />
-
-  <label>Imagen:</label>
-  <input type="file" name="imagen" accept="image/*" required />
-
-  <button type="submit">Agregar Producto</button>
-</form>
-
-<p id="mensaje"></p>
-
+    <!-- 🧾 Tabla de productos existentes -->
+    <section>
+      <h2>Productos existentes</h2>
+      <div id="lista-productos">
+        <!-- Se completa con JS -->
+      </div>
+    </section>
   </main>
 
-  <footer>
-    <p>© 2025 Mielissimo – Panel de Administración</p>
-  </footer>
-
+  <!-- JS del admin -->
   <script src="js/admin.js"></script>
+
+  <script>
+    function cerrarSesion() {
+      localStorage.removeItem("tokenAdmin");
+      window.location.href = "login-admin.html";
+    }
+  </script>
 </body>
 </html>
