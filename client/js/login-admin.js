@@ -1,9 +1,5 @@
-console.log("JS de login-admin cargado");
-
 document.getElementById("form-login-admin").addEventListener("submit", async (e) => {
   e.preventDefault();
-  console.log("Formulario detectado");
-
   const usuario = e.target.usuario.value;
   const clave = e.target.clave.value;
 
@@ -11,20 +7,19 @@ document.getElementById("form-login-admin").addEventListener("submit", async (e)
     const res = await fetch("http://localhost:3000/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ usuario, clave }) // nombre de campos correcto
+      body: JSON.stringify({ usuario, clave })
     });
 
-    const resultado = await res.json();
+    const data = await res.json();
 
     if (res.ok) {
-      // Guardar token para control de acceso
-      localStorage.setItem("tokenAdmin", "ok");
+      localStorage.setItem("tokenAdmin", data.token);
       window.location.href = "admin.html";
     } else {
-      document.getElementById("mensaje-login").textContent = resultado.error || "Credenciales incorrectas";
+      document.getElementById("mensaje-login").textContent = data.error || "Credenciales incorrectas";
     }
   } catch (err) {
-    console.error("Error al loguear:", err);
+    console.error("Error al intentar login:", err);
     document.getElementById("mensaje-login").textContent = "Error de conexión con el servidor";
   }
 });

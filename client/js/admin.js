@@ -1,19 +1,25 @@
+// admin.js
+
 const formulario = document.getElementById("formulario-producto");
 const mensaje = document.getElementById("mensaje");
 const productosContainer = document.getElementById("lista-productos");
 
-// Si estamos editando, guardamos el ID acá
 let productoEnEdicion = null;
 
-// Obtener el token
+// ✅ Token de autenticación
 const token = localStorage.getItem("tokenAdmin");
 
 // Mostrar productos actuales
 function cargarProductos() {
-  fetch("http://localhost:3000/api/productos")
+  fetch("/api/productos", {
+    headers: {
+      Authorization: `Bearer ${token}` // ✅ si tenés rutas protegidas en el futuro
+    }
+  })
     .then(res => res.json())
     .then(productos => {
-      productosContainer.innerHTML = ""; // limpiar
+      console.log("Productos desde el servidor:", productos);
+      productosContainer.innerHTML = "";
       productos.forEach(prod => {
         const div = document.createElement("div");
         div.classList.add("producto-admin");
@@ -26,7 +32,11 @@ function cargarProductos() {
         productosContainer.appendChild(div);
       });
     })
-    .catch(err => console.error("Error al cargar productos:", err));
+    .catch(err => {
+      console.error("Error al cargar productos:", err);
+      mensaje.textContent = "Error al cargar productos";
+      mensaje.style.color = "red";
+    });
 }
 
 // Enviar producto nuevo o editado
@@ -41,8 +51,8 @@ formulario.addEventListener("submit", async (e) => {
   };
 
   const url = productoEnEdicion
-    ? `http://localhost:3000/api/productos/${productoEnEdicion}`
-    : "http://localhost:3000/api/productos";
+    ? `/api/productos/${productoEnEdicion}`
+    : "/api/productos";
 
   const metodo = productoEnEdicion ? "PUT" : "POST";
 
@@ -65,7 +75,11 @@ formulario.addEventListener("submit", async (e) => {
       mensaje.style.color = "green";
       formulario.reset();
       productoEnEdicion = null;
-      cargarProductos();
+
+      // 🕒 Esperar un poquito para evitar glitch visual
+      setTimeout(() => {
+        cargarProductos();
+      }, 300);
     } else {
       mensaje.textContent = resultado.error || "Error en la operación.";
       mensaje.style.color = "red";
@@ -77,7 +91,6 @@ formulario.addEventListener("submit", async (e) => {
   }
 });
 
-// Cargar producto al formulario para editar
 function editarProducto(id, nombre, precio, imagen, stock) {
   formulario.nombre.value = nombre;
   formulario.precio.value = precio;
@@ -88,10 +101,9 @@ function editarProducto(id, nombre, precio, imagen, stock) {
   mensaje.style.color = "blue";
 }
 
-// Eliminar producto
 function eliminarProducto(id) {
   if (confirm("¿Estás seguro de que querés eliminar este producto?")) {
-    fetch(`http://localhost:3000/api/productos/${id}`, {
+    fetch(`/api/productos/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${token}`
@@ -108,5 +120,5 @@ function eliminarProducto(id) {
   }
 }
 
-// Al cargar la página
+// Al cargar
 cargarProductos();

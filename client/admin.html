@@ -5,14 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Panel de Administración – Mielissimo</title>
   <link rel="stylesheet" href="css/styles.css">
-
-  <!-- Protección con token -->
-  <script>
-    const token = localStorage.getItem("tokenAdmin");
-    if (!token) {
-      window.location.href = "login-admin.html";
-    }
-  </script>
+ 
 </head>
 <body>
   <header>
@@ -21,29 +14,24 @@
   </header>
 
   <main style="padding: 2rem;">
-    <!-- 🧾 Formulario para agregar productos -->
     <section>
       <h2>Agregar producto</h2>
       <form id="formulario-producto">
-        <input type="text" name="nombre" placeholder="Nombre" required>
-        <input type="number" name="precio" step="0.01" placeholder="Precio" required>
-        <input type="text" name="imagen" placeholder="URL de la imagen o /uploads/nombre.jpg" required>
-        <input type="number" name="stock" placeholder="Stock" required>
+        <input type="text" name="nombre" placeholder="Nombre" required />
+        <input type="number" name="precio" step="0.01" placeholder="Precio" required />
+        <input type="text" name="imagen" placeholder="URL de imagen o /uploads/nombre.jpg" required />
+        <input type="number" name="stock" placeholder="Stock" required />
         <button type="submit">Agregar</button>
       </form>
       <p id="mensaje"></p>
     </section>
 
-    <!-- 🧾 Tabla de productos existentes -->
     <section>
       <h2>Productos existentes</h2>
-      <div id="lista-productos">
-        <!-- Se completa con JS -->
-      </div>
+      <div id="lista-productos"></div>
     </section>
   </main>
 
-  <!-- JS del admin -->
   <script src="js/admin.js"></script>
 
   <script>
