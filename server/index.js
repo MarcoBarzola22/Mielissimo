@@ -4,7 +4,18 @@ const mysql = require('mysql2');
 const bcrypt = require('bcrypt');
 const path = require('path');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const fs = require('fs');
 
+const storage = multer.diskStorage({
+  destination: "uploads/",
+  filename: (req, file, cb) => {
+    const nombreUnico = Date.now() + "-" + file.originalname;
+    cb(null, nombreUnico);
+  }
+});
+
+const upload = multer({ storage });
 const app = express();
 const PORT = 3000;
 const JWT_SECRET = "claveultrasecreta123";
@@ -41,50 +52,113 @@ function verificarToken(req, res, next) {
   });
 }
 
-// Productos
+// 🔄 Obtener productos (con filtro opcional por categoría)
 app.get('/api/productos', (req, res) => {
-  db.query('SELECT id, nombre, precio, imagen, stock FROM productos', (err, resultados) => {
+  const { categoria } = req.query;
+
+  let sql = 'SELECT id, nombre, precio, imagen, stock FROM productos';
+  let valores = [];
+
+  if (categoria) {
+    sql += ' WHERE categoria_id = ?';
+    valores.push(categoria);
+  }
+
+  db.query(sql, valores, (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error al obtener los productos' });
     console.log("Productos enviados al cliente:", resultados);
     res.json(resultados);
-
   });
 });
 
-app.post('/api/productos', verificarToken, (req, res) => {
-  const { nombre, precio, imagen, stock } = req.body;
-  if (!nombre || !precio || !imagen || stock === undefined) {
+// ✅ Obtener todas las categorías
+app.get('/api/categorias', (req, res) => {
+  const sql = 'SELECT id, nombre FROM categorias';
+
+  db.query(sql, (err, resultados) => {
+    if (err) {
+      return res.status(500).json({ error: 'Error al obtener categorías' });
+    }
+
+    res.json(resultados);
+  });
+});
+
+// ➕ Agregar producto
+app.post('/api/productos', verificarToken, upload.single("imagen"), (req, res) => {
+  const { nombre, precio, stock, categoria_id } = req.body;
+  const imagen = req.file ? `/uploads/${req.file.filename}` : null;
+
+  if (!nombre || !precio || !imagen || stock === undefined || !categoria_id) {
     return res.status(400).json({ error: 'Faltan datos' });
   }
-  const sql = 'INSERT INTO productos (nombre, precio, imagen, stock) VALUES (?, ?, ?, ?)';
-  db.query(sql, [nombre, precio, imagen, stock], (err, resultado) => {
+
+  const sql = 'INSERT INTO productos (nombre, precio, imagen, stock, categoria_id) VALUES (?, ?, ?, ?, ?)';
+  db.query(sql, [nombre, precio, imagen, stock, categoria_id], (err, resultado) => {
     if (err) return res.status(500).json({ error: 'Error al insertar' });
     res.status(201).json({ mensaje: 'Producto agregado', id: resultado.insertId });
   });
 });
 
-app.put('/api/productos/:id', verificarToken, (req, res) => {
+// 📝 Editar producto
+app.put('/api/productos/:id', verificarToken, upload.single("imagen"), (req, res) => {
   const { id } = req.params;
-  const { nombre, precio, imagen, stock } = req.body;
-  if (!nombre || !precio || !imagen || stock === undefined) {
+  const { nombre, precio, stock, categoria_id } = req.body;
+
+  if (!nombre || !precio || stock === undefined || !categoria_id) {
     return res.status(400).json({ error: 'Faltan datos' });
   }
-  const sql = 'UPDATE productos SET nombre = ?, precio = ?, imagen = ?, stock = ? WHERE id = ?';
-  db.query(sql, [nombre, precio, imagen, stock, id], (err) => {
+
+  let sql, valores;
+
+  if (req.file) {
+    const imagen = "/uploads/" + req.file.filename;
+    sql = 'UPDATE productos SET nombre = ?, precio = ?, imagen = ?, stock = ?, categoria_id = ? WHERE id = ?';
+    valores = [nombre, precio, imagen, stock, categoria_id, id];
+  } else {
+    sql = 'UPDATE productos SET nombre = ?, precio = ?, stock = ?, categoria_id = ? WHERE id = ?';
+    valores = [nombre, precio, stock, categoria_id, id];
+  }
+
+  db.query(sql, valores, (err) => {
     if (err) return res.status(500).json({ error: 'Error al actualizar' });
-    res.json({ mensaje: 'Producto actualizado' });
+    res.json({ mensaje: 'Producto actualizado correctamente' });
   });
 });
 
+// 🗑️ Eliminar producto y su imagen
 app.delete('/api/productos/:id', verificarToken, (req, res) => {
   const { id } = req.params;
-  db.query('DELETE FROM productos WHERE id = ?', [id], (err) => {
-    if (err) return res.status(500).json({ error: 'Error al eliminar' });
-    res.json({ mensaje: 'Producto eliminado' });
+
+  // Primero obtenemos la imagen
+  const sqlSelect = 'SELECT imagen FROM productos WHERE id = ?';
+  db.query(sqlSelect, [id], (err, resultados) => {
+    if (err || resultados.length === 0) {
+      return res.status(500).json({ error: 'Error al buscar producto' });
+    }
+
+    const imagen = resultados[0].imagen;
+    const rutaImagen = path.join(__dirname, '..', imagen);
+
+    // Luego eliminamos el producto
+    const sqlDelete = 'DELETE FROM productos WHERE id = ?';
+    db.query(sqlDelete, [id], (err, resultado) => {
+      if (err) {
+        return res.status(500).json({ error: 'Error al eliminar producto' });
+      }
+
+      if (fs.existsSync(rutaImagen)) {
+        fs.unlink(rutaImagen, (err) => {
+          if (err) console.error("No se pudo borrar imagen:", err);
+        });
+      }
+
+      res.json({ mensaje: 'Producto eliminado correctamente' });
+    });
   });
 });
 
-// Login seguro
+// 🔐 Login seguro
 app.post('/api/admin/login', (req, res) => {
   const { usuario, clave } = req.body;
   const sql = 'SELECT * FROM admins WHERE usuario = ?';
