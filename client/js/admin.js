@@ -43,12 +43,15 @@ function cargarProductos() {
 formulario.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const datos = {
-    nombre: formulario.nombre.value,
-    precio: parseFloat(formulario.precio.value),
-    imagen: formulario.imagen.value,
-    stock: parseInt(formulario.stock.value)
-  };
+  const formData = new FormData();
+  formData.append("nombre", formulario.nombre.value);
+  formData.append("precio", formulario.precio.value);
+  formData.append("stock", formulario.stock.value);
+
+  const imagenInput = formulario.imagen;
+  if (imagenInput.files.length > 0) {
+    formData.append("imagen", imagenInput.files[0]);
+  }
 
   const url = productoEnEdicion
     ? `/api/productos/${productoEnEdicion}`
@@ -60,10 +63,9 @@ formulario.addEventListener("submit", async (e) => {
     const res = await fetch(url, {
       method: metodo,
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`
       },
-      body: JSON.stringify(datos)
+      body: formData
     });
 
     const resultado = await res.json();
@@ -75,11 +77,7 @@ formulario.addEventListener("submit", async (e) => {
       mensaje.style.color = "green";
       formulario.reset();
       productoEnEdicion = null;
-
-      // 🕒 Esperar un poquito para evitar glitch visual
-      setTimeout(() => {
-        cargarProductos();
-      }, 300);
+      setTimeout(() => cargarProductos(), 300);
     } else {
       mensaje.textContent = resultado.error || "Error en la operación.";
       mensaje.style.color = "red";
@@ -91,13 +89,17 @@ formulario.addEventListener("submit", async (e) => {
   }
 });
 
+
+
 function editarProducto(id, nombre, precio, imagen, stock) {
+  productoEnEdicion = id;
+
   formulario.nombre.value = nombre;
   formulario.precio.value = precio;
-  formulario.imagen.value = imagen;
   formulario.stock.value = stock;
-  productoEnEdicion = id;
-  mensaje.textContent = "Editando producto...";
+
+  // Para imagen, mostrar el nombre del archivo actual (pero no se puede pre-cargar la imagen en el input file)
+  mensaje.textContent = "Editando producto ID " + id;
   mensaje.style.color = "blue";
 }
 
@@ -106,19 +108,28 @@ function eliminarProducto(id) {
     fetch(`/api/productos/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}` // ✅ NECESARIO
       }
     })
       .then(res => res.json())
       .then(data => {
-        alert(data.mensaje);
-        cargarProductos();
+        if (data.mensaje) {
+          alert(data.mensaje);
+          cargarProductos();
+        } else if (data.error) {
+          alert("Error: " + data.error);
+        } else {
+          alert("Error desconocido");
+        }
       })
       .catch(err => {
         console.error("Error al eliminar:", err);
+        alert("Error al eliminar producto.");
       });
   }
 }
+
+
 
 // Al cargar
 cargarProductos();

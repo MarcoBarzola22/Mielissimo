@@ -16,13 +16,15 @@
   <main style="padding: 2rem;">
     <section>
       <h2>Agregar producto</h2>
-      <form id="formulario-producto">
-        <input type="text" name="nombre" placeholder="Nombre" required />
-        <input type="number" name="precio" step="0.01" placeholder="Precio" required />
-        <input type="text" name="imagen" placeholder="URL de imagen o /uploads/nombre.jpg" required />
-        <input type="number" name="stock" placeholder="Stock" required />
-        <button type="submit">Agregar</button>
-      </form>
+      <form id="formulario-producto" enctype="multipart/form-data">
+  <input type="text" name="nombre" placeholder="Nombre" required>
+  <input type="number" name="precio" step="0.01" placeholder="Precio" required>
+  <input type="file" name="imagen" accept="image/*">
+  <input type="number" name="stock" placeholder="Stock" required>
+  <button type="submit">Agregar</button>
+</form>
+
+
       <p id="mensaje"></p>
     </section>
 
