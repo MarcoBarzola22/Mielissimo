@@ -7,6 +7,11 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs');
 
+const app = express();
+const PORT = 3000;
+const JWT_SECRET = "claveultrasecreta123";
+
+// Configuración de Multer para imágenes
 const storage = multer.diskStorage({
   destination: "uploads/",
   filename: (req, file, cb) => {
@@ -14,11 +19,7 @@ const storage = multer.diskStorage({
     cb(null, nombreUnico);
   }
 });
-
 const upload = multer({ storage });
-const app = express();
-const PORT = 3000;
-const JWT_SECRET = "claveultrasecreta123";
 
 // Middlewares
 app.use(cors());
@@ -26,20 +27,19 @@ app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
-// Conexión MySQL
+// Conexión a MySQL
 const db = mysql.createConnection({
   host: 'localhost',
   user: 'root',
   password: '44994334marco',
   database: 'mielissimo'
 });
-
 db.connect((err) => {
   if (err) console.error('Error DB:', err);
   else console.log('MySQL conectado');
 });
 
-// Middleware para proteger rutas
+// Middleware de autenticación
 function verificarToken(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth) return res.status(401).json({ error: "No autorizado" });
@@ -52,39 +52,69 @@ function verificarToken(req, res, next) {
   });
 }
 
-// 🔄 Obtener productos (con filtro opcional por categoría)
+// 🔶 CATEGORÍAS
+app.get("/api/categorias", (req, res) => {
+  db.query("SELECT * FROM categorias", (err, resultados) => {
+    if (err) return res.status(500).json({ error: "Error al obtener categorías" });
+    res.json(resultados);
+  });
+});
+
+app.post("/api/categorias", verificarToken, (req, res) => {
+  const { nombre } = req.body;
+  if (!nombre) return res.status(400).json({ error: "Nombre requerido" });
+  db.query("INSERT INTO categorias (nombre) VALUES (?)", [nombre], (err, resultado) => {
+    if (err) return res.status(500).json({ error: "Error al agregar categoría" });
+    res.status(201).json({ mensaje: "Categoría creada", id: resultado.insertId });
+  });
+});
+
+app.put("/api/categorias/:id", verificarToken, (req, res) => {
+  const { id } = req.params;
+  const { nombre } = req.body;
+  if (!nombre) return res.status(400).json({ error: "Nombre requerido" });
+
+  db.query("UPDATE categorias SET nombre = ? WHERE id = ?", [nombre, id], (err, result) => {
+    if (err) return res.status(500).json({ error: "Error al actualizar categoría" });
+    res.json({ mensaje: "Categoría actualizada correctamente" });
+  });
+});
+
+app.delete("/api/categorias/:id", verificarToken, (req, res) => {
+  const { id } = req.params;
+
+  db.query("SELECT COUNT(*) AS cantidad FROM productos WHERE categoria_id = ?", [id], (err, result) => {
+    if (err) return res.status(500).json({ error: "Error al verificar productos" });
+
+    if (result[0].cantidad > 0) {
+      return res.status(400).json({ error: "No se puede eliminar la categoría porque tiene productos asociados" });
+    }
+
+    db.query("DELETE FROM categorias WHERE id = ?", [id], (err) => {
+      if (err) return res.status(500).json({ error: "Error al eliminar categoría" });
+      res.json({ mensaje: "Categoría eliminada correctamente" });
+    });
+  });
+});
+
+// 🔶 PRODUCTOS
 app.get('/api/productos', (req, res) => {
   const { categoria } = req.query;
-
-  let sql = 'SELECT id, nombre, precio, imagen, stock FROM productos';
-  let valores = [];
+  let sql = `SELECT productos.*, categorias.nombre AS categoria_nombre 
+             FROM productos LEFT JOIN categorias ON productos.categoria_id = categorias.id`;
+  const valores = [];
 
   if (categoria) {
-    sql += ' WHERE categoria_id = ?';
+    sql += " WHERE productos.categoria_id = ?";
     valores.push(categoria);
   }
 
   db.query(sql, valores, (err, resultados) => {
-    if (err) return res.status(500).json({ error: 'Error al obtener los productos' });
-    console.log("Productos enviados al cliente:", resultados);
+    if (err) return res.status(500).json({ error: 'Error al obtener productos' });
     res.json(resultados);
   });
 });
 
-// ✅ Obtener todas las categorías
-app.get('/api/categorias', (req, res) => {
-  const sql = 'SELECT id, nombre FROM categorias';
-
-  db.query(sql, (err, resultados) => {
-    if (err) {
-      return res.status(500).json({ error: 'Error al obtener categorías' });
-    }
-
-    res.json(resultados);
-  });
-});
-
-// ➕ Agregar producto
 app.post('/api/productos', verificarToken, upload.single("imagen"), (req, res) => {
   const { nombre, precio, stock, categoria_id } = req.body;
   const imagen = req.file ? `/uploads/${req.file.filename}` : null;
@@ -100,7 +130,6 @@ app.post('/api/productos', verificarToken, upload.single("imagen"), (req, res) =
   });
 });
 
-// 📝 Editar producto
 app.put('/api/productos/:id', verificarToken, upload.single("imagen"), (req, res) => {
   const { id } = req.params;
   const { nombre, precio, stock, categoria_id } = req.body;
@@ -109,49 +138,50 @@ app.put('/api/productos/:id', verificarToken, upload.single("imagen"), (req, res
     return res.status(400).json({ error: 'Faltan datos' });
   }
 
-  let sql, valores;
+  db.query('SELECT imagen FROM productos WHERE id = ?', [id], (err, resultados) => {
+    if (err || resultados.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
 
-  if (req.file) {
-    const imagen = "/uploads/" + req.file.filename;
-    sql = 'UPDATE productos SET nombre = ?, precio = ?, imagen = ?, stock = ?, categoria_id = ? WHERE id = ?';
-    valores = [nombre, precio, imagen, stock, categoria_id, id];
-  } else {
-    sql = 'UPDATE productos SET nombre = ?, precio = ?, stock = ?, categoria_id = ? WHERE id = ?';
-    valores = [nombre, precio, stock, categoria_id, id];
-  }
+    const productoActual = resultados[0];
+    let sql, valores;
 
-  db.query(sql, valores, (err) => {
-    if (err) return res.status(500).json({ error: 'Error al actualizar' });
-    res.json({ mensaje: 'Producto actualizado correctamente' });
+    if (req.file) {
+      const imagenAnterior = productoActual.imagen;
+      const nuevaImagen = "/uploads/" + req.file.filename;
+      const rutaImagenAnterior = path.join(__dirname, '..', imagenAnterior);
+
+      fs.unlink(rutaImagenAnterior, (err) => {
+        if (err) console.warn("No se pudo eliminar imagen anterior:", err);
+      });
+
+      sql = 'UPDATE productos SET nombre = ?, precio = ?, imagen = ?, stock = ?, categoria_id = ? WHERE id = ?';
+      valores = [nombre, precio, nuevaImagen, stock, categoria_id, id];
+    } else {
+      sql = 'UPDATE productos SET nombre = ?, precio = ?, stock = ?, categoria_id = ? WHERE id = ?';
+      valores = [nombre, precio, stock, categoria_id, id];
+    }
+
+    db.query(sql, valores, (err) => {
+      if (err) return res.status(500).json({ error: 'Error al actualizar' });
+      res.json({ mensaje: 'Producto actualizado correctamente' });
+    });
   });
 });
 
-// 🗑️ Eliminar producto y su imagen
 app.delete('/api/productos/:id', verificarToken, (req, res) => {
   const { id } = req.params;
 
-  // Primero obtenemos la imagen
-  const sqlSelect = 'SELECT imagen FROM productos WHERE id = ?';
-  db.query(sqlSelect, [id], (err, resultados) => {
-    if (err || resultados.length === 0) {
-      return res.status(500).json({ error: 'Error al buscar producto' });
-    }
+  db.query("SELECT imagen FROM productos WHERE id = ?", [id], (err, resultados) => {
+    if (err || resultados.length === 0) return res.status(404).json({ error: "Producto no encontrado" });
 
     const imagen = resultados[0].imagen;
     const rutaImagen = path.join(__dirname, '..', imagen);
 
-    // Luego eliminamos el producto
-    const sqlDelete = 'DELETE FROM productos WHERE id = ?';
-    db.query(sqlDelete, [id], (err, resultado) => {
-      if (err) {
-        return res.status(500).json({ error: 'Error al eliminar producto' });
-      }
+    db.query('DELETE FROM productos WHERE id = ?', [id], (err) => {
+      if (err) return res.status(500).json({ error: 'Error al eliminar producto' });
 
-      if (fs.existsSync(rutaImagen)) {
-        fs.unlink(rutaImagen, (err) => {
-          if (err) console.error("No se pudo borrar imagen:", err);
-        });
-      }
+      fs.unlink(rutaImagen, (err) => {
+        if (err) console.warn("No se pudo borrar la imagen:", err);
+      });
 
       res.json({ mensaje: 'Producto eliminado correctamente' });
     });
@@ -161,8 +191,7 @@ app.delete('/api/productos/:id', verificarToken, (req, res) => {
 // 🔐 Login seguro
 app.post('/api/admin/login', (req, res) => {
   const { usuario, clave } = req.body;
-  const sql = 'SELECT * FROM admins WHERE usuario = ?';
-  db.query(sql, [usuario], (err, resultados) => {
+  db.query('SELECT * FROM admins WHERE usuario = ?', [usuario], (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error en DB' });
     if (resultados.length === 0) return res.status(401).json({ error: 'Usuario no existe' });
 
@@ -176,6 +205,7 @@ app.post('/api/admin/login', (req, res) => {
   });
 });
 
+// 🟢 Arrancar servidor
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

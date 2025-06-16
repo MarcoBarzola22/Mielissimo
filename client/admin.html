@@ -1,46 +1,48 @@
-<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Panel de Administración – Mielissimo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Administración - Mielissimo</title>
   <link rel="stylesheet" href="css/styles.css">
- 
 </head>
 <body>
-  <header>
-    <h1>Panel de Administración</h1>
-    <button onclick="cerrarSesion()">Cerrar sesión</button>
-  </header>
+  <h1>Panel de Administración</h1>
 
-  <main style="padding: 2rem;">
-    <section>
-      <h2>Agregar producto</h2>
-      <form id="formulario-producto" enctype="multipart/form-data">
-  <input type="text" name="nombre" placeholder="Nombre" required>
-  <input type="number" name="precio" step="0.01" placeholder="Precio" required>
-  <input type="file" name="imagen" accept="image/*">
-  <input type="number" name="stock" placeholder="Stock" required>
-  <button type="submit">Agregar</button>
-</form>
+  <button id="logout">Cerrar sesión</button>
 
+  <section>
+    <h2>Agregar/Editar Producto</h2>
+    <form id="formulario-producto" enctype="multipart/form-data">
+      <input type="text" name="nombre" placeholder="Nombre" required>
+      <input type="number" name="precio" step="0.01" placeholder="Precio" required>
+      <input type="file" name="imagen" accept="image/*">
+      <input type="number" name="stock" placeholder="Stock" required>
+      <select id="categoria-producto" name="categoria_id" required>
+        <option value="">Seleccionar categoría</option>
+      </select>
+      <button type="submit">Guardar</button>
+    </form>
+    <p id="mensaje"></p>
+  </section>
 
-      <p id="mensaje"></p>
-    </section>
+  <section>
+    <h2>Productos actuales</h2>
+    <div id="lista-productos"></div>
+  </section>
 
-    <section>
-      <h2>Productos existentes</h2>
-      <div id="lista-productos"></div>
-    </section>
-  </main>
+  <section>
+    <h2>Crear nueva categoría</h2>
+    <form id="formulario-categoria">
+      <input type="text" name="nombre" placeholder="Nombre de categoría" required>
+      <button type="submit">Agregar categoría</button>
+    </form>
+  </section>
+
+  <section>
+    <h2>Editar / Eliminar categorías</h2>
+    <div id="lista-categorias"></div>
+  </section>
 
   <script src="js/admin.js"></script>
-
-  <script>
-    function cerrarSesion() {
-      localStorage.removeItem("tokenAdmin");
-      window.location.href = "login-admin.html";
-    }
-  </script>
 </body>
 </html>
