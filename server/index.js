@@ -11,9 +11,9 @@ const app = express();
 const PORT = 3000;
 const JWT_SECRET = "claveultrasecreta123";
 
-// Configuración de Multer para imágenes
+// Configuración de Multer
 const storage = multer.diskStorage({
-  destination: "uploads/",
+  destination: path.join(__dirname, 'uploads'),
   filename: (req, file, cb) => {
     const nombreUnico = Date.now() + "-" + file.originalname;
     cb(null, nombreUnico);
@@ -24,7 +24,7 @@ const upload = multer({ storage });
 // Middlewares
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
 // Conexión a MySQL
@@ -39,7 +39,7 @@ db.connect((err) => {
   else console.log('MySQL conectado');
 });
 
-// Middleware de autenticación
+// Middleware para proteger rutas
 function verificarToken(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth) return res.status(401).json({ error: "No autorizado" });
@@ -52,7 +52,7 @@ function verificarToken(req, res, next) {
   });
 }
 
-// 🔶 CATEGORÍAS
+// 🔹 CATEGORÍAS
 app.get("/api/categorias", (req, res) => {
   db.query("SELECT * FROM categorias", (err, resultados) => {
     if (err) return res.status(500).json({ error: "Error al obtener categorías" });
@@ -63,6 +63,7 @@ app.get("/api/categorias", (req, res) => {
 app.post("/api/categorias", verificarToken, (req, res) => {
   const { nombre } = req.body;
   if (!nombre) return res.status(400).json({ error: "Nombre requerido" });
+
   db.query("INSERT INTO categorias (nombre) VALUES (?)", [nombre], (err, resultado) => {
     if (err) return res.status(500).json({ error: "Error al agregar categoría" });
     res.status(201).json({ mensaje: "Categoría creada", id: resultado.insertId });
@@ -72,9 +73,10 @@ app.post("/api/categorias", verificarToken, (req, res) => {
 app.put("/api/categorias/:id", verificarToken, (req, res) => {
   const { id } = req.params;
   const { nombre } = req.body;
+
   if (!nombre) return res.status(400).json({ error: "Nombre requerido" });
 
-  db.query("UPDATE categorias SET nombre = ? WHERE id = ?", [nombre, id], (err, result) => {
+  db.query("UPDATE categorias SET nombre = ? WHERE id = ?", [nombre, id], (err) => {
     if (err) return res.status(500).json({ error: "Error al actualizar categoría" });
     res.json({ mensaje: "Categoría actualizada correctamente" });
   });
@@ -83,28 +85,26 @@ app.put("/api/categorias/:id", verificarToken, (req, res) => {
 app.delete("/api/categorias/:id", verificarToken, (req, res) => {
   const { id } = req.params;
 
-  db.query("SELECT COUNT(*) AS cantidad FROM productos WHERE categoria_id = ?", [id], (err, result) => {
-    if (err) return res.status(500).json({ error: "Error al verificar productos" });
-
-    if (result[0].cantidad > 0) {
-      return res.status(400).json({ error: "No se puede eliminar la categoría porque tiene productos asociados" });
+  db.query("DELETE FROM categorias WHERE id = ?", [id], (err, resultado) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Error al eliminar categoría (verifica que no esté asignada a productos)" });
     }
-
-    db.query("DELETE FROM categorias WHERE id = ?", [id], (err) => {
-      if (err) return res.status(500).json({ error: "Error al eliminar categoría" });
-      res.json({ mensaje: "Categoría eliminada correctamente" });
-    });
+    res.json({ mensaje: "Categoría eliminada correctamente" });
   });
 });
 
-// 🔶 PRODUCTOS
+// 🔹 PRODUCTOS
 app.get('/api/productos', (req, res) => {
-  const { categoria } = req.query;
+  const { categoria, id } = req.query;
   let sql = `SELECT productos.*, categorias.nombre AS categoria_nombre 
              FROM productos LEFT JOIN categorias ON productos.categoria_id = categorias.id`;
   const valores = [];
 
-  if (categoria) {
+  if (id) {
+    sql += " WHERE productos.id = ?";
+    valores.push(id);
+  } else if (categoria) {
     sql += " WHERE productos.categoria_id = ?";
     valores.push(categoria);
   }
@@ -114,6 +114,7 @@ app.get('/api/productos', (req, res) => {
     res.json(resultados);
   });
 });
+
 
 app.post('/api/productos', verificarToken, upload.single("imagen"), (req, res) => {
   const { nombre, precio, stock, categoria_id } = req.body;
@@ -139,7 +140,8 @@ app.put('/api/productos/:id', verificarToken, upload.single("imagen"), (req, res
   }
 
   db.query('SELECT imagen FROM productos WHERE id = ?', [id], (err, resultados) => {
-    if (err || resultados.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
+    if (err) return res.status(500).json({ error: 'Error al consultar' });
+    if (resultados.length === 0) return res.status(404).json({ error: 'Producto no encontrado' });
 
     const productoActual = resultados[0];
     let sql, valores;
@@ -147,8 +149,8 @@ app.put('/api/productos/:id', verificarToken, upload.single("imagen"), (req, res
     if (req.file) {
       const imagenAnterior = productoActual.imagen;
       const nuevaImagen = "/uploads/" + req.file.filename;
-      const rutaImagenAnterior = path.join(__dirname, '..', imagenAnterior);
 
+      const rutaImagenAnterior = path.join(__dirname, imagenAnterior);
       fs.unlink(rutaImagenAnterior, (err) => {
         if (err) console.warn("No se pudo eliminar imagen anterior:", err);
       });
@@ -171,27 +173,31 @@ app.delete('/api/productos/:id', verificarToken, (req, res) => {
   const { id } = req.params;
 
   db.query("SELECT imagen FROM productos WHERE id = ?", [id], (err, resultados) => {
-    if (err || resultados.length === 0) return res.status(404).json({ error: "Producto no encontrado" });
+    if (err || resultados.length === 0) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
 
     const imagen = resultados[0].imagen;
-    const rutaImagen = path.join(__dirname, '..', imagen);
+    const rutaImagen = path.join(__dirname, imagen);
 
-    db.query('DELETE FROM productos WHERE id = ?', [id], (err) => {
-      if (err) return res.status(500).json({ error: 'Error al eliminar producto' });
+    db.query("DELETE FROM productos WHERE id = ?", [id], (err) => {
+      if (err) return res.status(500).json({ error: "Error al eliminar producto" });
 
       fs.unlink(rutaImagen, (err) => {
         if (err) console.warn("No se pudo borrar la imagen:", err);
       });
 
-      res.json({ mensaje: 'Producto eliminado correctamente' });
+      res.json({ mensaje: "Producto eliminado correctamente" });
     });
   });
 });
 
-// 🔐 Login seguro
+// 🔹 LOGIN
 app.post('/api/admin/login', (req, res) => {
   const { usuario, clave } = req.body;
-  db.query('SELECT * FROM admins WHERE usuario = ?', [usuario], (err, resultados) => {
+  const sql = 'SELECT * FROM admins WHERE usuario = ?';
+
+  db.query(sql, [usuario], (err, resultados) => {
     if (err) return res.status(500).json({ error: 'Error en DB' });
     if (resultados.length === 0) return res.status(401).json({ error: 'Usuario no existe' });
 
@@ -205,7 +211,27 @@ app.post('/api/admin/login', (req, res) => {
   });
 });
 
-// 🟢 Arrancar servidor
+// 📬 Newsletter
+app.post("/api/newsletter", (req, res) => {
+  const { email } = req.body;
+  if (!email || !email.includes("@")) {
+    return res.status(400).json({ error: "Email inválido" });
+  }
+
+  const sql = "INSERT INTO suscriptores (email) VALUES (?)";
+  db.query(sql, [email], (err, resultado) => {
+    if (err) {
+      if (err.code === "ER_DUP_ENTRY") {
+        return res.status(400).json({ error: "Este correo ya está suscripto" });
+      }
+      return res.status(500).json({ error: "Error al suscribir" });
+    }
+
+    res.status(201).json({ mensaje: "¡Gracias por suscribirte!" });
+  });
+});
+
+
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

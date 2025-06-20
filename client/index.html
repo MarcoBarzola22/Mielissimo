@@ -19,6 +19,11 @@
         <li><a href="#">Productos</a></li>
         <li><a href="#">Contacto</a></li>
         <li><a href="login.html">Iniciar sesión</a></li>
+        <li>
+          <a href="carrito.html">
+            🛒 Carrito <span id="contador-carrito">(0)</span>
+          </a>
+        </li>
       </ul>
     </nav>
   </header>
@@ -26,20 +31,29 @@
   <!-- 🛍️ Sección de productos -->
   <main>
     <h1>Nuestros Productos</h1>
+
     <section class="filtros">
-  <label for="categoria">Filtrar por categoría:</label>
-  <select id="filtro-categoria">
-    <option value="todas">Todas</option>
-    <!-- Las categorías se completarán dinámicamente -->
-  </select>
-</section>
-        <section id="productos" class="productos">
-          <!-- Repetir más productos -->
-        </section>
-             
-      
- 
+      <label for="categoria">Filtrar por categoría:</label>
+      <select id="filtro-categoria">
+        <option value="todas">Todas</option>
+        <!-- Las categorías se completarán dinámicamente -->
+      </select>
+    </section>
+
+    <section id="productos" class="productos">
+      <!-- Los productos se renderizan desde JS -->
+    </section>
   </main>
+
+  <!-- 📩 Newsletter -->
+  <section class="newsletter">
+    <h2>Suscribite a nuestro Newsletter</h2>
+    <form id="form-newsletter">
+      <input type="email" id="email-newsletter" placeholder="Tu correo electrónico" required>
+      <button type="submit">Suscribirme</button>
+    </form>
+    <p id="mensaje-newsletter"></p>
+  </section>
 
   <!-- 📞 Footer -->
   <footer>
@@ -47,8 +61,6 @@
     <p>WhatsApp: 2657-XXXXXX | Instagram: @mielissimo</p>
   </footer>
 
-<script src="js/main.js"></script>
-
-
+  <script src="js/main.js"></script>
 </body>
 </html>

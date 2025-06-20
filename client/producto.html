@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Carrito – Mielissimo</title>
+  <title>Detalle del Producto – Mielissimo</title>
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
@@ -16,8 +16,9 @@
     <nav>
       <ul>
         <li><a href="index.html">Inicio</a></li>
-        <li><a href="carrito.html">Carrito</a></li>
+        <li><a href="#">Productos</a></li>
         <li><a href="#">Contacto</a></li>
+        <li><a href="login.html">Iniciar sesión</a></li>
         <li>
           <a href="carrito.html">
             🛒 Carrito <span id="contador-carrito">(0)</span>
@@ -27,16 +28,16 @@
     </nav>
   </header>
 
-  <!-- 🛒 Carrito -->
   <main>
-    <h1>Tu Carrito</h1>
-    <section class="carrito-contenedor">
-      <!-- Aquí se mostrarán los productos -->
+    <section class="detalle-producto">
+      <h1 id="nombre-producto">Cargando...</h1>
+      <img id="imagen-producto" src="" alt="Producto" />
+      <p><strong>Categoría:</strong> <span id="categoria-producto"></span></p>
+      <p><strong>Precio:</strong> $<span id="precio-producto"></span></p>
+      <p><strong>Stock disponible:</strong> <span id="stock-producto"></span></p>
+      <button id="btn-agregar">Agregar al carrito</button>
+      <p id="mensaje-carrito" style="color: green;"></p>
     </section>
-
-    <div class="finalizar">
-      <button id="finalizarCompra">🧾 Finalizar compra</button>
-    </div>
   </main>
 
   <!-- 📞 Footer -->
@@ -45,6 +46,6 @@
     <p>WhatsApp: 2657-XXXXXX | Instagram: @mielissimo</p>
   </footer>
 
-  <script src="js/carrito.js"></script>
+  <script src="js/detalle.js"></script>
 </body>
 </html>
