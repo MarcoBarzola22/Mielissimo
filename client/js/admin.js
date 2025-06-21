@@ -5,33 +5,38 @@ const selectCategoria = document.getElementById("categoria-producto");
 const formularioCategoria = document.getElementById("formulario-categoria");
 const listaCategorias = document.getElementById("lista-categorias");
 const botonLogout = document.getElementById("logout");
+const buscador = document.getElementById("buscador-productos");
+const seccionFormulario = document.getElementById("seccion-formulario");
 
 let productoEnEdicion = null;
 const token = localStorage.getItem("tokenAdmin");
 
-function cargarProductos() {
+function cargarProductos(filtro = "") {
   fetch("/api/productos", {
     headers: { Authorization: `Bearer ${token}` }
   })
     .then(res => res.json())
     .then(productos => {
       productosContainer.innerHTML = "";
-      productos.forEach(prod => {
-        const div = document.createElement("div");
-        div.classList.add("producto-admin");
-        div.innerHTML = `
-          <p><strong>${prod.nombre}</strong> – $${parseFloat(prod.precio).toFixed(2)} – Stock: ${prod.stock}</p>
-          <p><img src="${prod.imagen}" alt="${prod.nombre}" width="100"></p>
-          <button onclick="editarProducto(${prod.id}, '${prod.nombre}', ${prod.precio}, '${prod.imagen}', ${prod.stock}, ${prod.categoria_id})">✏ Editar</button>
-          <button onclick="eliminarProducto(${prod.id})">🗑 Eliminar</button>
-        `;
-        productosContainer.appendChild(div);
-      });
+      productos
+        .filter(p => p.nombre.toLowerCase().includes(filtro.toLowerCase()))
+        .forEach(prod => {
+          const div = document.createElement("div");
+          div.classList.add("producto-admin");
+          div.innerHTML = `
+            <img src="${prod.imagen}" alt="${prod.nombre}" />
+            <p><strong>${prod.nombre}</strong></p>
+            <p>Precio: $${parseFloat(prod.precio).toFixed(2)}</p>
+            <p>Stock: ${prod.stock}</p>
+            <button onclick="editarProducto(${prod.id}, '${prod.nombre}', ${prod.precio}, '${prod.imagen}', ${prod.stock}, ${prod.categoria_id})">✏ Editar</button>
+            <button class="eliminar" onclick="eliminarProducto(${prod.id})">🗑 Eliminar</button>
+          `;
+          productosContainer.appendChild(div);
+        });
     })
     .catch(err => {
       console.error("Error al cargar productos:", err);
       mensaje.textContent = "Error al cargar productos";
-      mensaje.style.color = "red";
     });
 }
 
@@ -48,24 +53,24 @@ function cargarCategorias() {
         selectCategoria.appendChild(option);
 
         const div = document.createElement("div");
+        div.classList.add("categoria-item");
         div.innerHTML = `
-          <strong>${cat.nombre}</strong>
-          <button onclick="editarCategoriaPrompt(${cat.id}, '${cat.nombre}')">✏</button>
-          <button onclick="eliminarCategoria(${cat.id})">🗑</button>
+          <span>${cat.nombre}</span>
+          <div class="botones-vertical">
+            <button onclick="editarCategoriaPrompt(${cat.id}, '${cat.nombre}')">✏</button>
+            <button class="eliminar" onclick="eliminarCategoria(${cat.id})">🗑</button>
+          </div>
         `;
         listaCategorias.appendChild(div);
       });
-    })
-    .catch(err => console.error("Error al cargar categorías:", err));
+    });
 }
 
 formulario.addEventListener("submit", async (e) => {
   e.preventDefault();
   const datos = new FormData(formulario);
 
-  const url = productoEnEdicion
-    ? `/api/productos/${productoEnEdicion}`
-    : "/api/productos";
+  const url = productoEnEdicion ? `/api/productos/${productoEnEdicion}` : "/api/productos";
   const metodo = productoEnEdicion ? "PUT" : "POST";
 
   try {
@@ -77,21 +82,17 @@ formulario.addEventListener("submit", async (e) => {
 
     const resultado = await res.json();
     if (res.ok) {
-      mensaje.textContent = productoEnEdicion
-        ? "Producto actualizado correctamente."
-        : "Producto agregado correctamente.";
+      mensaje.textContent = productoEnEdicion ? "Producto actualizado" : "Producto agregado";
       mensaje.style.color = "green";
       formulario.reset();
       productoEnEdicion = null;
       setTimeout(() => cargarProductos(), 300);
     } else {
-      mensaje.textContent = resultado.error || "Error en la operación.";
+      mensaje.textContent = resultado.error || "Error en la operación";
       mensaje.style.color = "red";
     }
   } catch (err) {
-    console.error("Error al enviar producto:", err);
     mensaje.textContent = "Error de conexión.";
-    mensaje.style.color = "red";
   }
 });
 
@@ -103,6 +104,7 @@ function editarProducto(id, nombre, precio, imagen, stock, categoria_id) {
   productoEnEdicion = id;
   mensaje.textContent = "Editando producto...";
   mensaje.style.color = "blue";
+  seccionFormulario.scrollIntoView({ behavior: "smooth" });
 }
 
 function eliminarProducto(id) {
@@ -112,14 +114,7 @@ function eliminarProducto(id) {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
-      .then(data => {
-        alert(data.mensaje || data.error);
-        cargarProductos();
-      })
-      .catch(err => {
-        console.error("Error al eliminar:", err);
-        alert("Error al eliminar producto.");
-      });
+      .then(() => cargarProductos());
   }
 }
 
@@ -127,32 +122,26 @@ formularioCategoria.addEventListener("submit", async (e) => {
   e.preventDefault();
   const nombre = formularioCategoria.nombre.value;
 
-  try {
-    const res = await fetch("/api/categorias", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ nombre })
-    });
+  const res = await fetch("/api/categorias", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`
+    },
+    body: JSON.stringify({ nombre })
+  });
 
-    const resultado = await res.json();
-    if (res.ok) {
-      alert("Categoría agregada correctamente");
-      formularioCategoria.reset();
-      cargarCategorias();
-    } else {
-      alert(resultado.error || "Error al agregar categoría");
-    }
-  } catch (err) {
-    console.error("Error:", err);
-    alert("Error de conexión");
+  const data = await res.json();
+  if (res.ok) {
+    formularioCategoria.reset();
+    cargarCategorias();
+  } else {
+    alert(data.error || "Error al agregar categoría");
   }
 });
 
 function editarCategoriaPrompt(id, nombreActual) {
-  const nuevoNombre = prompt("Editar nombre de categoría:", nombreActual);
+  const nuevoNombre = prompt("Editar nombre:", nombreActual);
   if (nuevoNombre && nuevoNombre !== nombreActual) {
     fetch(`/api/categorias/${id}`, {
       method: "PUT",
@@ -161,28 +150,16 @@ function editarCategoriaPrompt(id, nombreActual) {
         Authorization: `Bearer ${token}`
       },
       body: JSON.stringify({ nombre: nuevoNombre })
-    })
-      .then(res => res.json())
-      .then(data => {
-        alert(data.mensaje || data.error);
-        cargarCategorias();
-      })
-      .catch(err => alert("Error al editar categoría"));
+    }).then(() => cargarCategorias());
   }
 }
 
 function eliminarCategoria(id) {
-  if (confirm("¿Eliminar esta categoría? (Debe estar vacía)")) {
+  if (confirm("¿Eliminar esta categoría?")) {
     fetch(`/api/categorias/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        alert(data.mensaje || data.error);
-        cargarCategorias();
-      })
-      .catch(err => alert("Error al eliminar categoría"));
+    }).then(() => cargarCategorias());
   }
 }
 
@@ -190,6 +167,8 @@ botonLogout.addEventListener("click", () => {
   localStorage.removeItem("tokenAdmin");
   window.location.href = "login-admin.html";
 });
+
+buscador.addEventListener("input", () => cargarProductos(buscador.value));
 
 cargarProductos();
 cargarCategorias();

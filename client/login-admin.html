@@ -7,7 +7,13 @@
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-  <main style="padding: 2rem; max-width: 400px; margin: auto;">
+  <header class="header-login">
+    <div class="logo">
+      <a href="index.html"><img src="assets/logoCanva.png" alt="Logo de Mielissimo"></a>
+    </div>
+  </header>
+
+  <main class="form-container">
     <h1>Acceso Administración</h1>
     <form id="form-login-admin">
       <input type="text" name="usuario" placeholder="Usuario" required />
@@ -16,6 +22,10 @@
     </form>
     <p id="mensaje-login" style="color: red;"></p>
   </main>
+
+  <footer>
+    <p>© 2025 Mielissimo – Villa Mercedes</p>
+  </footer>
 
   <script src="js/login-admin.js"></script>
 </body>

@@ -1,25 +1,27 @@
-document.getElementById("form-login-admin").addEventListener("submit", async (e) => {
+const formLogin = document.getElementById("form-login-admin");
+const mensaje = document.getElementById("mensaje-login");
+
+formLogin.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const usuario = e.target.usuario.value;
-  const clave = e.target.clave.value;
+  const datos = Object.fromEntries(new FormData(formLogin));
 
   try {
-    const res = await fetch("http://localhost:3000/api/admin/login", {
+    const res = await fetch("/api/admin/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ usuario, clave })
+      body: JSON.stringify(datos)
     });
 
-    const data = await res.json();
+    const resultado = await res.json();
 
     if (res.ok) {
-      localStorage.setItem("tokenAdmin", data.token);
+      localStorage.setItem("tokenAdmin", resultado.token);
       window.location.href = "admin.html";
     } else {
-      document.getElementById("mensaje-login").textContent = data.error || "Credenciales incorrectas";
+      mensaje.textContent = resultado.error || "Credenciales incorrectas";
     }
   } catch (err) {
-    console.error("Error al intentar login:", err);
-    document.getElementById("mensaje-login").textContent = "Error de conexión con el servidor";
+    console.error("Error en login:", err);
+    mensaje.textContent = "Error de conexión con el servidor";
   }
 });

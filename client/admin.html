@@ -1,47 +1,60 @@
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Panel de Administración - Mielissimo</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
-  <h1>Panel de Administración</h1>
 
-  <button id="logout">Cerrar sesión</button>
+  <header class="header-admin">
+    <div class="logo">
+      <img src="assets/logoCanva.png" alt="Logo de Mielissimo" />
+    </div>
+    <button id="logout">Cerrar sesión</button>
+  </header>
 
-  <section>
-    <h2>Agregar/Editar Producto</h2>
-    <form id="formulario-producto" enctype="multipart/form-data">
-      <input type="text" name="nombre" placeholder="Nombre" required>
-      <input type="number" name="precio" step="0.01" placeholder="Precio" required>
-      <input type="file" name="imagen" accept="image/*">
-      <input type="number" name="stock" placeholder="Stock" required>
-      <select id="categoria-producto" name="categoria_id" required>
-        <option value="">Seleccionar categoría</option>
-      </select>
-      <button type="submit">Guardar</button>
-    </form>
-    <p id="mensaje"></p>
-  </section>
+  <main>
+    <section class="seccion">
+      <h2>Crear nueva categoría</h2>
+      <form id="formulario-categoria">
+        <input type="text" name="nombre" placeholder="Nombre de categoría" required />
+        <button type="submit">Agregar categoría</button>
+      </form>
+    </section>
 
-  <section>
-    <h2>Productos actuales</h2>
-    <div id="lista-productos"></div>
-  </section>
+    <section class="seccion">
+      <h2>Editar / Eliminar categorías</h2>
+      <div id="lista-categorias" class="categorias-grid"></div>
+    </section>
+  
 
-  <section>
-    <h2>Crear nueva categoría</h2>
-    <form id="formulario-categoria">
-      <input type="text" name="nombre" placeholder="Nombre de categoría" required>
-      <button type="submit">Agregar categoría</button>
-    </form>
-  </section>
+   <section class="seccion" id="seccion-formulario">
+      <h2>Agregar / Editar Producto</h2>
+      <form id="formulario-producto" enctype="multipart/form-data">
+        <input type="text" name="nombre" placeholder="Nombre" required />
+        <input type="number" name="precio" step="0.01" placeholder="Precio" required />
+        <input type="file" name="imagen" accept="image/*" />
+        <input type="number" name="stock" placeholder="Stock" required />
+        <select id="categoria-producto" name="categoria_id" required>
+          <option value="">Seleccionar categoría</option>
+        </select>
+        <button type="submit">Guardar</button>
+      </form>
+      <p id="mensaje"></p>
+    </section>
 
-  <section>
-    <h2>Editar / Eliminar categorías</h2>
-    <div id="lista-categorias"></div>
-  </section>
+  <section class="seccion">
+      <h2>Productos actuales</h2>
+      <input type="text" id="buscador-productos" placeholder="Buscar producto por nombre..." />
+      <div id="lista-productos" class="productos-grid"></div>
+    </section>
+
+    </main>
+  <footer>
+    <p>© 2025 Mielissimo – Panel de Administración</p>
+  </footer>
 
   <script src="js/admin.js"></script>
 </body>
