@@ -3,49 +3,54 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Registro – Mielissimo</title>
-  <link rel="stylesheet" href="css/styles.css" />
+  <title>Registrarse – Mielissimo</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/tienda.css">
+  <link rel="stylesheet" href="css/registro.css">
 </head>
 <body>
 
-  <header>
+  <!-- Navbar como en la tienda -->
+  <header class="header-publico">
     <div class="logo">
-      <img src="assets/logoCanva.png" alt="Logo de Mielissimo" />
+      <a href="index.html"><img src="assets/logoCanva.png" alt="Logo de Mielissimo" /></a>
     </div>
     <nav>
       <ul>
         <li><a href="index.html">Inicio</a></li>
-        <li><a href="carrito.html">Carrito</a></li>
+        <li><a href="#productos">Productos</a></li>
+        <li><a href="#">Contacto</a></li>
         <li><a href="login.html">Iniciar sesión</a></li>
+        <li><a href="carrito.html">🛒 Carrito <span id="contador-carrito">(0)</span></a></li>
       </ul>
     </nav>
   </header>
 
+  <!-- Formulario de registro -->
   <main class="form-container">
-    <h1>Crear una cuenta</h1>
-    <form id="registroForm">
-      <label for="nombre">Nombre completo</label>
-      <input type="text" id="nombre" name="nombre" required>
+    <div class="card-registro">
+      <h1>Crear cuenta</h1>
+      <form id="form-registro">
+        <label for="nombre">Nombre completo</label>
+        <input type="text" id="nombre" name="nombre" required>
 
-      <label for="email">Correo electrónico</label>
-      <input type="email" id="email" name="email" required>
+        <label for="email">Correo electrónico</label>
+        <input type="email" id="email" name="email" required>
 
-      <label for="password">Contraseña</label>
-      <input type="password" id="password" name="password" required>
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" name="password" required>
 
-      <label for="confirmPassword">Repetir contraseña</label>
-      <input type="password" id="confirmPassword" name="confirmPassword" required>
-
-      <button type="submit">Registrarse</button>
-    </form>
-    <p>¿Ya tenés cuenta? <a href="login.html">Iniciar sesión</a></p>
+        <button type="submit">Registrarme</button>
+      </form>
+      <p>¿Ya tenés cuenta? <a href="login.html">Iniciar sesión</a></p>
+    </div>
   </main>
 
   <footer>
     <p>© 2025 Mielissimo – Villa Mercedes</p>
+    <p>WhatsApp: 2657-XXXXXX | Instagram: @mielissimo</p>
   </footer>
 
   <script src="js/registro.js"></script>
-
 </body>
 </html>

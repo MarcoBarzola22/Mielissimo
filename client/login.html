@@ -4,35 +4,42 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Iniciar sesión – Mielissimo</title>
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/tienda.css">
+  <link rel="stylesheet" href="css/login.css"> <!-- este contiene los estilos de la tarjeta -->
 </head>
 <body>
 
-  <header>
-    <div class="logo">
-      <img src="assets/logoCanva.png" alt="Logo de Mielissimo" />
-    </div>
-    <nav>
-      <ul>
-        <li><a href="index.html">Inicio</a></li>
-        <li><a href="carrito.html">Carrito</a></li>
-        <li><a href="registro.html">Registrarse</a></li>
-      </ul>
-    </nav>
-  </header>
+  <header class="header-publico">
+  <div class="logo">
+    <img src="assets/logoCanva.png" alt="Logo de Mielissimo" />
+  </div>
+  <nav>
+    <ul>
+      <li><a href="#">Inicio</a></li>
+      <li><a href="#productos">Productos</a></li>
+      <li><a href="#">Contacto</a></li>
+      <li><a href="registro.html">Registrarse</a></li>
+      <li>
+        <a href="carrito.html">
+          🛒 Carrito <span id="contador-carrito">(0)</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+</header>
 
+  <!-- 🧾 Formulario dentro de tarjeta -->
   <main class="form-container">
-    <h1>Iniciar sesión</h1>
-    <form id="loginForm">
-      <label for="email">Correo electrónico</label>
-      <input type="email" id="email" name="email" required>
-
-      <label for="password">Contraseña</label>
-      <input type="password" id="password" name="password" required>
-
-      <button type="submit">Ingresar</button>
-    </form>
-    <p>¿No tenés cuenta? <a href="registro.html">Registrate acá</a></p>
+    <div class="card-login">
+      <h1>Iniciar sesión</h1>
+      <form id="loginForm">
+        <input type="email" id="email" name="email" placeholder="Correo electrónico" required>
+        <input type="password" id="password" name="password" placeholder="Contraseña" required>
+        <button type="submit">Ingresar</button>
+      </form>
+      <p>¿No tenés cuenta? <a href="registro.html">Registrate acá</a></p>
+    </div>
   </main>
 
   <footer>
@@ -40,6 +47,5 @@
   </footer>
 
   <script src="js/login.js"></script>
-
 </body>
 </html>

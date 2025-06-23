@@ -4,56 +4,69 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Mielissimo – Tienda de Dulces</title>
-  <link rel="stylesheet" href="css/styles.css" />
+ <link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/tienda.css">
+
 </head>
 <body>
 
-  <!-- 🧁 Header -->
-  <header>
-    <div class="logo">
-      <img src="assets/logoCanva.png" alt="Logo de Mielissimo" />
+  <!-- 📑 Header visual mejorado -->
+ <!-- Solo modificamos el header -->
+<header class="header-publico">
+  <div class="logo">
+    <img src="assets/logoCanva.png" alt="Logo de Mielissimo" />
+  </div>
+  <nav>
+    <ul>
+      <li><a href="#">Inicio</a></li>
+      <li><a href="#productos">Productos</a></li>
+      <li><a href="#">Contacto</a></li>
+      <li><a href="login.html">Iniciar sesión</a></li>
+      <li>
+        <a href="carrito.html">
+          🛒 Carrito <span id="contador-carrito">(0)</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+</header>
+
+
+  <!-- 🌿 Hero destacado -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Bienvenidos a <span>Mielissimo</span></h1>
+      <p>La dulzura que estabas buscando</p>
+      <a href="#productos" class="btn-hero">Ver productos</a>
     </div>
-    <nav>
-      <ul>
-        <li><a href="#">Inicio</a></li>
-        <li><a href="#">Productos</a></li>
-        <li><a href="#">Contacto</a></li>
-        <li><a href="login.html">Iniciar sesión</a></li>
-        <li>
-          <a href="carrito.html">
-            🛒 Carrito <span id="contador-carrito">(0)</span>
-          </a>
-        </li>
-      </ul>
-    </nav>
-  </header>
+  </section>
 
-  <!-- 🛍️ Sección de productos -->
+
+  <!-- 🍬 Catálogo completo -->
   <main>
-    <h1>Nuestros Productos</h1>
 
-    <section class="filtros">
-      <label for="categoria">Filtrar por categoría:</label>
-      <select id="filtro-categoria">
-        <option value="todas">Todas</option>
-        <!-- Las categorías se completarán dinámicamente -->
-      </select>
-    </section>
+    <!-- 🔄 Nueva barra de filtros horizontal -->
+<section class="filtros-horizontal">
+  <h2>Categorías</h2>
+  <div id="categorias-horizontal" class="categoria-pills">
+    <!-- Se llenará desde JS -->
+  </div>
+</section>
 
     <section id="productos" class="productos">
-      <!-- Los productos se renderizan desde JS -->
+      <!-- Productos renderizados por main.js -->
     </section>
   </main>
 
-  <!-- 📩 Newsletter -->
-  <section class="newsletter">
-    <h2>Suscribite a nuestro Newsletter</h2>
-    <form id="form-newsletter">
-      <input type="email" id="email-newsletter" placeholder="Tu correo electrónico" required>
-      <button type="submit">Suscribirme</button>
-    </form>
-    <p id="mensaje-newsletter"></p>
-  </section>
+  <!-- 📧 Newsletter con centrado real -->
+<section class="newsletter centrado">
+  <h2>Suscribite a nuestro Newsletter</h2>
+  <form id="form-newsletter">
+    <input type="email" id="email-newsletter" placeholder="Tu correo electrónico" required>
+    <button type="submit">Suscribirme</button>
+  </form>
+  <p id="mensaje-newsletter"></p>
+</section>
 
   <!-- 📞 Footer -->
   <footer>

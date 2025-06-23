@@ -28,8 +28,15 @@ function cargarProductos(filtro = "") {
             <p><strong>${prod.nombre}</strong></p>
             <p>Precio: $${parseFloat(prod.precio).toFixed(2)}</p>
             <p>Stock: ${prod.stock}</p>
-            <button onclick="editarProducto(${prod.id}, '${prod.nombre}', ${prod.precio}, '${prod.imagen}', ${prod.stock}, ${prod.categoria_id})">✏ Editar</button>
-            <button class="eliminar" onclick="eliminarProducto(${prod.id})">🗑 Eliminar</button>
+            <button class="btn-editar" data-id="${prod.id}" 
+              data-nombre="${prod.nombre}"
+              data-precio="${prod.precio}"
+              data-imagen="${prod.imagen}"
+              data-stock="${prod.stock}"
+              data-categoria="${prod.categoria_id}">
+              ✏ Editar
+            </button>
+            <button class="btn-eliminar" data-id="${prod.id}">🗑 Eliminar</button>
           `;
           productosContainer.appendChild(div);
         });
@@ -39,6 +46,7 @@ function cargarProductos(filtro = "") {
       mensaje.textContent = "Error al cargar productos";
     });
 }
+
 
 function cargarCategorias() {
   fetch("/api/categorias")
@@ -57,14 +65,15 @@ function cargarCategorias() {
         div.innerHTML = `
           <span>${cat.nombre}</span>
           <div class="botones-vertical">
-            <button onclick="editarCategoriaPrompt(${cat.id}, '${cat.nombre}')">✏</button>
-            <button class="eliminar" onclick="eliminarCategoria(${cat.id})">🗑</button>
+            <button class="btn-editar-categoria" data-id="${cat.id}" data-nombre="${cat.nombre}">✏</button>
+            <button class="btn-eliminar-categoria eliminar" data-id="${cat.id}">🗑</button>
           </div>
         `;
         listaCategorias.appendChild(div);
       });
     });
 }
+
 
 formulario.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -167,6 +176,42 @@ botonLogout.addEventListener("click", () => {
   localStorage.removeItem("tokenAdmin");
   window.location.href = "login-admin.html";
 });
+
+document.addEventListener("click", (e) => {
+  // Editar producto
+  if (e.target.classList.contains("btn-editar")) {
+    const btn = e.target;
+    const id = btn.dataset.id;
+    const nombre = btn.dataset.nombre;
+    const precio = btn.dataset.precio;
+    const imagen = btn.dataset.imagen;
+    const stock = btn.dataset.stock;
+    const categoria_id = btn.dataset.categoria;
+
+    editarProducto(id, nombre, precio, imagen, stock, categoria_id);
+  }
+
+  // Eliminar producto
+  if (e.target.classList.contains("btn-eliminar")) {
+    const id = e.target.dataset.id;
+    eliminarProducto(id);
+  }
+});
+
+// Delegación de eventos para botones de categorías
+document.addEventListener("click", (e) => {
+  if (e.target.classList.contains("btn-editar-categoria")) {
+    const id = e.target.dataset.id;
+    const nombre = e.target.dataset.nombre;
+    editarCategoriaPrompt(id, nombre);
+  }
+
+  if (e.target.classList.contains("btn-eliminar-categoria")) {
+    const id = e.target.dataset.id;
+    eliminarCategoria(id);
+  }
+});
+
 
 buscador.addEventListener("input", () => cargarProductos(buscador.value));
 

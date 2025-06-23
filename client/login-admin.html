@@ -5,22 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login Administración – Mielissimo</title>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/tienda.css">
+  <link rel="stylesheet" href="css/login-admin.css"> <!-- nuevo archivo con estilos -->
 </head>
 <body>
-  <header class="header-login">
+
+  <!-- Encabezado con solo logo -->
+  <header class="header-login-admin">
     <div class="logo">
-      <a href="index.html"><img src="assets/logoCanva.png" alt="Logo de Mielissimo"></a>
+      <a href="index.html">
+        <img src="assets/logoCanva.png" alt="Logo de Mielissimo">
+      </a>
     </div>
   </header>
 
+  <!-- Formulario de acceso -->
   <main class="form-container">
-    <h1>Acceso Administración</h1>
-    <form id="form-login-admin">
-      <input type="text" name="usuario" placeholder="Usuario" required />
-      <input type="password" name="clave" placeholder="Contraseña" required />
-      <button type="submit">Ingresar</button>
-    </form>
-    <p id="mensaje-login" style="color: red;"></p>
+    <div class="card-login-admin">
+      <h1>Acceso Administración</h1>
+      <form id="form-login-admin">
+        <input type="text" name="usuario" placeholder="Usuario" required />
+        <input type="password" name="clave" placeholder="Contraseña" required />
+        <button type="submit">Ingresar</button>
+      </form>
+      <p id="mensaje-login" style="color: red;"></p>
+    </div>
   </main>
 
   <footer>

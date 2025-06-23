@@ -1,40 +1,55 @@
-const selectCategoria = document.getElementById("filtro-categoria");
+const contenedorCategorias = document.getElementById("categorias-horizontal");
 const contenedorProductos = document.getElementById("productos");
+const productosDestacados = document.getElementById("productos-destacados");
 
-// 🔃 Cargar categorías desde el backend
+// 🔃 Cargar categorías como botones pill
 function cargarCategorias() {
   fetch("/api/categorias")
     .then(res => res.json())
     .then(categorias => {
-      selectCategoria.innerHTML = '<option value="todas">Todas</option>';
+      if (!contenedorCategorias) return;
+
+      contenedorCategorias.innerHTML = "";
+
+      const btnTodas = document.createElement("button");
+      btnTodas.textContent = "Todas";
+      btnTodas.classList.add("btn-categoria", "activa");
+      btnTodas.dataset.id = "todas";
+      contenedorCategorias.appendChild(btnTodas);
+
       categorias.forEach(cat => {
-        const option = document.createElement("option");
-        option.value = cat.id;
-        option.textContent = cat.nombre;
-        selectCategoria.appendChild(option);
+        const btn = document.createElement("button");
+        btn.textContent = cat.nombre;
+        btn.dataset.id = cat.id;
+        btn.classList.add("btn-categoria");
+        contenedorCategorias.appendChild(btn);
       });
     })
     .catch(err => console.error("Error al cargar categorías:", err));
 }
 
-// 🎯 Evento al cambiar categoría
-if (selectCategoria) {
-  selectCategoria.addEventListener("change", () => {
-    const idCategoria = selectCategoria.value;
+// 🖱️ Filtro por categoría
+document.addEventListener("click", (e) => {
+  if (e.target.classList.contains("btn-categoria")) {
+    const idCategoria = e.target.dataset.id;
+
+    document.querySelectorAll(".btn-categoria").forEach(btn =>
+      btn.classList.remove("activa")
+    );
+    e.target.classList.add("activa");
+
     const url = idCategoria === "todas"
       ? "/api/productos"
       : `/api/productos?categoria=${idCategoria}`;
 
     fetch(url)
       .then(res => res.json())
-      .then(productos => {
-        renderizarProductos(productos);
-      })
+      .then(productos => renderizarProductos(productos))
       .catch(err => console.error("Error al filtrar productos:", err));
-  });
-}
+  }
+});
 
-// 🎨 Renderizar productos
+// 🖼 Renderizar productos
 function renderizarProductos(productos) {
   if (!contenedorProductos) return;
   contenedorProductos.innerHTML = "";
@@ -56,6 +71,8 @@ function renderizarProductos(productos) {
   });
 }
 
+
+
 // 🛒 Carrito con LocalStorage
 let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 
@@ -68,6 +85,7 @@ function agregarAlCarrito(id) {
   const productoExistente = carrito.find(p => p.id === id);
   if (productoExistente) {
     productoExistente.cantidad++;
+    guardarCarrito();
   } else {
     fetch(`/api/productos`)
       .then(res => res.json())
@@ -85,7 +103,6 @@ function agregarAlCarrito(id) {
         }
       });
   }
-  guardarCarrito();
 }
 
 function actualizarContadorCarrito() {
@@ -96,7 +113,7 @@ function actualizarContadorCarrito() {
   }
 }
 
-// Newsletter
+// 📧 Newsletter con Mailchimp
 const formNewsletter = document.getElementById("form-newsletter");
 const inputEmail = document.getElementById("email-newsletter");
 const mensajeNewsletter = document.getElementById("mensaje-newsletter");
@@ -132,10 +149,13 @@ if (formNewsletter) {
   });
 }
 
-// Inicial
+// 🚀 Inicialización
 cargarCategorias();
+
 fetch("/api/productos")
   .then(res => res.json())
-  .then(productos => renderizarProductos(productos));
+  .then(productos => {
+    renderizarProductos(productos);
+  });
 
 actualizarContadorCarrito();
