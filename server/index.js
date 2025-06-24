@@ -73,7 +73,6 @@ app.post("/api/categorias", verificarToken, (req, res) => {
 app.put("/api/categorias/:id", verificarToken, (req, res) => {
   const { id } = req.params;
   const { nombre } = req.body;
-
   if (!nombre) return res.status(400).json({ error: "Nombre requerido" });
 
   db.query("UPDATE categorias SET nombre = ? WHERE id = ?", [nombre, id], (err) => {
@@ -84,12 +83,8 @@ app.put("/api/categorias/:id", verificarToken, (req, res) => {
 
 app.delete("/api/categorias/:id", verificarToken, (req, res) => {
   const { id } = req.params;
-
   db.query("DELETE FROM categorias WHERE id = ?", [id], (err, resultado) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: "Error al eliminar categoría (verifica que no esté asignada a productos)" });
-    }
+    if (err) return res.status(500).json({ error: "Error al eliminar categoría" });
     res.json({ mensaje: "Categoría eliminada correctamente" });
   });
 });
@@ -114,7 +109,6 @@ app.get('/api/productos', (req, res) => {
     res.json(resultados);
   });
 });
-
 
 app.post('/api/productos', verificarToken, upload.single("imagen"), (req, res) => {
   const { nombre, precio, stock, categoria_id } = req.body;
@@ -149,12 +143,8 @@ app.put('/api/productos/:id', verificarToken, upload.single("imagen"), (req, res
     if (req.file) {
       const imagenAnterior = productoActual.imagen;
       const nuevaImagen = "/uploads/" + req.file.filename;
-
       const rutaImagenAnterior = path.join(__dirname, imagenAnterior);
-      fs.unlink(rutaImagenAnterior, (err) => {
-        if (err) console.warn("No se pudo eliminar imagen anterior:", err);
-      });
-
+      fs.unlink(rutaImagenAnterior, () => {});
       sql = 'UPDATE productos SET nombre = ?, precio = ?, imagen = ?, stock = ?, categoria_id = ? WHERE id = ?';
       valores = [nombre, precio, nuevaImagen, stock, categoria_id, id];
     } else {
@@ -171,28 +161,21 @@ app.put('/api/productos/:id', verificarToken, upload.single("imagen"), (req, res
 
 app.delete('/api/productos/:id', verificarToken, (req, res) => {
   const { id } = req.params;
-
   db.query("SELECT imagen FROM productos WHERE id = ?", [id], (err, resultados) => {
     if (err || resultados.length === 0) {
       return res.status(404).json({ error: "Producto no encontrado" });
     }
-
     const imagen = resultados[0].imagen;
     const rutaImagen = path.join(__dirname, imagen);
-
     db.query("DELETE FROM productos WHERE id = ?", [id], (err) => {
       if (err) return res.status(500).json({ error: "Error al eliminar producto" });
-
-      fs.unlink(rutaImagen, (err) => {
-        if (err) console.warn("No se pudo borrar la imagen:", err);
-      });
-
+      fs.unlink(rutaImagen, () => {});
       res.json({ mensaje: "Producto eliminado correctamente" });
     });
   });
 });
 
-// 🔹 LOGIN
+// 🔐 LOGIN ADMIN
 app.post('/api/admin/login', (req, res) => {
   const { usuario, clave } = req.body;
   const sql = 'SELECT * FROM admins WHERE usuario = ?';
@@ -219,19 +202,115 @@ app.post("/api/newsletter", (req, res) => {
   }
 
   const sql = "INSERT INTO suscriptores (email) VALUES (?)";
-  db.query(sql, [email], (err, resultado) => {
-    if (err) {
-      if (err.code === "ER_DUP_ENTRY") {
-        return res.status(400).json({ error: "Este correo ya está suscripto" });
-      }
-      return res.status(500).json({ error: "Error al suscribir" });
+  db.query(sql, [email], (err) => {
+    if (err && err.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({ error: "Este correo ya está suscripto" });
     }
-
+    if (err) return res.status(500).json({ error: "Error al suscribir" });
     res.status(201).json({ mensaje: "¡Gracias por suscribirte!" });
   });
 });
 
+// 🧾 REGISTRO DE USUARIOS (CON DEBUG)
+app.post("/api/usuarios/registro", (req, res) => {
+  const { nombre, email, password } = req.body;
 
+  if (!nombre || !email || !password) {
+    return res.status(400).json({ error: "Faltan campos obligatorios" });
+  }
+
+  console.log("🟡 DATOS RECIBIDOS:", { nombre, email, password }); // Debug
+
+  bcrypt.hash(password, 10, (err, hash) => {
+    if (err) {
+      console.error("❌ Error al encriptar:", err);
+      return res.status(500).json({ error: "Error al encriptar contraseña" });
+    }
+
+    const sql = "INSERT INTO usuarios (nombre, email, password) VALUES (?, ?, ?)";
+    db.query(sql, [nombre, email, hash], (err, resultado) => {
+      if (err) {
+        console.error("❌ Error en INSERT:", err); // Debug de errores SQL
+        if (err.code === "ER_DUP_ENTRY") {
+          return res.status(400).json({ error: "El correo ya está registrado" });
+        }
+        return res.status(500).json({ error: "Error al registrar usuario" });
+      }
+      console.log("✅ Usuario registrado correctamente:", resultado); // Debug OK
+      res.status(201).json({ mensaje: "Usuario registrado correctamente" });
+    });
+  });
+});
+
+// 🔐 LOGIN DE USUARIOS COMUNES
+app.post("/api/usuarios/login", (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Faltan campos" });
+  }
+
+  const sql = "SELECT * FROM usuarios WHERE email = ?";
+  db.query(sql, [email], (err, resultados) => {
+    if (err) return res.status(500).json({ error: "Error en la base de datos" });
+    if (resultados.length === 0) return res.status(401).json({ error: "Usuario no encontrado" });
+
+    const usuario = resultados[0];
+
+    bcrypt.compare(password, usuario.password, (err, esValida) => {
+      if (err || !esValida) {
+        return res.status(401).json({ error: "Contraseña incorrecta" });
+      }
+
+      res.status(200).json({
+        mensaje: "Login exitoso",
+        usuario: {
+          id: usuario.id,
+          nombre: usuario.nombre,
+          email: usuario.email
+        }
+      });
+    });
+  });
+});
+
+// 📦 Registrar compras
+app.post("/api/compras", (req, res) => {
+  const { id_usuario, carrito } = req.body;
+
+  if (!id_usuario || !Array.isArray(carrito) || carrito.length === 0) {
+    return res.status(400).json({ error: "Datos inválidos" });
+  }
+
+  const sql = "INSERT INTO compras (id_usuario, id_producto, cantidad) VALUES ?";
+  const valores = carrito.map(item => [id_usuario, item.id, item.cantidad]);
+
+  db.query(sql, [valores], (err, resultado) => {
+    if (err) return res.status(500).json({ error: "Error al registrar compra" });
+    res.status(201).json({ mensaje: "Compra registrada correctamente" });
+  });
+});
+
+app.get("/api/compras/:id_usuario", async (req, res) => {
+  const id = req.params.id_usuario;
+  try {
+    const [compras] = await db.promise().query(`
+      SELECT c.*, p.nombre, p.imagen
+      FROM compras c
+      JOIN productos p ON c.id_producto = p.id
+      WHERE c.id_usuario = ?
+      ORDER BY c.fecha_compra DESC
+    `, [id]);
+
+    res.json(compras);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error al obtener compras" });
+  }
+});
+
+
+// 🔊 INICIAR SERVIDOR
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });

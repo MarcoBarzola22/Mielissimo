@@ -7,10 +7,17 @@
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/tienda.css">
   <link rel="stylesheet" href="css/registro.css">
+  <style>
+    .mensaje-registro {
+      margin-top: 1rem;
+      color: red;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
 
-  <!-- Navbar como en la tienda -->
+  <!-- 📑 Navbar como la tienda -->
   <header class="header-publico">
     <div class="logo">
       <a href="index.html"><img src="assets/logoCanva.png" alt="Logo de Mielissimo" /></a>
@@ -26,11 +33,12 @@
     </nav>
   </header>
 
-  <!-- Formulario de registro -->
+  <!-- 🧾 Formulario de registro -->
   <main class="form-container">
     <div class="card-registro">
       <h1>Crear cuenta</h1>
-      <form id="form-registro">
+      <form id="registroForm">
+
         <label for="nombre">Nombre completo</label>
         <input type="text" id="nombre" name="nombre" required>
 
@@ -40,12 +48,18 @@
         <label for="password">Contraseña</label>
         <input type="password" id="password" name="password" required>
 
+        <label for="confirmPassword">Confirmar contraseña</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" required>
+
         <button type="submit">Registrarme</button>
       </form>
+
       <p>¿Ya tenés cuenta? <a href="login.html">Iniciar sesión</a></p>
+      <p id="mensaje-registro" class="mensaje-registro"></p>
     </div>
   </main>
 
+  <!-- 📞 Footer como en la tienda -->
   <footer>
     <p>© 2025 Mielissimo – Villa Mercedes</p>
     <p>WhatsApp: 2657-XXXXXX | Instagram: @mielissimo</p>

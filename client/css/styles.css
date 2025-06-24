@@ -50,3 +50,34 @@ footer {
   margin-top: auto;
 }
 
+/* ✅ Estilo visual del contenedor de usuario logueado */
+#usuario-logueado {
+  display: none;
+  align-items: center;
+  gap: 40px; /* ✔️ Más separación visual */
+  color: white;
+  font-weight: bold;
+}
+
+
+#usuario-logueado span {
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+#usuario-logueado button {
+  background-color: white;
+  color: #ef5579;
+  border: none;
+  padding: 6px 14px; /* ← más espacio interno */
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+
+#usuario-logueado button:hover {
+  background-color: #f9b3c5;
+}

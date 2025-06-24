@@ -518,3 +518,140 @@ main h2:hover::after, .filtros-horizontal h2:hover::after {
   transform-origin: bottom left;
 }
 
+/* ✅ Estilo visual del contenedor de usuario logueado */
+#usuario-logueado {
+  display: none;
+  align-items: center;
+  gap: 40px; /* ✔️ Más separación visual */
+  color: white;
+  font-weight: bold;
+}
+
+
+#usuario-logueado span {
+  color: white; /* correcto */
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+#usuario-logueado button {
+  background-color: white;
+  color: #ef5579;
+  border: none;
+  padding: 6px 14px; /* ← más espacio interno */
+  border-radius: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+
+#usuario-logueado button:hover {
+  background-color: #f9b3c5;
+}
+ 
+/* === Carrito de compras === */
+
+main h1 {
+  text-align: center;
+  color: #ef5579;
+  margin-top: 2rem;
+}
+
+.carrito-contenedor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1rem;
+}
+
+.carrito-contenedor .item-carrito {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid #ef55795e;
+  padding: 1rem;
+  border-radius: 12px;
+  background-color: #fff0f5;
+}
+
+.item-carrito img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.item-carrito .info {
+  flex: 1;
+}
+
+.item-carrito h3 {
+  margin: 0;
+  color: #ef5579;
+}
+
+.item-carrito p {
+  margin: 0.3rem 0;
+}
+
+.item-carrito .btn-eliminar {
+  background-color: #ef5579;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+}
+
+#confirmar-compra {
+  background-color: #ef5579;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 2rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+#confirmar-compra:hover {
+  background-color: #d6456a;
+}
+
+#mensaje-compra {
+  text-align: center;
+  color: green;
+}
+
+.usuario-logueado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: 10px;
+}
+
+/* HISTORIAL */
+.lista-compras {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.item-compra {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid #ccc;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #fffafc;
+}
+
+.item-compra img {
+  width: 80px;
+  border-radius: 8px;
+}

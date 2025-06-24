@@ -18,16 +18,24 @@
   </div>
   <nav>
     <ul>
-      <li><a href="#">Inicio</a></li>
-      <li><a href="#productos">Productos</a></li>
-      <li><a href="#">Contacto</a></li>
-      <li><a href="login.html">Iniciar sesión</a></li>
-      <li>
-        <a href="carrito.html">
-          🛒 Carrito <span id="contador-carrito">(0)</span>
-        </a>
-      </li>
-    </ul>
+  <li><a href="#">Inicio</a></li>
+  <li><a href="#productos">Productos</a></li>
+  <li><a href="#">Contacto</a></li>
+  <li>
+    <a href="carrito.html">
+      🛒 Carrito <span id="contador-carrito">(0)</span>
+    </a>
+  </li>
+
+  <li id="login-li"><a href="login.html">Iniciar sesión</a></li>
+
+  <!-- Nuevo contenedor para usuario -->
+  <li id="usuario-logueado" class="usuario-logueado" style="display: none;"></li>
+  <li id="btn-historial" style="display: none;"><a href="historial.html">🧾 Historial</a></li>
+
+</ul>
+
+
   </nav>
 </header>
 
@@ -74,6 +82,7 @@
     <p>WhatsApp: 2657-XXXXXX | Instagram: @mielissimo</p>
   </footer>
 
-  <script src="js/main.js"></script>
+  <script type="module" src="js/main.js"></script>
+
 </body>
 </html>

@@ -1,6 +1,7 @@
+import { mostrarUsuario, actualizarContadorCarrito } from "./navbar.js";
+
 const contenedorCategorias = document.getElementById("categorias-horizontal");
 const contenedorProductos = document.getElementById("productos");
-const productosDestacados = document.getElementById("productos-destacados");
 
 // 🔃 Cargar categorías como botones pill
 function cargarCategorias() {
@@ -71,8 +72,6 @@ function renderizarProductos(productos) {
   });
 }
 
-
-
 // 🛒 Carrito con LocalStorage
 let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 
@@ -104,16 +103,9 @@ function agregarAlCarrito(id) {
       });
   }
 }
+window.agregarAlCarrito = agregarAlCarrito;
 
-function actualizarContadorCarrito() {
-  const contador = document.getElementById("contador-carrito");
-  if (contador) {
-    const total = carrito.reduce((acc, item) => acc + item.cantidad, 0);
-    contador.textContent = `(${total})`;
-  }
-}
-
-// 📧 Newsletter con Mailchimp
+// 📧 Newsletter
 const formNewsletter = document.getElementById("form-newsletter");
 const inputEmail = document.getElementById("email-newsletter");
 const mensajeNewsletter = document.getElementById("mensaje-newsletter");
@@ -149,13 +141,13 @@ if (formNewsletter) {
   });
 }
 
-// 🚀 Inicialización
-cargarCategorias();
+// 🚀 Inicio
+document.addEventListener("DOMContentLoaded", () => {
+  mostrarUsuario();
+  actualizarContadorCarrito();
+  cargarCategorias();
 
-fetch("/api/productos")
-  .then(res => res.json())
-  .then(productos => {
-    renderizarProductos(productos);
-  });
-
-actualizarContadorCarrito();
+  fetch("/api/productos")
+    .then(res => res.json())
+    .then(productos => renderizarProductos(productos));
+});

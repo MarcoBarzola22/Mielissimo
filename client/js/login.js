@@ -1,32 +1,43 @@
-//valida el formulario del login
+// login.js (frontend)
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('loginForm');
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
 
-    // Validaciones básicas
     if (!email || !password) {
-      alert('Por favor, completá todos los campos.');
+      alert("Por favor completá ambos campos.");
       return;
     }
 
-    if (!validarEmail(email)) {
-      alert('Ingresá un correo electrónico válido.');
-      return;
+    try {
+      const res = await fetch("/api/usuarios/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        // 🔐 Guardamos token y datos del usuario
+        localStorage.setItem("token_usuario", data.token);
+        localStorage.setItem("id_usuario", data.usuario.id);
+        localStorage.setItem("nombre_usuario", data.usuario.nombre);
+
+        alert("¡Bienvenido!");
+        window.location.href = "index.html";
+      } else {
+        alert(data.error || "Credenciales incorrectas.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error al conectar con el servidor.");
     }
-
-    // Muestra mensaje de éxito (provisorio)
-    alert('Inicio de sesión válido. En el siguiente paso se validará con el backend.');
-
-    // Acá luego irá el fetch para validar contra la base de datos
   });
 });
-
-function validarEmail(email) {
-  const re = /\S+@\S+\.\S+/;
-  return re.test(email);
-}
