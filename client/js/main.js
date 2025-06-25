@@ -55,9 +55,15 @@ function renderizarProductos(productos) {
   if (!contenedorProductos) return;
   contenedorProductos.innerHTML = "";
 
+  let favoritos = JSON.parse(localStorage.getItem("favoritos")) || [];
+
   productos.forEach(prod => {
     const div = document.createElement("div");
     div.classList.add("producto");
+
+    const esFavorito = favoritos.includes(prod.id);
+    const colorCorazon = esFavorito ? "#ef5579" : "#ccc";
+
     div.innerHTML = `
       <a href="producto.html?id=${prod.id}">
         <img src="${prod.imagen}" alt="${prod.nombre}">
@@ -67,10 +73,32 @@ function renderizarProductos(productos) {
       <p>Precio: $${parseFloat(prod.precio).toFixed(2)}</p>
       <p>Stock: ${prod.stock}</p>
       <button onclick="agregarAlCarrito(${prod.id})">Agregar al carrito</button>
+      <button class="btn-favorito" data-id="${prod.id}" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: ${colorCorazon};">
+        ❤️
+      </button>
     `;
+
     contenedorProductos.appendChild(div);
   });
+
+  // Eventos para botones de favorito
+  document.querySelectorAll(".btn-favorito").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+      const id = parseInt(e.target.dataset.id);
+      let favoritos = JSON.parse(localStorage.getItem("favoritos")) || [];
+
+      if (favoritos.includes(id)) {
+        favoritos = favoritos.filter(fid => fid !== id);
+      } else {
+        favoritos.push(id);
+      }
+
+      localStorage.setItem("favoritos", JSON.stringify(favoritos));
+      renderizarProductos(productos); // volver a renderizar para actualizar el color
+    });
+  });
 }
+
 
 // 🛒 Carrito con LocalStorage
 let carrito = JSON.parse(localStorage.getItem("carrito")) || [];

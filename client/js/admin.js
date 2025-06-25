@@ -1,3 +1,4 @@
+
 const formulario = document.getElementById("formulario-producto");
 const mensaje = document.getElementById("mensaje");
 const productosContainer = document.getElementById("lista-productos");
@@ -7,7 +8,9 @@ const listaCategorias = document.getElementById("lista-categorias");
 const botonLogout = document.getElementById("logout");
 const buscador = document.getElementById("buscador-productos");
 const seccionFormulario = document.getElementById("seccion-formulario");
-
+const listaVariantes = document.getElementById("lista-variantes");
+const formularioVariante = document.getElementById("formulario-variante");
+const mensajeVariante = document.getElementById("mensaje-variante");
 let productoEnEdicion = null;
 const token = localStorage.getItem("tokenAdmin");
 
@@ -28,17 +31,21 @@ function cargarProductos(filtro = "") {
             <p><strong>${prod.nombre}</strong></p>
             <p>Precio: $${parseFloat(prod.precio).toFixed(2)}</p>
             <p>Stock: ${prod.stock}</p>
-            <button class="btn-editar" data-id="${prod.id}" 
-              data-nombre="${prod.nombre}"
-              data-precio="${prod.precio}"
-              data-imagen="${prod.imagen}"
-              data-stock="${prod.stock}"
-              data-categoria="${prod.categoria_id}">
-              ✏ Editar
-            </button>
-            <button class="btn-eliminar" data-id="${prod.id}">🗑 Eliminar</button>
+            <div class="btns" style="display: flex; flex-direction: column; gap: 0.3rem;">
+              <button class="btn-editar" data-id="${prod.id}" 
+                data-nombre="${prod.nombre}"
+                data-precio="${prod.precio}"
+                data-imagen="${prod.imagen}"
+                data-stock="${prod.stock}"
+                data-categoria="${prod.categoria_id}">✏ Editar</button>
+              <button class="btn-eliminar" data-id="${prod.id}">🗑 Eliminar</button>
+              <button class="btn-variante" data-id="${prod.id}" data-nombre="${prod.nombre}">➕ Agregar Variante</button>
+              <button class="btn-ver-variantes" data-id="${prod.id}" data-nombre="${prod.nombre}">👁 Ver Variantes</button>
+              <span id="contador-variantes-${prod.id}" class="contador-variantes"></span>
+            </div>
           `;
           productosContainer.appendChild(div);
+          actualizarContadorVariantes(prod.id);
         });
     })
     .catch(err => {
@@ -47,6 +54,17 @@ function cargarProductos(filtro = "") {
     });
 }
 
+function actualizarContadorVariantes(idProducto) {
+  fetch(`/api/variantes/${idProducto}`)
+    .then(res => res.json())
+    .then(variantes => {
+      const span = document.getElementById(`contador-variantes-${idProducto}`);
+      if (span) {
+        span.textContent = `🧩 Variantes: ${variantes.length}`;
+      }
+    })
+    .catch(err => console.error("Error al contar variantes:", err));
+}
 
 function cargarCategorias() {
   fetch("/api/categorias")
@@ -64,7 +82,7 @@ function cargarCategorias() {
         div.classList.add("categoria-item");
         div.innerHTML = `
           <span>${cat.nombre}</span>
-          <div class="botones-vertical">
+          <div class="botones">
             <button class="btn-editar-categoria" data-id="${cat.id}" data-nombre="${cat.nombre}">✏</button>
             <button class="btn-eliminar-categoria eliminar" data-id="${cat.id}">🗑</button>
           </div>
@@ -74,11 +92,9 @@ function cargarCategorias() {
     });
 }
 
-
 formulario.addEventListener("submit", async (e) => {
   e.preventDefault();
   const datos = new FormData(formulario);
-
   const url = productoEnEdicion ? `/api/productos/${productoEnEdicion}` : "/api/productos";
   const metodo = productoEnEdicion ? "PUT" : "POST";
 
@@ -111,10 +127,17 @@ function editarProducto(id, nombre, precio, imagen, stock, categoria_id) {
   formulario.stock.value = stock;
   selectCategoria.value = categoria_id;
   productoEnEdicion = id;
-  mensaje.textContent = "Editando producto...";
-  mensaje.style.color = "blue";
-  seccionFormulario.scrollIntoView({ behavior: "smooth" });
+
+  if (mensaje) {
+    mensaje.textContent = "Editando producto...";
+    mensaje.style.color = "blue";
+  }
+
+  if (seccionFormulario) {
+    seccionFormulario.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
+
 
 function eliminarProducto(id) {
   if (confirm("¿Estás seguro de que querés eliminar este producto?")) {
@@ -130,7 +153,6 @@ function eliminarProducto(id) {
 formularioCategoria.addEventListener("submit", async (e) => {
   e.preventDefault();
   const nombre = formularioCategoria.nombre.value;
-
   const res = await fetch("/api/categorias", {
     method: "POST",
     headers: {
@@ -139,7 +161,6 @@ formularioCategoria.addEventListener("submit", async (e) => {
     },
     body: JSON.stringify({ nombre })
   });
-
   const data = await res.json();
   if (res.ok) {
     formularioCategoria.reset();
@@ -164,7 +185,7 @@ function editarCategoriaPrompt(id, nombreActual) {
 }
 
 function eliminarCategoria(id) {
-  if (confirm("¿Eliminar esta categoría?")) {
+  if (confirm("Eliminar esta categoría?")) {
     fetch(`/api/categorias/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` }
@@ -178,28 +199,22 @@ botonLogout.addEventListener("click", () => {
 });
 
 document.addEventListener("click", (e) => {
-  // Editar producto
   if (e.target.classList.contains("btn-editar")) {
     const btn = e.target;
-    const id = btn.dataset.id;
-    const nombre = btn.dataset.nombre;
-    const precio = btn.dataset.precio;
-    const imagen = btn.dataset.imagen;
-    const stock = btn.dataset.stock;
-    const categoria_id = btn.dataset.categoria;
-
-    editarProducto(id, nombre, precio, imagen, stock, categoria_id);
+    editarProducto(
+      btn.dataset.id,
+      btn.dataset.nombre,
+      btn.dataset.precio,
+      btn.dataset.imagen,
+      btn.dataset.stock,
+      btn.dataset.categoria
+    );
   }
 
-  // Eliminar producto
   if (e.target.classList.contains("btn-eliminar")) {
-    const id = e.target.dataset.id;
-    eliminarProducto(id);
+    eliminarProducto(e.target.dataset.id);
   }
-});
 
-// Delegación de eventos para botones de categorías
-document.addEventListener("click", (e) => {
   if (e.target.classList.contains("btn-editar-categoria")) {
     const id = e.target.dataset.id;
     const nombre = e.target.dataset.nombre;
@@ -210,8 +225,85 @@ document.addEventListener("click", (e) => {
     const id = e.target.dataset.id;
     eliminarCategoria(id);
   }
+
+  if (e.target.classList.contains("btn-variante")) {
+    const id = e.target.dataset.id;
+    const nombre = e.target.dataset.nombre;
+    document.getElementById("id_producto_variante").value = id;
+    document.getElementById("nombre-producto-seleccionado").textContent = `Agregar variantes a: ${nombre}`;
+    document.getElementById("seccion-formulario-variante").style.display = "block";
+    mensajeVariante.textContent = "";
+    document.getElementById("seccion-formulario-variante").scrollIntoView({ behavior: "smooth" });
+  }
+
+  if (e.target.classList.contains("btn-ver-variantes")) {
+    const id = e.target.dataset.id;
+    document.getElementById("seccion-formulario-variante").style.display = "block";
+    document.getElementById("id_producto_variante").value = id;
+    document.getElementById("nombre-producto-seleccionado").textContent = `Variantes de producto ID: ${id}`;
+    cargarVariantes(id);
+    document.getElementById("seccion-formulario-variante").scrollIntoView({ behavior: "smooth" });
+  }
+
+  if (e.target.classList.contains("eliminar-variante")) {
+    const id = e.target.dataset.id;
+    if (confirm("¿Eliminar variante?")) {
+      fetch(`/api/variantes/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      }).then(() => {
+        cargarVariantes(document.getElementById("id_producto_variante").value);
+        actualizarContadorVariantes(document.getElementById("id_producto_variante").value);
+      });
+    }
+  }
 });
 
+
+function cargarVariantes(productoId) {
+  listaVariantes.innerHTML = "";
+  fetch(`/api/variantes/${productoId}`)
+    .then(res => res.json())
+    .then(variantes => {
+      variantes.forEach(v => {
+        const div = document.createElement("div");
+        div.classList.add("variante-item");
+        div.innerHTML = `
+          <img src="${v.imagen}" alt="${v.nombre}" />
+          <p><strong>${v.nombre}</strong></p>
+          <p>Precio extra: $${v.precio_extra}</p>
+          <p>Stock: ${v.stock}</p>
+          <button class="eliminar-variante" data-id="${v.id}">🗑 Eliminar</button>
+        `;
+        listaVariantes.appendChild(div);
+      });
+    });
+}
+
+formularioVariante.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const datos = new FormData(formularioVariante);
+  try {
+    const res = await fetch("/api/variantes", {
+      method: "POST",
+      body: datos
+    });
+    const data = await res.json();
+    if (res.ok) {
+      mensajeVariante.textContent = "✅ Variante creada correctamente";
+      mensajeVariante.style.color = "green";
+      formularioVariante.reset();
+      cargarVariantes(document.getElementById("id_producto_variante").value);
+      actualizarContadorVariantes(document.getElementById("id_producto_variante").value);
+    } else {
+      mensajeVariante.textContent = data.error || "Error al crear variante";
+      mensajeVariante.style.color = "red";
+    }
+  } catch (err) {
+    mensajeVariante.textContent = "Error de conexión";
+    mensajeVariante.style.color = "red";
+  }
+});
 
 buscador.addEventListener("input", () => cargarProductos(buscador.value));
 

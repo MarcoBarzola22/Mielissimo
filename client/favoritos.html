@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Favoritos | Mielissimo</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/tienda.css" />
+</head>
+<body>
+  <header>
+    <nav>
+      <ul>
+        <li><a href="index.html">Inicio</a></li>
+        <li id="usuario-logueado"></li>
+        <li id="login-li"><a href="login.html">Iniciar sesión</a></li>
+        <li><a href="carrito.html">🛒 <span id="contador-carrito">(0)</span></a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <section class="contenedor">
+      <h2>❤️ Tus Favoritos</h2>
+      <div id="lista-favoritos" class="productos-grid"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Mielissimo</p>
+  </footer>
+
+  <script type="module" src="js/navbar.js"></script>
+  <script type="module" src="js/favoritos.js"></script>
+</body>
+</html>

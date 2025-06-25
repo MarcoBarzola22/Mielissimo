@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Panel de Administración - Mielissimo</title>
   <link rel="stylesheet" href="css/styles.css">
-<link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
-
   <header class="header-admin">
     <div class="logo">
       <img src="assets/logoCanva.png" alt="Logo de Mielissimo" />
@@ -29,30 +28,58 @@
       <h2>Editar / Eliminar categorías</h2>
       <div id="lista-categorias" class="categorias-grid"></div>
     </section>
-  
 
-   <section class="seccion" id="seccion-formulario">
+    <section class="seccion" id="seccion-formulario">
       <h2>Agregar / Editar Producto</h2>
+      <p id="mensaje" style="margin-top: 1rem;"></p>
       <form id="formulario-producto" enctype="multipart/form-data">
         <input type="text" name="nombre" placeholder="Nombre" required />
-        <input type="number" name="precio" step="0.01" placeholder="Precio" required />
+        <input type="number" name="precio" step="0.01" placeholder="Precio base" required />
         <input type="file" name="imagen" accept="image/*" />
-        <input type="number" name="stock" placeholder="Stock" required />
+        <input type="number" name="stock" placeholder="Stock general" required />
         <select id="categoria-producto" name="categoria_id" required>
           <option value="">Seleccionar categoría</option>
         </select>
         <button type="submit">Guardar</button>
       </form>
-      <p id="mensaje"></p>
     </section>
 
-  <section class="seccion">
+   <section class="seccion" id="seccion-formulario-variante" style="display: none;">
+  <h2 id="nombre-producto-seleccionado">Variantes del producto</h2>
+  <form id="formulario-variante" enctype="multipart/form-data">
+    <input type="hidden" id="id_producto_variante" name="id_producto" />
+    <input type="text" name="nombre" placeholder="Nombre de variante" required />
+    <input type="number" name="precio_extra" step="0.01" placeholder="Precio extra" required />
+    <input type="number" name="stock" placeholder="Stock de variante" required />
+    <input type="file" name="imagen" accept="image/*" />
+    <button type="submit">Agregar variante</button>
+    <input type="hidden" id="id_variante_edicion" name="id_variante_edicion" />
+
+  </form>
+  <p id="mensaje-variante"></p>
+  <table id="tabla-variantes" class="tabla-variantes" style="width: 100%; margin-top: 2rem; border-collapse: collapse;">
+  <thead>
+    <tr>
+      <th>Imagen</th>
+      <th>Nombre</th>
+      <th>Precio extra</th>
+      <th>Stock</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody id="lista-variantes"></tbody>
+</table>
+
+</section>
+
+
+    <section class="seccion">
       <h2>Productos actuales</h2>
       <input type="text" id="buscador-productos" placeholder="Buscar producto por nombre..." />
       <div id="lista-productos" class="productos-grid"></div>
     </section>
+  </main>
 
-    </main>
   <footer>
     <p>© 2025 Mielissimo – Panel de Administración</p>
   </footer>

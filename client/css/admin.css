@@ -137,3 +137,56 @@ form select {
 .categoria-item .botones button.eliminar {
   background-color: #ff5e5e;
 }
+
+/* === TABLA DE VARIANTES === */
+.tabla-variantes {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+  background-color: #fff0f5;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tabla-variantes th,
+.tabla-variantes td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e4cbd4;
+}
+
+.tabla-variantes th {
+  background-color: #ef5579;
+  color: white;
+  font-weight: bold;
+  text-align: center;
+}
+
+.tabla-variantes td img {
+  height: 50px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.tabla-variantes button {
+  background-color: #ff5e5e;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.tabla-variantes th,
+.tabla-variantes td {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.tabla-variantes img {
+  height: 60px;
+  object-fit: cover;
+  border-radius: 4px;
+}
