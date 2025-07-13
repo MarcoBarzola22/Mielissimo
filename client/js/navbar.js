@@ -1,36 +1,51 @@
 // navbar.js
+export function mostrarUsuario() {
+  const nombreUsuario = localStorage.getItem("nombre_usuario");
+  const loginLi = document.getElementById("login-li");
+  const usuarioLogueadoLi = document.getElementById("usuario-logueado");
+  const historialLi = document.getElementById("btn-historial");
+  const favoritosLi = document.getElementById("btn-favoritos");
+
+  if (nombreUsuario) {
+    if (loginLi) loginLi.style.display = "none";
+    if (usuarioLogueadoLi) {
+      usuarioLogueadoLi.textContent = `👤 ${nombreUsuario}`;
+      usuarioLogueadoLi.style.display = "inline";
+      usuarioLogueadoLi.style.color = "white"; // Cambiar si el navbar es blanco
+    }
+    if (historialLi) historialLi.style.display = "inline";
+    if (favoritosLi) favoritosLi.style.display = "inline";
+
+    // Agregar botón de cerrar sesión
+    if (!document.getElementById("btn-logout")) {
+      const liCerrar = document.createElement("li");
+      liCerrar.id = "btn-logout";
+      liCerrar.innerHTML = `<a href="#">Cerrar sesión</a>`;
+      liCerrar.addEventListener("click", () => {
+        localStorage.removeItem("token_usuario");
+        localStorage.removeItem("nombre_usuario");
+        localStorage.removeItem("id_usuario");
+        localStorage.removeItem("carrito");
+        window.location.href = "index.html";
+      });
+
+      document.querySelector("nav ul").appendChild(liCerrar);
+    }
+
+  } else {
+    if (loginLi) loginLi.style.display = "inline";
+    if (usuarioLogueadoLi) usuarioLogueadoLi.style.display = "none";
+    if (historialLi) historialLi.style.display = "none";
+    if (favoritosLi) favoritosLi.style.display = "none";
+
+    const btnLogout = document.getElementById("btn-logout");
+    if (btnLogout) btnLogout.remove();
+  }
+}
 
 export function actualizarContadorCarrito() {
   const contador = document.getElementById("contador-carrito");
   const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-  if (contador) {
-    const total = carrito.reduce((acc, item) => acc + item.cantidad, 0);
-    contador.textContent = `(${total})`;
-  }
+  const total = carrito.reduce((acc, p) => acc + p.cantidad, 0);
+  if (contador) contador.textContent = `(${total})`;
 }
-
-export function mostrarUsuario() {
-  const nombreUsuario = localStorage.getItem("nombre_usuario");
-  const contenedorUsuario = document.getElementById("usuario-logueado");
-  const loginLi = document.getElementById("login-li");
-  const btnHistorial = document.getElementById("btn-historial");
-
-  if (nombreUsuario && contenedorUsuario) {
-    contenedorUsuario.innerHTML = `
-      <span style="color: #ef5579; font-weight: bold;">👤 ${nombreUsuario}</span>
-      <button id="cerrar-sesion"
-        style="margin-left: 12px; background:#ef5579; color:white; border:none; border-radius:5px; padding:3px 8px; cursor:pointer;">
-        Cerrar sesión
-      </button>
-    `;
-    contenedorUsuario.style.display = "inline-block";
-    if (loginLi) loginLi.style.display = "none";
-    if (btnHistorial) btnHistorial.style.display = "inline-block"; // ✅ Mostrar botón
-
-    document.getElementById("cerrar-sesion").addEventListener("click", () => {
-      localStorage.clear();
-      location.href = "index.html";
-    });
-  }
-}
-

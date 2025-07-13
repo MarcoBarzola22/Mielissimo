@@ -50,55 +50,109 @@ document.addEventListener("click", (e) => {
   }
 });
 
+// 🔄 Obtener favoritos del usuario si está logueado
+async function obtenerFavoritos() {
+  const tokenUsuario = localStorage.getItem("token_usuario");
+  if (!tokenUsuario) return [];
+
+  try {
+    const res = await fetch("/api/favoritos", {
+      headers: { Authorization: `Bearer ${tokenUsuario}` }
+    });
+
+    if (!res.ok) throw new Error("No autorizado");
+
+    const data = await res.json();
+    return data.map(f => f.producto_id);
+  } catch (err) {
+    console.error("Error al obtener favoritos:", err);
+    return [];
+  }
+}
+
 // 🖼 Renderizar productos
-function renderizarProductos(productos) {
+async function renderizarProductos(productos) {
   if (!contenedorProductos) return;
   contenedorProductos.innerHTML = "";
 
-  let favoritos = JSON.parse(localStorage.getItem("favoritos")) || [];
+  const favoritos = await obtenerFavoritos();
+  const tokenUsuario = localStorage.getItem("token_usuario");
 
   productos.forEach(prod => {
     const div = document.createElement("div");
     div.classList.add("producto");
 
     const esFavorito = favoritos.includes(prod.id);
-    const colorCorazon = esFavorito ? "#ef5579" : "#ccc";
+    const iconoCorazon = esFavorito ? "❤️" : "🤍"; // Relleno vs vacío
+    const colorCorazon = esFavorito ? "#ef5579" : "#999";
 
     div.innerHTML = `
-      <a href="producto.html?id=${prod.id}">
-        <img src="${prod.imagen}" alt="${prod.nombre}">
-      </a>
+      <img src="${prod.imagen}" alt="${prod.nombre}">
       <h3>${prod.nombre}</h3>
       <p class="categoria-nombre">${prod.categoria_nombre || "Sin categoría"}</p>
       <p>Precio: $${parseFloat(prod.precio).toFixed(2)}</p>
       <p>Stock: ${prod.stock}</p>
-      <button onclick="agregarAlCarrito(${prod.id})">Agregar al carrito</button>
-      <button class="btn-favorito" data-id="${prod.id}" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: ${colorCorazon};">
-        ❤️
-      </button>
+      <button class="btn-carrito" data-id="${prod.id}">Agregar al carrito</button>
+      ${tokenUsuario ? `<button class="btn-favorito" data-id="${prod.id}" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: ${colorCorazon};">
+        ${iconoCorazon}
+      </button>` : ""}
     `;
+
+    // Redirigir al hacer clic en la tarjeta (excepto en botones)
+    div.addEventListener("click", (e) => {
+      if (
+        !e.target.classList.contains("btn-carrito") &&
+        !e.target.classList.contains("btn-favorito")
+      ) {
+        window.location.href = `producto.html?id=${prod.id}`;
+      }
+    });
 
     contenedorProductos.appendChild(div);
   });
 
-  // Eventos para botones de favorito
-  document.querySelectorAll(".btn-favorito").forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      const id = parseInt(e.target.dataset.id);
-      let favoritos = JSON.parse(localStorage.getItem("favoritos")) || [];
+  // Evento para agregar/quitar favorito
+  if (tokenUsuario) {
+    document.querySelectorAll(".btn-favorito").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const id = parseInt(e.target.dataset.id);
 
-      if (favoritos.includes(id)) {
-        favoritos = favoritos.filter(fid => fid !== id);
-      } else {
-        favoritos.push(id);
-      }
+        const esFavorito = favoritos.includes(id);
+        try {
+          if (esFavorito) {
+            await fetch(`/api/favoritos/${id}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${tokenUsuario}` }
+            });
+          } else {
+            await fetch("/api/favoritos", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${tokenUsuario}`
+              },
+              body: JSON.stringify({ producto_id: id })
+            });
+          }
 
-      localStorage.setItem("favoritos", JSON.stringify(favoritos));
-      renderizarProductos(productos); // volver a renderizar para actualizar el color
+          const nuevosProductos = await fetch("/api/productos").then(r => r.json());
+          renderizarProductos(nuevosProductos);
+        } catch (err) {
+          console.error("Error al actualizar favoritos:", err);
+        }
+      });
+    });
+  }
+
+  // Eventos para agregar al carrito
+  document.querySelectorAll(".btn-carrito").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const id = parseInt(btn.dataset.id);
+      agregarAlCarrito(id);
     });
   });
 }
-
 
 // 🛒 Carrito con LocalStorage
 let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
@@ -170,12 +224,11 @@ if (formNewsletter) {
 }
 
 // 🚀 Inicio
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   mostrarUsuario();
   actualizarContadorCarrito();
   cargarCategorias();
 
-  fetch("/api/productos")
-    .then(res => res.json())
-    .then(productos => renderizarProductos(productos));
+  const productos = await fetch("/api/productos").then(r => r.json());
+  renderizarProductos(productos);
 });

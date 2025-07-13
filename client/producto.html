@@ -3,51 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Detalle del Producto – Mielissimo</title>
-  <link rel="stylesheet" href="css/styles.css">
-<link rel="stylesheet" href="css/tienda.css">
-
+  <title>Detalle del producto | Mielissimo</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/tienda.css" />
 </head>
 <body>
+ <header class="header-publico">
+  <div class="logo">
+    <img src="assets/logoCanva.png" alt="Logo de Mielissimo" />
+  </div>
+  <nav>
+    <ul>
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="#productos">Productos</a></li>
+      <li><a href="#">Contacto</a></li>
+      <li>
+        <a href="carrito.html">
+          🛒 Carrito <span id="contador-carrito">(0)</span>
+        </a>
+      </li>
+      <li>
+        <a href="favoritos.html">❤️ Favoritos</a>
+      </li>
+      <li id="login-li"><a href="login.html">Iniciar sesión</a></li>
+      <li id="usuario-logueado" class="usuario-logueado" style="display: none;"></li>
+      <li id="btn-historial" style="display: none;"><a href="historial.html">🧾 Historial</a></li>
+    </ul>
+  </nav>
+</header>
 
-  <!-- 🧁 Header -->
-  <header>
-    <div class="logo">
-      <a href="index.html"><img src="assets/logoCanva.png" alt="Logo de Mielissimo" /></a>
-    </div>
-    <nav>
-      <ul>
-        <li><a href="index.html">Inicio</a></li>
-        <li><a href="#">Productos</a></li>
-        <li><a href="#">Contacto</a></li>
-        <li><a href="login.html">Iniciar sesión</a></li>
-        <li>
-          <a href="carrito.html">
-            🛒 Carrito <span id="contador-carrito">(0)</span>
-          </a>
-        </li>
-      </ul>
-    </nav>
-  </header>
 
-  <main>
-    <section class="detalle-producto">
-      <h1 id="nombre-producto">Cargando...</h1>
-      <img id="imagen-producto" src="" alt="Producto" />
-      <p><strong>Categoría:</strong> <span id="categoria-producto"></span></p>
-      <p><strong>Precio:</strong> $<span id="precio-producto"></span></p>
-      <p><strong>Stock disponible:</strong> <span id="stock-producto"></span></p>
-      <button id="btn-agregar">Agregar al carrito</button>
-      <p id="mensaje-carrito" style="color: green;"></p>
-    </section>
+
+  <main class="producto-detalle">
+    <section id="info-producto" class="contenedor"></section>
+    <section id="variantes-producto" class="contenedor"></section>
   </main>
 
-  <!-- 📞 Footer -->
   <footer>
-    <p>© 2025 Mielissimo – Villa Mercedes</p>
-    <p>WhatsApp: 2657-XXXXXX | Instagram: @mielissimo</p>
+    <p>&copy; 2025 Mielissimo</p>
   </footer>
 
-  <script src="js/detalle.js"></script>
+  <script type="module" src="js/navbar.js"></script>
+  <script type="module" src="js/producto.js"></script>
 </body>
 </html>

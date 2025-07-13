@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const mysql = require('mysql2');
@@ -232,6 +233,7 @@ app.post("/api/usuarios/registro", (req, res) => {
   });
 });
 
+// LOGIN USUARIO CON TOKEN JWT
 app.post("/api/usuarios/login", (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: "Faltan campos" });
@@ -244,8 +246,12 @@ app.post("/api/usuarios/login", (req, res) => {
     bcrypt.compare(password, usuario.password, (err, esValida) => {
       if (err || !esValida) return res.status(401).json({ error: "Contraseña incorrecta" });
 
+      // ✅ Generar token
+      const token = jwt.sign({ usuario: { id: usuario.id, nombre: usuario.nombre, email: usuario.email } }, JWT_SECRET, { expiresIn: "2h" });
+
       res.json({
         mensaje: "Login exitoso",
+        token,
         usuario: {
           id: usuario.id,
           nombre: usuario.nombre,
@@ -255,6 +261,7 @@ app.post("/api/usuarios/login", (req, res) => {
     });
   });
 });
+
 
 // ==============================
 // 🧾 COMPRAS
@@ -358,6 +365,55 @@ app.put("/api/variantes/:id", upload.single("imagen"), (req, res) => {
     });
   });
 });
+
+// Obtener favoritos del usuario
+app.get('/api/favoritos', verificarToken, (req, res) => {
+  const usuarioId = req.usuario.id;
+
+  db.query(`
+    SELECT f.producto_id, p.nombre, p.precio, p.imagen, p.stock, c.nombre AS categoria_nombre
+    FROM favoritos f
+    JOIN productos p ON f.producto_id = p.id
+    LEFT JOIN categorias c ON p.categoria_id = c.id
+    WHERE f.usuario_id = ?
+  `, [usuarioId], (err, resultados) => {
+    if (err) return res.status(500).json({ error: 'Error al obtener favoritos' });
+    res.json(resultados);
+  });
+});
+
+// Agregar favorito
+app.post('/api/favoritos', verificarToken, (req, res) => {
+  const usuarioId = req.usuario.id;
+  const { producto_id } = req.body;
+
+  if (!producto_id) return res.status(400).json({ error: 'Falta producto_id' });
+
+  db.query(
+    'INSERT IGNORE INTO favoritos (usuario_id, producto_id) VALUES (?, ?)',
+    [usuarioId, producto_id],
+    (err) => {
+      if (err) return res.status(500).json({ error: 'Error al agregar favorito' });
+      res.json({ mensaje: 'Agregado a favoritos' });
+    }
+  );
+});
+
+// Eliminar favorito
+app.delete('/api/favoritos/:producto_id', verificarToken, (req, res) => {
+  const usuarioId = req.usuario.id;
+  const { producto_id } = req.params;
+
+  db.query(
+    'DELETE FROM favoritos WHERE usuario_id = ? AND producto_id = ?',
+    [usuarioId, producto_id],
+    (err) => {
+      if (err) return res.status(500).json({ error: 'Error al eliminar favorito' });
+      res.json({ mensaje: 'Eliminado de favoritos' });
+    }
+  );
+});
+
 
 
 // ==============================

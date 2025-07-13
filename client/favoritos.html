@@ -3,34 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Favoritos | Mielissimo</title>
+  <title>Favoritos - Mielissimo</title>
   <link rel="stylesheet" href="css/styles.css" />
-  <link rel="stylesheet" href="css/tienda.css" />
 </head>
 <body>
-  <header>
-    <nav>
-      <ul>
-        <li><a href="index.html">Inicio</a></li>
-        <li id="usuario-logueado"></li>
-        <li id="login-li"><a href="login.html">Iniciar sesión</a></li>
-        <li><a href="carrito.html">🛒 <span id="contador-carrito">(0)</span></a></li>
-      </ul>
-    </nav>
-  </header>
+  <header class="header-publico">
+  <div class="logo">
+    <img src="assets/logoCanva.png" alt="Logo de Mielissimo" />
+  </div>
+  <nav>
+    <ul>
+      <li><a href="index.html">Inicio</a></li>
+      <li><a href="#productos">Productos</a></li>
+      <li><a href="#">Contacto</a></li>
+      <li>
+        <a href="carrito.html">
+          🛒 Carrito <span id="contador-carrito">(0)</span>
+        </a>
+      </li>
+      <li>
+        <a href="favoritos.html">❤️ Favoritos</a>
+      </li>
+      <li id="login-li"><a href="login.html">Iniciar sesión</a></li>
+      <li id="usuario-logueado" class="usuario-logueado" style="display: none;"></li>
+      <li id="btn-historial" style="display: none;"><a href="historial.html">🧾 Historial</a></li>
+    </ul>
+  </nav>
+</header>
+
 
   <main>
-    <section class="contenedor">
-      <h2>❤️ Tus Favoritos</h2>
-      <div id="lista-favoritos" class="productos-grid"></div>
-    </section>
+    <h1 style="text-align: center;">🧡 Mis Favoritos</h1>
+    <section id="favoritos-lista" class="grid-productos"></section>
   </main>
 
   <footer>
-    <p>&copy; 2025 Mielissimo</p>
+    <p>&copy; 2025 Mielissimo. Todos los derechos reservados.</p>
   </footer>
 
-  <script type="module" src="js/navbar.js"></script>
   <script type="module" src="js/favoritos.js"></script>
+  <script type="module" src="js/navbar.js"></script>
 </body>
 </html>

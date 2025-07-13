@@ -655,3 +655,47 @@ main h1 {
   width: 80px;
   border-radius: 8px;
 }
+
+.producto {
+  cursor: pointer;
+  transition: transform 0.2s;
+  padding: 1rem;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+.producto:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 12px rgba(0,0,0,0.15);
+}
+
+.producto-detalle-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.producto-detalle-card img {
+  max-width: 300px;
+  border-radius: 8px;
+}
+
+.producto-info {
+  flex: 1;
+}
+
+.variante-detalle {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.variante-detalle img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 8px;
+}

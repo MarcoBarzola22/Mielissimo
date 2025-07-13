@@ -1,64 +1,61 @@
 import { mostrarUsuario, actualizarContadorCarrito } from "./navbar.js";
 
-document.addEventListener("DOMContentLoaded", async () => {
-  mostrarUsuario();
-  actualizarContadorCarrito();
+const contenedor = document.getElementById("favoritos-lista");
+const token = localStorage.getItem("tokenUsuario");
+const usuario = JSON.parse(localStorage.getItem("usuario"));
 
-  const contenedor = document.getElementById("lista-favoritos");
-  let favoritos = JSON.parse(localStorage.getItem("favoritos")) || [];
-
-  if (favoritos.length === 0) {
-    contenedor.innerHTML = "<p>No tenés productos favoritos aún.</p>";
+async function obtenerFavoritos() {
+  if (!usuario) {
+    contenedor.innerHTML = "<p>Iniciá sesión para ver tus favoritos.</p>";
     return;
   }
 
   try {
-    const res = await fetch("/api/productos");
-    const productos = await res.json();
-
-    const productosFavoritos = productos.filter(p => favoritos.includes(p.id));
-
-    productosFavoritos.forEach(prod => {
-      const div = document.createElement("div");
-      div.classList.add("producto");
-      div.innerHTML = `
-        <a href="producto.html?id=${prod.id}">
-          <img src="${prod.imagen}" alt="${prod.nombre}">
-        </a>
-        <h3>${prod.nombre}</h3>
-        <p class="categoria-nombre">${prod.categoria_nombre || "Sin categoría"}</p>
-        <p>Precio: $${parseFloat(prod.precio).toFixed(2)}</p>
-        <p>Stock: ${prod.stock}</p>
-        <button onclick="agregarAlCarrito(${prod.id})">Agregar al carrito</button>
-        <button onclick="quitarFavorito(${prod.id})" style="background: #eee; border: 1px solid #ef5579; color: #ef5579; margin-top: 8px;">❌ Quitar de favoritos</button>
-      `;
-      contenedor.appendChild(div);
+    const res = await fetch(`/api/favoritos/${usuario.id}`, {
+      headers: { Authorization: `Bearer ${token}` }
     });
+    const favoritos = await res.json();
 
-    // Accesible globalmente
-    window.agregarAlCarrito = function (id) {
-      let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-      const existe = carrito.find(p => p.id === id);
-      if (existe) {
-        existe.cantidad++;
-      } else {
-        const producto = productos.find(p => p.id === id);
-        if (producto) {
-          carrito.push({ ...producto, cantidad: 1 });
-        }
-      }
-      localStorage.setItem("carrito", JSON.stringify(carrito));
-      actualizarContadorCarrito();
-    };
+    if (!favoritos.length) {
+      contenedor.innerHTML = "<p>📭 No tenés productos en tu lista de favoritos.</p>";
+      return;
+    }
 
-    window.quitarFavorito = function (id) {
-      favoritos = favoritos.filter(favId => favId !== id);
-      localStorage.setItem("favoritos", JSON.stringify(favoritos));
-      location.reload(); // recarga para actualizar la vista
-    };
+    const resProd = await fetch("/api/productos");
+    const todos = await resProd.json();
 
-  } catch (err) {
-    contenedor.innerHTML = "<p>Error al cargar productos favoritos.</p>";
-    console.error(err);
+    const productosFav = todos.filter(p =>
+      favoritos.some(f => f.producto_id === p.id)
+    );
+
+    renderizar(productosFav);
+  } catch (error) {
+    contenedor.innerHTML = "<p>Error al cargar favoritos.</p>";
   }
+}
+
+function renderizar(productos) {
+  contenedor.innerHTML = "";
+
+  productos.forEach(prod => {
+    const div = document.createElement("div");
+    div.classList.add("producto");
+
+    div.innerHTML = `
+      <img src="${prod.imagen}" alt="${prod.nombre}" />
+      <h3>${prod.nombre}</h3>
+      <p>${prod.categoria_nombre || "Sin categoría"}</p>
+      <p>Precio: $${parseFloat(prod.precio).toFixed(2)}</p>
+      <p>Stock: ${prod.stock}</p>
+      <button onclick="location.href='producto.html?id=${prod.id}'">Ver producto</button>
+    `;
+
+    contenedor.appendChild(div);
+  });
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  mostrarUsuario();
+  actualizarContadorCarrito();
+  obtenerFavoritos();
 });
