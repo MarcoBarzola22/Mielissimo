@@ -22,20 +22,25 @@ async function cargarProducto() {
     if (token) await verificarFavorito();
 
     infoProducto.innerHTML = `
-      <div class="producto-detalle-card">
-        <img src="${prod.imagen}" alt="${prod.nombre}">
-        <div class="producto-info">
-          <h1>${prod.nombre}</h1>
-          <p><strong>Precio:</strong> $${parseFloat(prod.precio).toFixed(2)}</p>
-          <p><strong>Stock:</strong> ${prod.stock}</p>
-          <p><strong>Categoría:</strong> ${prod.categoria_nombre || "Sin categoría"}</p>
-          <button id="btn-agregar" class="btn">Agregar al carrito</button>
-          ${token ? `<button id="btn-favorito" style="background: none; border: none; font-size: 2rem; cursor: pointer;">
-            ${esFavorito ? "❤️" : "🤍"}
-          </button>` : ""}
-        </div>
+  <div class="producto-detalle-card" style="display: flex; flex-wrap: wrap; gap: 2rem;">
+    <div style="flex: 1; min-width: 280px;">
+      <img src="${prod.imagen}" alt="${prod.nombre}" style="width: 100%; max-width: 400px; border-radius: 1rem;">
+    </div>
+    <div class="producto-info" style="flex: 2; min-width: 280px;">
+      <h1 style="margin-bottom: 0.5rem;">${prod.nombre}</h1>
+      <p><strong>Precio:</strong> $${parseFloat(prod.precio).toFixed(2)}</p>
+      <p><strong>Stock:</strong> ${prod.stock}</p>
+      <p><strong>Categoría:</strong> ${prod.categoria_nombre || "Sin categoría"}</p>
+      <div style="margin-top: 1.5rem;">
+        <button id="btn-agregar" class="btn" style="margin-right: 1rem;">Agregar al carrito</button>
+        ${token ? `<button id="btn-favorito" style="background: none; border: none; font-size: 2rem; cursor: pointer;">
+          ${esFavorito ? "❤️" : "🤍"}
+        </button>` : ""}
       </div>
-    `;
+    </div>
+  </div>
+`;
+
 
     document.getElementById("btn-agregar").addEventListener("click", () => agregarAlCarrito(prod.id));
     if (token) {
@@ -93,19 +98,29 @@ fetch(`/api/variantes/${id}`)
   .then(variantes => {
     if (variantes.length > 0) {
       variantesSection.innerHTML = "<h2>Variantes disponibles</h2>";
-      variantes.forEach(v => {
-        const div = document.createElement("div");
-        div.classList.add("variante-detalle");
-        div.innerHTML = `
-          <img src="${v.imagen}" alt="${v.nombre}">
-          <div>
-            <p><strong>${v.nombre}</strong></p>
-            <p>Precio extra: $${parseFloat(v.precio_extra).toFixed(2)}</p>
-            <p>Stock: ${v.stock}</p>
-          </div>
-        `;
-        variantesSection.appendChild(div);
-      });
+     const contenedor = document.createElement("div");
+contenedor.style.display = "flex";
+contenedor.style.flexWrap = "wrap";
+contenedor.style.gap = "1rem";
+variantesSection.appendChild(contenedor);
+
+variantes.forEach(v => {
+  const div = document.createElement("div");
+  div.style.border = "1px solid #ddd";
+  div.style.borderRadius = "10px";
+  div.style.padding = "1rem";
+  div.style.width = "200px";
+  div.style.textAlign = "center";
+  div.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+  div.innerHTML = `
+    <img src="${v.imagen}" alt="${v.nombre}" style="width: 100%; border-radius: 0.5rem;" />
+    <p><strong>${v.nombre}</strong></p>
+    <p>Precio extra: $${parseFloat(v.precio_extra).toFixed(2)}</p>
+    <p>Stock: ${v.stock}</p>
+  `;
+  contenedor.appendChild(div);
+});
+
     }
   });
 

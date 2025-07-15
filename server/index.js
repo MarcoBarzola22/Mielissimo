@@ -488,5 +488,6 @@ app.delete('/api/favoritos/:producto_id', verificarToken, (req, res) => {
 // 🚀 INICIAR SERVIDOR
 // ==============================
 app.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+ console.log(`Servidor corriendo en http://localhost:${PORT}`);
+
 });

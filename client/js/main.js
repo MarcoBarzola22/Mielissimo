@@ -116,31 +116,35 @@ async function renderizarProductos(productos) {
     document.querySelectorAll(".btn-favorito").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        const id = parseInt(e.target.dataset.id);
+const id = parseInt(e.target.dataset.id);
+const icono = e.target;
 
-        const esFavorito = favoritos.includes(id);
-        try {
-          if (esFavorito) {
-            await fetch(`/api/favoritos/${id}`, {
-              method: "DELETE",
-              headers: { Authorization: `Bearer ${tokenUsuario}` }
-            });
-          } else {
-            await fetch("/api/favoritos", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${tokenUsuario}`
-              },
-              body: JSON.stringify({ producto_id: id })
-            });
-          }
+try {
+  if (favoritos.includes(id)) {
+    await fetch(`/api/favoritos/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${tokenUsuario}` }
+    });
+    icono.textContent = "🤍";
+    icono.style.color = "#999";
+    favoritos.splice(favoritos.indexOf(id), 1);
+  } else {
+    await fetch("/api/favoritos", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${tokenUsuario}`
+      },
+      body: JSON.stringify({ producto_id: id })
+    });
+    icono.textContent = "❤️";
+    icono.style.color = "#ef5579";
+    favoritos.push(id);
+  }
+} catch (err) {
+  console.error("Error al actualizar favoritos:", err);
+}
 
-          const nuevosProductos = await fetch("/api/productos").then(r => r.json());
-          renderizarProductos(nuevosProductos);
-        } catch (err) {
-          console.error("Error al actualizar favoritos:", err);
-        }
       });
     });
   }

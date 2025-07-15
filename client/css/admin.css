@@ -190,3 +190,68 @@ form select {
   object-fit: cover;
   border-radius: 4px;
 }
+
+#seccionVariantes {
+  background-color: #fff9f2;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+#seccionVariantes h3 {
+  margin-bottom: 1rem;
+}
+
+#seccionVariantes input,
+#seccionVariantes select {
+  padding: 0.4rem;
+  margin-right: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+#seccionVariantes button {
+  padding: 0.4rem 1rem;
+  background-color: #ffa726;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#seccionVariantes table {
+  width: 100%;
+  border: 1px solid #ccc;
+  margin-top: 1rem;
+  text-align: left;
+}
+
+#seccionVariantes th,
+#seccionVariantes td {
+  padding: 0.6rem;
+  border-bottom: 1px solid #ddd;
+}
+
+#seccionVariantes td button {
+  margin-right: 0.5rem;
+}
+
+.botones-producto button {
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+#tabla-variantes td,
+#tabla-variantes th {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+}
+
+#tabla-variantes {
+  width: 100%;
+  margin-top: 10px;
+  border-collapse: collapse;
+}
+
+#tabla-variantes tr:nth-child(even) {
+  background-color: #f9f9f9;
+}

@@ -1,3 +1,4 @@
+<!-- admin.html -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -16,11 +17,13 @@
   </header>
 
   <main>
+    <!-- Categorías -->
     <section class="seccion">
-      <h2>Crear nueva categoría</h2>
+      <h2>Crear / Editar categoría</h2>
       <form id="formulario-categoria">
         <input type="text" name="nombre" placeholder="Nombre de categoría" required />
         <button type="submit">Agregar categoría</button>
+        <button type="button" id="cancelar-edicion-categoria" style="display:none;">Cancelar edición</button>
       </form>
     </section>
 
@@ -29,6 +32,7 @@
       <div id="lista-categorias" class="categorias-grid"></div>
     </section>
 
+    <!-- Productos -->
     <section class="seccion" id="seccion-formulario">
       <h2>Agregar / Editar Producto</h2>
       <p id="mensaje" style="margin-top: 1rem;"></p>
@@ -41,41 +45,48 @@
           <option value="">Seleccionar categoría</option>
         </select>
         <button type="submit">Guardar</button>
+        <button type="button" id="cancelar-edicion-producto" style="display:none;">Cancelar edición</button>
       </form>
     </section>
 
-   <section class="seccion" id="seccion-formulario-variante" style="display: none;">
-  <h2 id="nombre-producto-seleccionado">Variantes del producto</h2>
-  <form id="formulario-variante" enctype="multipart/form-data">
-    <input type="hidden" id="id_producto_variante" name="id_producto" />
-    <input type="text" name="nombre" placeholder="Nombre de variante" required />
-    <input type="number" name="precio_extra" step="0.01" placeholder="Precio extra" required />
-    <input type="number" name="stock" placeholder="Stock de variante" required />
-    <input type="file" name="imagen" accept="image/*" />
-    <button type="submit">Agregar variante</button>
-    <input type="hidden" id="id_variante_edicion" name="id_variante_edicion" />
+    <!-- Variantes -->
+    <section class="seccion" id="seccion-variantes" style="display: none;">
+      <h2 id="nombre-producto-seleccionado">Variantes del producto</h2>
+      <form id="formulario-variante">
+        <select id="tipoVariante" name="tipo" required>
+          <option value="Sabor">Sabor</option>
+          <option value="Tamaño">Tamaño</option>
+        </select>
+        <input type="text" id="nombreVariante" name="nombre" placeholder="Nombre de la variante" required />
+        <input type="number" id="precioExtra" name="precio_extra" placeholder="Precio adicional" step="0.01" required />
+        <input type="number" id="stockVariante" name="stock" placeholder="Stock" required />
+        <button type="submit" id="btnAgregarVariante">Agregar variante</button>
+        <button type="button" id="btnCancelarEdicionVariante" style="display:none;">Cancelar edición</button>
+      </form>
+      <p id="mensaje-variante"></p>
 
-  </form>
-  <p id="mensaje-variante"></p>
-  <table id="tabla-variantes" class="tabla-variantes" style="width: 100%; margin-top: 2rem; border-collapse: collapse;">
-  <thead>
-    <tr>
-      <th>Imagen</th>
-      <th>Nombre</th>
-      <th>Precio extra</th>
-      <th>Stock</th>
-      <th>Acciones</th>
-    </tr>
-  </thead>
-  <tbody id="lista-variantes"></tbody>
-</table>
+      <table id="tabla-variantes" style="margin-top: 1rem; border-collapse: collapse;">
+        <thead>
+          <tr>
+            <th>Tipo</th>
+            <th>Nombre de variante</th>
+            <th>Precio adicional</th>
+            <th>Stock</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-</section>
-
-
+    <!-- Productos actuales -->
     <section class="seccion">
       <h2>Productos actuales</h2>
       <input type="text" id="buscador-productos" placeholder="Buscar producto por nombre..." />
+      <label>
+        <input type="checkbox" id="mostrarInactivos" />
+        Mostrar productos desactivados
+      </label>
       <div id="lista-productos" class="productos-grid"></div>
     </section>
   </main>

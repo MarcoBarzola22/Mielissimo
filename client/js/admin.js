@@ -1,3 +1,4 @@
+// admin.js COMPLETO con mejoras solicitadas
 
 const formulario = document.getElementById("formulario-producto");
 const mensaje = document.getElementById("mensaje");
@@ -7,63 +8,77 @@ const formularioCategoria = document.getElementById("formulario-categoria");
 const listaCategorias = document.getElementById("lista-categorias");
 const botonLogout = document.getElementById("logout");
 const buscador = document.getElementById("buscador-productos");
+const checkboxInactivos = document.getElementById("mostrarInactivos");
+
 const seccionFormulario = document.getElementById("seccion-formulario");
-const listaVariantes = document.getElementById("lista-variantes");
+const seccionVariantes = document.getElementById("seccion-variantes");
+const tablaVariantes = document.getElementById("tabla-variantes");
 const formularioVariante = document.getElementById("formulario-variante");
 const mensajeVariante = document.getElementById("mensaje-variante");
+
+const btnAgregarVariante = document.getElementById("btnAgregarVariante");
+const btnCancelarVariante = document.getElementById("btnCancelarEdicionVariante");
+const btnCancelarProducto = document.getElementById("cancelar-edicion-producto");
+const btnCancelarCategoria = document.getElementById("cancelar-edicion-categoria");
+
+
+let varianteEditandoId = null;
 let productoEnEdicion = null;
+let categoriaEnEdicion = null;
+let productoParaVariantes = null;
+
 const token = localStorage.getItem("tokenAdmin");
 
 function cargarProductos(filtro = "") {
-  fetch("/api/productos", {
+  const mostrarInactivos = checkboxInactivos.checked;
+
+  fetch(`/api/productos?mostrarInactivos=${mostrarInactivos}`, {
     headers: { Authorization: `Bearer ${token}` }
   })
     .then(res => res.json())
     .then(productos => {
       productosContainer.innerHTML = "";
       productos
-        .filter(p => p.nombre.toLowerCase().includes(filtro.toLowerCase()))
+        .filter(p => {
+          const nombreCoincide = p.nombre.toLowerCase().includes(filtro.toLowerCase());
+          return mostrarInactivos ? nombreCoincide : nombreCoincide && p.activo;
+        })
         .forEach(prod => {
+          const estaActivo = prod.activo === 1 || prod.activo === true;
+
           const div = document.createElement("div");
           div.classList.add("producto-admin");
+
           div.innerHTML = `
             <img src="${prod.imagen}" alt="${prod.nombre}" />
             <p><strong>${prod.nombre}</strong></p>
+            <p><em>Categoría: ${prod.categoria_nombre || "Sin categoría"}</em></p>
             <p>Precio: $${parseFloat(prod.precio).toFixed(2)}</p>
             <p>Stock: ${prod.stock}</p>
-            <div class="btns" style="display: flex; flex-direction: column; gap: 0.3rem;">
-              <button class="btn-editar" data-id="${prod.id}" 
-                data-nombre="${prod.nombre}"
-                data-precio="${prod.precio}"
-                data-imagen="${prod.imagen}"
-                data-stock="${prod.stock}"
-                data-categoria="${prod.categoria_id}">✏ Editar</button>
-              <button class="btn-eliminar" data-id="${prod.id}">🗑 Eliminar</button>
-              <button class="btn-variante" data-id="${prod.id}" data-nombre="${prod.nombre}">➕ Agregar Variante</button>
-              <button class="btn-ver-variantes" data-id="${prod.id}" data-nombre="${prod.nombre}">👁 Ver Variantes</button>
-              <span id="contador-variantes-${prod.id}" class="contador-variantes"></span>
+            <p><strong>Activo:</strong> ${estaActivo ? "Sí" : "No"}</p>
+            <div class="btns" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+              ${estaActivo
+                ? `
+                  <button class="btn-editar" data-id="${prod.id}" 
+                          data-nombre="${prod.nombre}"
+                          data-precio="${prod.precio}"
+                          data-imagen="${prod.imagen}"
+                          data-stock="${prod.stock}"
+                          data-categoria="${prod.categoria_id}">✏ Editar</button>
+                  <button class="btn-eliminar" data-id="${prod.id}">🗑 Desactivar</button>
+                  <button class="btn-variante" data-id="${prod.id}" data-nombre="${prod.nombre}">➕ Variantes</button>
+                `
+                : `<button class="btn-reactivar" data-id="${prod.id}">✅ Reactivar</button>`
+              }
             </div>
           `;
           productosContainer.appendChild(div);
-          actualizarContadorVariantes(prod.id);
         });
     })
     .catch(err => {
       console.error("Error al cargar productos:", err);
       mensaje.textContent = "Error al cargar productos";
     });
-}
-
-function actualizarContadorVariantes(idProducto) {
-  fetch(`/api/variantes/${idProducto}`)
-    .then(res => res.json())
-    .then(variantes => {
-      const span = document.getElementById(`contador-variantes-${idProducto}`);
-      if (span) {
-        span.textContent = `🧩 Variantes: ${variantes.length}`;
-      }
-    })
-    .catch(err => console.error("Error al contar variantes:", err));
 }
 
 function cargarCategorias() {
@@ -111,6 +126,7 @@ formulario.addEventListener("submit", async (e) => {
       mensaje.style.color = "green";
       formulario.reset();
       productoEnEdicion = null;
+      btnCancelarProducto.style.display = "none";
       setTimeout(() => cargarProductos(), 300);
     } else {
       mensaje.textContent = resultado.error || "Error en la operación";
@@ -118,7 +134,29 @@ formulario.addEventListener("submit", async (e) => {
     }
   } catch (err) {
     mensaje.textContent = "Error de conexión.";
+    mensaje.style.color = "red";
   }
+});
+
+btnCancelarProducto.addEventListener("click", () => {
+  formulario.reset();
+  productoEnEdicion = null;
+  mensaje.textContent = "";
+  btnCancelarProducto.style.display = "none";
+});
+
+btnCancelarCategoria.addEventListener("click", () => {
+  formularioCategoria.reset();
+  categoriaEnEdicion = null;
+  btnCancelarCategoria.style.display = "none";
+});
+
+btnCancelarVariante.addEventListener("click", () => {
+  formularioVariante.reset();
+  varianteEditandoId = null;
+  btnAgregarVariante.textContent = "Agregar variante";
+  btnCancelarVariante.style.display = "none";
+  mensajeVariante.textContent = "";
 });
 
 function editarProducto(id, nombre, precio, imagen, stock, categoria_id) {
@@ -128,33 +166,49 @@ function editarProducto(id, nombre, precio, imagen, stock, categoria_id) {
   selectCategoria.value = categoria_id;
   productoEnEdicion = id;
 
-  if (mensaje) {
-    mensaje.textContent = "Editando producto...";
-    mensaje.style.color = "blue";
-  }
-
-  if (seccionFormulario) {
-    seccionFormulario.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
+  mensaje.textContent = "Editando producto...";
+  mensaje.style.color = "blue";
+  btnCancelarProducto.style.display = "inline";
+  seccionFormulario.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+function desactivarProducto(id) {
+  if (!confirm("¿Estás seguro de que querés desactivar este producto?")) return;
 
-function eliminarProducto(id) {
-  if (confirm("¿Estás seguro de que querés eliminar este producto?")) {
-    fetch(`/api/productos/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(() => cargarProductos());
-  }
+  fetch(`/api/productos/desactivar/${id}`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      alert(data.mensaje);
+      cargarProductos();
+    });
+}
+
+function reactivarProducto(id) {
+  if (!confirm("¿Reactivar este producto?")) return;
+
+  fetch(`/api/productos/activar/${id}`, {
+    method: "PUT",
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      alert(data.mensaje);
+      cargarProductos();
+    });
 }
 
 formularioCategoria.addEventListener("submit", async (e) => {
   e.preventDefault();
   const nombre = formularioCategoria.nombre.value;
-  const res = await fetch("/api/categorias", {
-    method: "POST",
+
+  const url = categoriaEnEdicion ? `/api/categorias/${categoriaEnEdicion}` : "/api/categorias";
+  const metodo = categoriaEnEdicion ? "PUT" : "POST";
+
+  const res = await fetch(url, {
+    method: metodo,
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`
@@ -164,39 +218,32 @@ formularioCategoria.addEventListener("submit", async (e) => {
   const data = await res.json();
   if (res.ok) {
     formularioCategoria.reset();
+    categoriaEnEdicion = null;
+    btnCancelarCategoria.style.display = "none";
     cargarCategorias();
+    cargarProductos();
   } else {
-    alert(data.error || "Error al agregar categoría");
+    alert(data.error || "Error al guardar categoría");
   }
 });
 
-function editarCategoriaPrompt(id, nombreActual) {
-  const nuevoNombre = prompt("Editar nombre:", nombreActual);
-  if (nuevoNombre && nuevoNombre !== nombreActual) {
-    fetch(`/api/categorias/${id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ nombre: nuevoNombre })
-    }).then(() => cargarCategorias());
-  }
-}
-
 function eliminarCategoria(id) {
-  if (confirm("Eliminar esta categoría?")) {
+  if (confirm("¿Eliminar esta categoría?")) {
     fetch(`/api/categorias/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` }
-    }).then(() => cargarCategorias());
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          alert(data.error);
+        } else {
+          alert("✅ Categoría eliminada correctamente");
+          cargarCategorias();
+        }
+      });
   }
 }
-
-botonLogout.addEventListener("click", () => {
-  localStorage.removeItem("tokenAdmin");
-  window.location.href = "login-admin.html";
-});
 
 document.addEventListener("click", (e) => {
   if (e.target.classList.contains("btn-editar")) {
@@ -211,38 +258,25 @@ document.addEventListener("click", (e) => {
     );
   }
 
-  if (e.target.classList.contains("btn-eliminar")) {
-    eliminarProducto(e.target.dataset.id);
-  }
+  if (e.target.classList.contains("btn-eliminar")) desactivarProducto(e.target.dataset.id);
+  if (e.target.classList.contains("btn-reactivar")) reactivarProducto(e.target.dataset.id);
 
   if (e.target.classList.contains("btn-editar-categoria")) {
-    const id = e.target.dataset.id;
-    const nombre = e.target.dataset.nombre;
-    editarCategoriaPrompt(id, nombre);
+    categoriaEnEdicion = e.target.dataset.id;
+    formularioCategoria.nombre.value = e.target.dataset.nombre;
+    btnCancelarCategoria.style.display = "inline";
   }
 
-  if (e.target.classList.contains("btn-eliminar-categoria")) {
-    const id = e.target.dataset.id;
-    eliminarCategoria(id);
-  }
+  if (e.target.classList.contains("btn-eliminar-categoria")) eliminarCategoria(e.target.dataset.id);
 
   if (e.target.classList.contains("btn-variante")) {
     const id = e.target.dataset.id;
     const nombre = e.target.dataset.nombre;
-    document.getElementById("id_producto_variante").value = id;
-    document.getElementById("nombre-producto-seleccionado").textContent = `Agregar variantes a: ${nombre}`;
-    document.getElementById("seccion-formulario-variante").style.display = "block";
-    mensajeVariante.textContent = "";
-    document.getElementById("seccion-formulario-variante").scrollIntoView({ behavior: "smooth" });
-  }
-
-  if (e.target.classList.contains("btn-ver-variantes")) {
-    const id = e.target.dataset.id;
-    document.getElementById("seccion-formulario-variante").style.display = "block";
-    document.getElementById("id_producto_variante").value = id;
-    document.getElementById("nombre-producto-seleccionado").textContent = `Variantes de producto ID: ${id}`;
+    productoParaVariantes = id;
+    document.getElementById("nombre-producto-seleccionado").textContent = `Variantes de ${nombre}`;
     cargarVariantes(id);
-    document.getElementById("seccion-formulario-variante").scrollIntoView({ behavior: "smooth" });
+    seccionVariantes.style.display = "block";
+    seccionVariantes.scrollIntoView({ behavior: "smooth" });
   }
 
   if (e.target.classList.contains("eliminar-variante")) {
@@ -251,31 +285,50 @@ document.addEventListener("click", (e) => {
       fetch(`/api/variantes/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` }
-      }).then(() => {
-        cargarVariantes(document.getElementById("id_producto_variante").value);
-        actualizarContadorVariantes(document.getElementById("id_producto_variante").value);
-      });
+      }).then(() => cargarVariantes(productoParaVariantes));
     }
+  }
+
+  if (e.target.classList.contains("editar-variante")) {
+    const id = e.target.dataset.id;
+    varianteEditandoId = id;
+    document.getElementById("tipoVariante").value = e.target.dataset.tipo;
+    document.getElementById("nombreVariante").value = e.target.dataset.nombre;
+    document.getElementById("precioExtra").value = e.target.dataset.precio;
+    document.getElementById("stockVariante").value = e.target.dataset.stock;
+    btnAgregarVariante.textContent = "Guardar cambios";
+    btnCancelarVariante.style.display = "inline";
   }
 });
 
-
-function cargarVariantes(productoId) {
-  listaVariantes.innerHTML = "";
-  fetch(`/api/variantes/${productoId}`)
+function cargarVariantes(idProducto) {
+  tablaVariantes.innerHTML = `
+    <tr>
+      <th>Tipo</th>
+      <th>Nombre de variante</th>
+      <th>Precio adicional</th>
+      <th>Stock</th>
+      <th>Acciones</th>
+    </tr>
+  `;
+  fetch(`/api/variantes/${idProducto}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
     .then(res => res.json())
     .then(variantes => {
       variantes.forEach(v => {
-        const div = document.createElement("div");
-        div.classList.add("variante-item");
-        div.innerHTML = `
-          <img src="${v.imagen}" alt="${v.nombre}" />
-          <p><strong>${v.nombre}</strong></p>
-          <p>Precio extra: $${v.precio_extra}</p>
-          <p>Stock: ${v.stock}</p>
-          <button class="eliminar-variante" data-id="${v.id}">🗑 Eliminar</button>
+        const fila = document.createElement("tr");
+        fila.innerHTML = `
+          <td>${v.tipo}</td>
+          <td>${v.nombre}</td>
+          <td>$${v.precio_extra}</td>
+          <td>${v.stock}</td>
+          <td>
+            <button class="editar-variante" data-id="${v.id}" data-tipo="${v.tipo}" data-nombre="${v.nombre}" data-precio="${v.precio_extra}" data-stock="${v.stock}">✏</button>
+            <button class="eliminar-variante" data-id="${v.id}">🗑</button>
+          </td>
         `;
-        listaVariantes.appendChild(div);
+        tablaVariantes.appendChild(fila);
       });
     });
 }
@@ -283,20 +336,28 @@ function cargarVariantes(productoId) {
 formularioVariante.addEventListener("submit", async (e) => {
   e.preventDefault();
   const datos = new FormData(formularioVariante);
+  datos.append("id_producto", productoParaVariantes);
+
+  const metodo = varianteEditandoId ? "PUT" : "POST";
+  const url = varianteEditandoId ? `/api/variantes/${varianteEditandoId}` : "/api/variantes";
+
   try {
-    const res = await fetch("/api/variantes", {
-      method: "POST",
+    const res = await fetch(url, {
+      method: metodo,
+      headers: { Authorization: `Bearer ${token}` },
       body: datos
     });
     const data = await res.json();
     if (res.ok) {
-      mensajeVariante.textContent = "✅ Variante creada correctamente";
+      mensajeVariante.textContent = varianteEditandoId ? "✅ Variante actualizada" : "✅ Variante agregada";
       mensajeVariante.style.color = "green";
       formularioVariante.reset();
-      cargarVariantes(document.getElementById("id_producto_variante").value);
-      actualizarContadorVariantes(document.getElementById("id_producto_variante").value);
+      btnAgregarVariante.textContent = "Agregar variante";
+      btnCancelarVariante.style.display = "none";
+      varianteEditandoId = null;
+      cargarVariantes(productoParaVariantes);
     } else {
-      mensajeVariante.textContent = data.error || "Error al crear variante";
+      mensajeVariante.textContent = data.error || "Error";
       mensajeVariante.style.color = "red";
     }
   } catch (err) {
@@ -305,7 +366,13 @@ formularioVariante.addEventListener("submit", async (e) => {
   }
 });
 
+botonLogout.addEventListener("click", () => {
+  localStorage.removeItem("tokenAdmin");
+  window.location.href = "login-admin.html";
+});
+
 buscador.addEventListener("input", () => cargarProductos(buscador.value));
+checkboxInactivos.addEventListener("change", () => cargarProductos());
 
 cargarProductos();
 cargarCategorias();

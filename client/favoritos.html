@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Favoritos - Mielissimo</title>
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/tienda.css" />
 </head>
 <body>
   <header class="header-publico">
@@ -14,16 +15,13 @@
   <nav>
     <ul>
       <li><a href="index.html">Inicio</a></li>
-      <li><a href="#productos">Productos</a></li>
-      <li><a href="#">Contacto</a></li>
       <li>
         <a href="carrito.html">
           🛒 Carrito <span id="contador-carrito">(0)</span>
         </a>
       </li>
-      <li>
-        <a href="favoritos.html">❤️ Favoritos</a>
-      </li>
+      <li id="btn-favoritos" style="display: none;"><a href="favoritos.html">❤️ Favoritos</a></li>
+
       <li id="login-li"><a href="login.html">Iniciar sesión</a></li>
       <li id="usuario-logueado" class="usuario-logueado" style="display: none;"></li>
       <li id="btn-historial" style="display: none;"><a href="historial.html">🧾 Historial</a></li>
@@ -32,10 +30,11 @@
 </header>
 
 
-  <main>
-    <h1 style="text-align: center;">🧡 Mis Favoritos</h1>
-    <section id="favoritos-lista" class="grid-productos"></section>
-  </main>
+ <main class="contenedor">
+  <h1>Tus productos favoritos</h1>
+  <div id="productos" class="productos"></div>
+</main>
+
 
   <footer>
     <p>&copy; 2025 Mielissimo. Todos los derechos reservados.</p>
