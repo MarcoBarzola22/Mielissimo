@@ -769,4 +769,99 @@ main h1 {
   outline: none;
 }
 
+.buscador-productos {
+  margin: 2rem auto;
+  max-width: 500px;
+  text-align: center;
+}
+
+#buscador {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  border-radius: 2rem;
+  border: 1px solid #ccc;
+  box-shadow: 0 0 5px rgba(0,0,0,0.05);
+}
+
+.mensaje-accion {
+  margin-top: 10px;
+  font-weight: bold;
+  transition: opacity 0.3s ease;
+}
+
+.producto-detalle-container {
+  max-width: 1200px;
+  margin: 40px auto;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 40px;
+}
+
+.producto-detalle img {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.producto-detalle .info {
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.producto-detalle .precio {
+  font-size: 1.5rem;
+  color: #e54;
+}
+
+.producto-detalle .stock {
+  font-size: 1rem;
+  color: #555;
+}
+
+.producto-detalle button {
+  padding: 12px;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  background-color: #f7c14b;
+  color: #000;
+  border-radius: 8px;
+  transition: background 0.3s ease;
+}
+.producto-detalle button:hover {
+  background-color: #f3b121;
+}
+
+.grupo-variante {
+  margin-top: 10px;
+}
+.grupo-variante h4 {
+  margin-bottom: 5px;
+  font-size: 1.1rem;
+  color: #444;
+}
+.variante-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+}
+
+.btn-favorito {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  cursor: pointer;
+  margin-left: 10px;
+  transition: transform 0.2s ease;
+}
+.btn-favorito:hover {
+  transform: scale(1.1);
+}
 

@@ -2,6 +2,8 @@ import { mostrarUsuario, actualizarContadorCarrito } from "./navbar.js";
 
 const contenedorCategorias = document.getElementById("categorias-horizontal");
 const contenedorProductos = document.getElementById("productos");
+let productosCache = [];
+let productosVisibles = []; // cache local de lo que se muestra ahora
 
 // 🔃 Cargar categorías como botones pill
 function cargarCategorias() {
@@ -73,6 +75,13 @@ async function obtenerFavoritos() {
 // 🖼 Renderizar productos
 async function renderizarProductos(productos) {
   if (!contenedorProductos) return;
+
+  // Si los productos son los mismos que ya están, no renderizamos de nuevo
+  const mismosProductos = JSON.stringify(productos) === JSON.stringify(productosVisibles);
+  if (mismosProductos) return;
+
+  productosVisibles = productos;
+
   contenedorProductos.innerHTML = "";
 
   const favoritos = await obtenerFavoritos();
@@ -83,7 +92,7 @@ async function renderizarProductos(productos) {
     div.classList.add("producto");
 
     const esFavorito = favoritos.includes(prod.id);
-    const iconoCorazon = esFavorito ? "❤️" : "🤍"; // Relleno vs vacío
+    const iconoCorazon = esFavorito ? "❤️" : "🤍"; 
     const colorCorazon = esFavorito ? "#ef5579" : "#999";
 
     div.innerHTML = `
@@ -98,12 +107,8 @@ async function renderizarProductos(productos) {
       </button>` : ""}
     `;
 
-    // Redirigir al hacer clic en la tarjeta (excepto en botones)
     div.addEventListener("click", (e) => {
-      if (
-        !e.target.classList.contains("btn-carrito") &&
-        !e.target.classList.contains("btn-favorito")
-      ) {
+      if (!e.target.classList.contains("btn-carrito") && !e.target.classList.contains("btn-favorito")) {
         window.location.href = `producto.html?id=${prod.id}`;
       }
     });
@@ -111,45 +116,42 @@ async function renderizarProductos(productos) {
     contenedorProductos.appendChild(div);
   });
 
-  // Evento para agregar/quitar favorito
   if (tokenUsuario) {
     document.querySelectorAll(".btn-favorito").forEach(btn => {
       btn.addEventListener("click", async (e) => {
         e.stopPropagation();
-const id = parseInt(e.target.dataset.id);
-const icono = e.target;
+        const id = parseInt(e.target.dataset.id);
+        const icono = e.target;
 
-try {
-  if (favoritos.includes(id)) {
-    await fetch(`/api/favoritos/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${tokenUsuario}` }
-    });
-    icono.textContent = "🤍";
-    icono.style.color = "#999";
-    favoritos.splice(favoritos.indexOf(id), 1);
-  } else {
-    await fetch("/api/favoritos", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenUsuario}`
-      },
-      body: JSON.stringify({ producto_id: id })
-    });
-    icono.textContent = "❤️";
-    icono.style.color = "#ef5579";
-    favoritos.push(id);
-  }
-} catch (err) {
-  console.error("Error al actualizar favoritos:", err);
-}
-
+        try {
+          if (favoritos.includes(id)) {
+            await fetch(`/api/favoritos/${id}`, {
+              method: "DELETE",
+              headers: { Authorization: `Bearer ${tokenUsuario}` }
+            });
+            icono.textContent = "🤍";
+            icono.style.color = "#999";
+            favoritos.splice(favoritos.indexOf(id), 1);
+          } else {
+            await fetch("/api/favoritos", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${tokenUsuario}`
+              },
+              body: JSON.stringify({ producto_id: id })
+            });
+            icono.textContent = "❤️";
+            icono.style.color = "#ef5579";
+            favoritos.push(id);
+          }
+        } catch (err) {
+          console.error("Error al actualizar favoritos:", err);
+        }
       });
     });
   }
 
-  // Eventos para agregar al carrito
   document.querySelectorAll(".btn-carrito").forEach(btn => {
     btn.addEventListener("click", () => {
       const id = parseInt(btn.dataset.id);
@@ -157,6 +159,7 @@ try {
     });
   });
 }
+
 
 // 🛒 Carrito con LocalStorage
 let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
@@ -233,6 +236,24 @@ document.addEventListener("DOMContentLoaded", async () => {
   actualizarContadorCarrito();
   cargarCategorias();
 
-  const productos = await fetch("/api/productos").then(r => r.json());
-  renderizarProductos(productos);
+  productosCache = await fetch("/api/productos").then(r => r.json());
+  renderizarProductos(productosCache);
+
+  // 🔍 Búsqueda en tiempo real por nombre (optimizada)
+  const inputBuscador = document.getElementById("buscador");
+  let ultimoTexto = "";
+
+  if (inputBuscador) {
+    inputBuscador.addEventListener("input", () => {
+      const texto = inputBuscador.value.trim().toLowerCase();
+
+      if (texto === ultimoTexto) return;
+      ultimoTexto = texto;
+
+      const filtrados = productosCache.filter(p =>
+        p.nombre.toLowerCase().includes(texto)
+      );
+      renderizarProductos(filtrados);
+    });
+  }
 });
