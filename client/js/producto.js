@@ -8,6 +8,7 @@ const token = localStorage.getItem("token_usuario");
 
 let esFavorito = false;
 let variantesSeleccionadas = [];
+let precioBase = 0;
 
 async function cargarProducto() {
   try {
@@ -20,20 +21,26 @@ async function cargarProducto() {
       return;
     }
 
+    precioBase = parseFloat(prod.precio);
     if (token) await verificarFavorito();
 
     infoProducto.innerHTML = `
-      <div class="producto-imagen">
-        <img src="${prod.imagen}" alt="${prod.nombre}" class="producto-imagen">
-      </div>
-      <div class="producto-info">
-        <h1>${prod.nombre}</h1>
-        <p><strong>Precio:</strong> $${parseFloat(prod.precio).toFixed(2)}</p>
-        <p><strong>Stock:</strong> ${prod.stock}</p>
-        <p><strong>Categoría:</strong> ${prod.categoria_nombre || "Sin categoría"}</p>
-        <div class="botones-producto">
-          <button id="btn-agregar" class="btn">Agregar al carrito</button>
-          ${token ? `<button id="btn-favorito">${esFavorito ? "❤️" : "🤍"}</button>` : ""}
+      <div class="tarjeta-producto-detalle">
+        <h1 class="nombre-producto">${prod.nombre}</h1>
+        <div class="contenido-producto">
+          <div class="producto-imagen">
+            <img src="${prod.imagen}" alt="${prod.nombre}" class="img-estandarizada"/>
+          </div>
+          <div class="producto-info">
+            <div id="seccion-variantes-dentro"></div>
+            <p><strong>Precio:</strong> <span id="precio-dinamico">$${precioBase.toFixed(2)}</span></p>
+            <p><strong>Stock:</strong> ${prod.stock}</p>
+            <p><strong>Categoría:</strong> ${prod.categoria_nombre || "Sin categoría"}</p>
+            <div class="botones-producto">
+              <button id="btn-agregar" class="btn">Agregar al carrito</button>
+              ${token ? `<button id="btn-favorito" class="btn-favorito">${esFavorito ? "❤️" : "🤍"}</button>` : ""}
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -42,6 +49,8 @@ async function cargarProducto() {
     if (token) {
       document.getElementById("btn-favorito").addEventListener("click", toggleFavorito);
     }
+
+    cargarVariantesVisuales();
   } catch (err) {
     console.error("Error al cargar producto:", err);
   }
@@ -85,6 +94,16 @@ async function toggleFavorito() {
   }
 }
 
+function actualizarPrecio() {
+  const precioMostrado = document.getElementById("precio-dinamico");
+  const varianteTamanio = variantesSeleccionadas.find(v => v.tipo === "Tamaño");
+  if (varianteTamanio && !isNaN(varianteTamanio.precio)) {
+    precioMostrado.textContent = `$${parseFloat(varianteTamanio.precio).toFixed(2)}`;
+  } else {
+    precioMostrado.textContent = `$${precioBase.toFixed(2)}`;
+  }
+}
+
 function agregarAlCarrito(prod) {
   const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 
@@ -93,13 +112,16 @@ function agregarAlCarrito(prod) {
     JSON.stringify(p.variantes) === JSON.stringify(variantesSeleccionadas);
 
   const existente = carrito.find(igual);
+  const varianteTamanio = variantesSeleccionadas.find(v => v.tipo === "Tamaño");
+  const precioFinal = varianteTamanio?.precio ?? precioBase;
+
   if (existente) {
     existente.cantidad++;
   } else {
     carrito.push({
       id: prod.id,
       nombre: prod.nombre,
-      precio: parseFloat(prod.precio),
+      precio: precioFinal,
       imagen: prod.imagen,
       cantidad: 1,
       variantes: variantesSeleccionadas
@@ -111,46 +133,50 @@ function agregarAlCarrito(prod) {
   alert("Producto agregado con éxito");
 }
 
-// 🧩 Cargar variantes
-fetch(`/api/variantes/${id}`)
-  .then(res => res.json())
-  .then(variantes => {
-    if (variantes.length === 0) return;
+function cargarVariantesVisuales() {
+  fetch(`/api/variantes/${id}`)
+    .then(res => res.json())
+    .then(variantes => {
+      if (variantes.length === 0) return;
 
-    variantesSection.innerHTML = "<h2>Variantes disponibles</h2>";
-    const grid = document.createElement("div");
-    grid.className = "variantes-grid";
-    variantesSection.appendChild(grid);
+      const contenedor = document.getElementById("seccion-variantes-dentro");
+      contenedor.innerHTML = "<h3>Variantes disponibles:</h3>";
 
-    variantes.forEach(v => {
-      const div = document.createElement("div");
-      div.className = "variante-card";
-      div.innerHTML = `
-        <input type="checkbox" id="var-${v.id}" data-id="${v.id}" data-nombre="${v.nombre}" data-precio="${v.precio_extra}" />
-        <label for="var-${v.id}">
-          <p><strong>${v.nombre}</strong></p>
-          <p>Tipo: ${v.tipo}</p>
-          <p>Precio extra: $${parseFloat(v.precio_extra).toFixed(2)}</p>
-          <p>Stock: ${v.stock}</p>
-        </label>
-      `;
-      grid.appendChild(div);
-    });
-
-    document.querySelectorAll("input[type='checkbox']").forEach(checkbox => {
-      checkbox.addEventListener("change", () => {
-        const id = parseInt(checkbox.dataset.id);
-        const nombre = checkbox.dataset.nombre;
-        const precio = parseFloat(checkbox.dataset.precio);
-
-        if (checkbox.checked) {
-          variantesSeleccionadas.push({ id, nombre, precio });
-        } else {
-          variantesSeleccionadas = variantesSeleccionadas.filter(v => v.id !== id);
-        }
+      const tipos = {};
+      variantes.forEach(v => {
+        if (!tipos[v.tipo]) tipos[v.tipo] = [];
+        tipos[v.tipo].push(v);
       });
+
+      for (const tipo in tipos) {
+        const grupo = document.createElement("div");
+        grupo.className = "grupo-variantes";
+        grupo.innerHTML = `<p><strong>${tipo}</strong></p>`;
+
+        tipos[tipo].forEach(v => {
+          const btn = document.createElement("button");
+          btn.className = "btn-variante";
+          btn.textContent = `${v.nombre} ${v.precio_extra ? `- $${parseFloat(v.precio_extra).toFixed(2)}` : ""}`;
+          btn.addEventListener("click", () => {
+            const yaSeleccionada = variantesSeleccionadas.find(sel => sel.id === v.id);
+            if (yaSeleccionada) {
+              variantesSeleccionadas = variantesSeleccionadas.filter(sel => sel.id !== v.id);
+              btn.classList.remove("activo");
+            } else {
+              variantesSeleccionadas = variantesSeleccionadas.filter(sel => sel.tipo !== v.tipo);
+              variantesSeleccionadas.push({ id: v.id, nombre: v.nombre, precio: parseFloat(v.precio_extra) || precioBase, tipo: v.tipo });
+              grupo.querySelectorAll(".btn-variante").forEach(b => b.classList.remove("activo"));
+              btn.classList.add("activo");
+            }
+            actualizarPrecio();
+          });
+          grupo.appendChild(btn);
+        });
+
+        contenedor.appendChild(grupo);
+      }
     });
-  });
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   mostrarUsuario();

@@ -85,7 +85,33 @@
     <p>&copy; 2025 Mielissimo</p>
   </footer>
 
-  <script type="module" src="js/navbar.js"></script>
+  <!-- 🛒 Botón flotante del carrito -->
+<button id="boton-carrito-flotante" onclick="window.location.href='carrito.html'" style="
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #ff69b4;
+  border: none;
+  border-radius: 50%;
+  padding: 0.8rem 1rem;
+  font-size: 1.5rem;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  cursor: pointer;
+  display: none;
+">
+  🛒 <span id="contador-flotante">0</span>
+</button>
+
+
+  <script type="module">
+  import { mostrarUsuario, mostrarBotonCarritoFlotante } from "./js/navbar.js";
+
+  document.addEventListener("DOMContentLoaded", () => {
+    mostrarUsuario();
+    mostrarBotonCarritoFlotante();
+  });
+</script>
+
   <script type="module" src="js/producto.js"></script>
 </body>
 </html>

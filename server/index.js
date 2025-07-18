@@ -336,20 +336,67 @@ app.post("/api/usuarios/login", (req, res) => {
 // ==============================
 // 🧾 COMPRAS
 // ==============================
-app.post("/api/compras", (req, res) => {
-  const { id_usuario, carrito } = req.body;
+app.post("/api/compras", async (req, res) => {
+  const { id_usuario, carrito, tipoEnvio } = req.body;
+
   if (!id_usuario || !Array.isArray(carrito) || carrito.length === 0) {
-    return res.status(400).json({ error: "Datos inválidos" });
+    return res.status(400).json({ error: "Datos inválidos para la compra." });
   }
 
-  const sql = "INSERT INTO compras (id_usuario, id_producto, cantidad) VALUES ?";
-  const valores = carrito.map(item => [id_usuario, item.id, item.cantidad]);
+  try {
+    const fecha = new Date().toISOString().slice(0, 19).replace("T", " ");
 
-  db.query(sql, [valores], err => {
-    if (err) return res.status(500).json({ error: "Error al registrar compra" });
-    res.status(201).json({ mensaje: "Compra registrada correctamente" });
-  });
+    let total = 0;
+
+    // Verificamos precios y stock reales desde la base de datos
+    for (const item of carrito) {
+      const [productoRows] = await db.query("SELECT precio, stock FROM productos WHERE id = ?", [item.id]);
+
+      if (productoRows.length === 0) {
+        return res.status(404).json({ error: `Producto con ID ${item.id} no encontrado.` });
+      }
+
+      const producto = productoRows[0];
+
+      if (producto.stock < item.cantidad) {
+        return res.status(400).json({ error: `Stock insuficiente para el producto con ID ${item.id}.` });
+      }
+
+      total += item.precio * item.cantidad;
+
+      // Descontamos el stock
+      const nuevoStock = producto.stock - item.cantidad;
+      await db.query("UPDATE productos SET stock = ? WHERE id = ?", [nuevoStock, item.id]);
+    }
+
+    // Si el tipo de envío es "envio", sumamos 1000 ARS
+    if (tipoEnvio === "envio") {
+      total += 1000;
+    }
+
+    // Insertamos la compra
+    const [resultadoCompra] = await db.query(
+      "INSERT INTO compras (id_usuario, fecha, total, tipo_envio) VALUES (?, ?, ?, ?)",
+      [id_usuario, fecha, total, tipoEnvio || "retiro"]
+    );
+
+    const id_compra = resultadoCompra.insertId;
+
+    // Insertamos los productos comprados
+    for (const item of carrito) {
+      await db.query(
+        "INSERT INTO productos_comprados (id_compra, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)",
+        [id_compra, item.id, item.cantidad, item.precio]
+      );
+    }
+
+    res.json({ mensaje: "Compra registrada correctamente." });
+  } catch (error) {
+    console.error("Error al registrar compra:", error);
+    res.status(500).json({ error: "Error al procesar la compra." });
+  }
 });
+
 
 app.get("/api/compras/:id_usuario", (req, res) => {
   const id = req.params.id_usuario;
@@ -379,15 +426,15 @@ app.get("/api/variantes/:id_producto", (req, res) => {
 });
 
 app.post("/api/variantes", upload.single("imagen"), (req, res) => {
-  const { id_producto, nombre, precio_extra, stock, tipo } = req.body;
+  const { id_producto, nombre, precio, stock, tipo } = req.body;
 
-  if (!id_producto || !nombre || stock === undefined || !tipo) {
-    return res.status(400).json({ error: "Faltan campos" });
-  }
+  const precioFinal = precio === "" || precio === undefined || precio === null
+    ? null
+    : parseFloat(precio);
 
   db.query(
     "INSERT INTO variantes (id_producto, nombre, precio_extra, stock, tipo) VALUES (?, ?, ?, ?, ?)",
-    [id_producto, nombre, precio_extra || 0, stock, tipo],
+    [id_producto, nombre, precioFinal, stock, tipo],
     (err, resultado) => {
       if (err) return res.status(500).json({ error: "Error al crear variante" });
       res.status(201).json({ mensaje: "Variante creada correctamente", id: resultado.insertId });
@@ -395,10 +442,15 @@ app.post("/api/variantes", upload.single("imagen"), (req, res) => {
   );
 });
 
+
 app.put("/api/variantes/:id", upload.single("imagen"), (req, res) => {
   const { id } = req.params;
   const { nombre, precio_extra, stock } = req.body;
   const nuevaImagen = req.file ? "/uploads/" + req.file.filename : null;
+
+  const precioFinal = precio_extra === "" || precio_extra === undefined || precio_extra === null
+    ? null
+    : parseFloat(precio_extra);
 
   db.query("SELECT imagen FROM variantes WHERE id = ?", [id], (err, resultados) => {
     if (err || resultados.length === 0) {
@@ -414,10 +466,10 @@ app.put("/api/variantes/:id", upload.single("imagen"), (req, res) => {
       const rutaVieja = path.join(__dirname, imagenAnterior);
       fs.unlink(rutaVieja, () => {});
       sql = "UPDATE variantes SET nombre=?, precio_extra=?, stock=?, imagen=? WHERE id=?";
-      valores = [nombre, precio_extra || 0, stock, nuevaImagen, id];
+      valores = [nombre, precioFinal, stock, nuevaImagen, id];
     } else {
       sql = "UPDATE variantes SET nombre=?, precio_extra=?, stock=? WHERE id=?";
-      valores = [nombre, precio_extra || 0, stock, id];
+      valores = [nombre, precioFinal, stock, id];
     }
 
     db.query(sql, valores, (err) => {
@@ -434,6 +486,7 @@ app.delete("/api/variantes/:id", (req, res) => {
     res.json({ mensaje: "Variante eliminada correctamente" });
   });
 });
+
 
 // ==============================
 // ❤️ FAVORITOS

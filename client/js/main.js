@@ -1,5 +1,6 @@
 import { mostrarUsuario, actualizarContadorCarrito } from "./navbar.js";
 
+
 const contenedorCategorias = document.getElementById("categorias-horizontal");
 const contenedorProductos = document.getElementById("productos");
 let productosCache = [];
@@ -167,6 +168,8 @@ let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 function guardarCarrito() {
   localStorage.setItem("carrito", JSON.stringify(carrito));
   actualizarContadorCarrito();
+  actualizarContadorCarritoFlotante();
+
 }
 
 function agregarAlCarrito(id) {
@@ -193,6 +196,23 @@ function agregarAlCarrito(id) {
   }
 }
 window.agregarAlCarrito = agregarAlCarrito;
+
+function actualizarContadorCarritoFlotante() {
+  const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+  const total = carrito.reduce((sum, prod) => sum + prod.cantidad, 0);
+  const contador = document.getElementById("contador-flotante");
+  if (contador) {
+    contador.textContent = total;
+  }
+}
+
+const botonCarritoFlotante = document.getElementById("boton-carrito-flotante");
+if (botonCarritoFlotante) {
+  botonCarritoFlotante.addEventListener("click", () => {
+    window.location.href = "carrito.html";
+  });
+}
+
 
 // 📧 Newsletter
 const formNewsletter = document.getElementById("form-newsletter");
@@ -232,9 +252,7 @@ if (formNewsletter) {
 
 // 🚀 Inicio
 document.addEventListener("DOMContentLoaded", async () => {
-  mostrarUsuario();
-  actualizarContadorCarrito();
-  cargarCategorias();
+  
 
   productosCache = await fetch("/api/productos").then(r => r.json());
   renderizarProductos(productosCache);
@@ -256,4 +274,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       renderizarProductos(filtrados);
     });
   }
+
+ mostrarUsuario();
+  actualizarContadorCarrito();
+  cargarCategorias();
+
 });

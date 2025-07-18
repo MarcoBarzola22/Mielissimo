@@ -1,5 +1,3 @@
-// admin.js COMPLETO con mejoras solicitadas
-
 const formulario = document.getElementById("formulario-producto");
 const mensaje = document.getElementById("mensaje");
 const productosContainer = document.getElementById("lista-productos");
@@ -21,13 +19,27 @@ const btnCancelarVariante = document.getElementById("btnCancelarEdicionVariante"
 const btnCancelarProducto = document.getElementById("cancelar-edicion-producto");
 const btnCancelarCategoria = document.getElementById("cancelar-edicion-categoria");
 
-
 let varianteEditandoId = null;
 let productoEnEdicion = null;
 let categoriaEnEdicion = null;
 let productoParaVariantes = null;
 
 const token = localStorage.getItem("tokenAdmin");
+
+// 🔄 Precio según tipo de variante
+const tipoVarianteInput = document.getElementById("tipoVariante");
+const precioVarianteInput = document.getElementById("precioExtra");
+
+tipoVarianteInput.addEventListener("change", () => {
+  if (tipoVarianteInput.value === "Sabor") {
+    precioVarianteInput.disabled = true;
+    precioVarianteInput.value = "";
+  } else {
+    precioVarianteInput.disabled = false;
+  }
+});
+
+
 
 function cargarProductos(filtro = "") {
   const mostrarInactivos = checkboxInactivos.checked;
@@ -298,6 +310,15 @@ document.addEventListener("click", (e) => {
     document.getElementById("stockVariante").value = e.target.dataset.stock;
     btnAgregarVariante.textContent = "Guardar cambios";
     btnCancelarVariante.style.display = "inline";
+
+    // Actualización precio activo/inactivo al editar
+   if (e.target.dataset.tipo === "Sabor") {
+  document.getElementById("precioExtra").disabled = true;
+  document.getElementById("precioExtra").value = "";
+} else {
+  document.getElementById("precioExtra").disabled = false;
+}
+
   }
 });
 
@@ -306,7 +327,7 @@ function cargarVariantes(idProducto) {
     <tr>
       <th>Tipo</th>
       <th>Nombre de variante</th>
-      <th>Precio adicional</th>
+      <th>Precio</th>
       <th>Stock</th>
       <th>Acciones</th>
     </tr>
@@ -316,27 +337,52 @@ function cargarVariantes(idProducto) {
   })
     .then(res => res.json())
     .then(variantes => {
-      variantes.forEach(v => {
-        const fila = document.createElement("tr");
-        fila.innerHTML = `
-          <td>${v.tipo}</td>
-          <td>${v.nombre}</td>
-          <td>$${v.precio_extra}</td>
-          <td>${v.stock}</td>
-          <td>
-            <button class="editar-variante" data-id="${v.id}" data-tipo="${v.tipo}" data-nombre="${v.nombre}" data-precio="${v.precio_extra}" data-stock="${v.stock}">✏</button>
-            <button class="eliminar-variante" data-id="${v.id}">🗑</button>
-          </td>
-        `;
-        tablaVariantes.appendChild(fila);
-      });
+     variantes.forEach(v => {
+  const fila = document.createElement("tr");
+
+  const precioTexto =
+    v.tipo === "Tamaño"
+      ? (v.precio_extra !== null && v.precio_extra !== "" && !isNaN(v.precio_extra)
+          ? `$${parseFloat(v.precio_extra).toFixed(2)}`
+          : "$0.00")
+      : "-";
+
+  fila.innerHTML = `
+    <td>${v.tipo}</td>
+    <td>${v.nombre}</td>
+    <td>${precioTexto}</td>
+    <td>${v.stock}</td>
+    <td>
+      <button class="editar-variante" data-id="${v.id}" data-tipo="${v.tipo}" data-nombre="${v.nombre}" data-precio="${v.precio_extra}" data-stock="${v.stock}">✏</button>
+      <button class="eliminar-variante" data-id="${v.id}">🗑</button>
+    </td>
+  `;
+  tablaVariantes.appendChild(fila);
+});
+
+
     });
 }
 
 formularioVariante.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const datos = new FormData(formularioVariante);
-  datos.append("id_producto", productoParaVariantes);
+
+  const tipo = document.getElementById("tipoVariante").value;
+  const nombre = document.getElementById("nombreVariante").value;
+  const inputPrecio = document.getElementById("precioExtra");
+  const inputStock = document.getElementById("stockVariante");
+
+ const precioAdicional = inputPrecio.disabled || inputPrecio.value.trim() === "" ? null : parseFloat(inputPrecio.value);
+
+
+
+  const body = {
+    id_producto: parseInt(productoParaVariantes),
+    tipo,
+    nombre,
+    precio: precioAdicional,
+    stock: parseInt(inputStock.value),
+  };
 
   const metodo = varianteEditandoId ? "PUT" : "POST";
   const url = varianteEditandoId ? `/api/variantes/${varianteEditandoId}` : "/api/variantes";
@@ -344,9 +390,13 @@ formularioVariante.addEventListener("submit", async (e) => {
   try {
     const res = await fetch(url, {
       method: metodo,
-      headers: { Authorization: `Bearer ${token}` },
-      body: datos
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(body)
     });
+
     const data = await res.json();
     if (res.ok) {
       mensajeVariante.textContent = varianteEditandoId ? "✅ Variante actualizada" : "✅ Variante agregada";
@@ -355,6 +405,9 @@ formularioVariante.addEventListener("submit", async (e) => {
       btnAgregarVariante.textContent = "Agregar variante";
       btnCancelarVariante.style.display = "none";
       varianteEditandoId = null;
+      tipoVarianteInput.value = "Tamaño";
+precioVarianteInput.disabled = false;
+
       cargarVariantes(productoParaVariantes);
     } else {
       mensajeVariante.textContent = data.error || "Error";
@@ -366,6 +419,21 @@ formularioVariante.addEventListener("submit", async (e) => {
   }
 });
 
+// 🔄 Precio según tipo de variante
+
+tipoVarianteInput.addEventListener("change", () => {
+  if (tipoVarianteInput.value === "Sabor") {
+    precioVarianteInput.disabled = true;
+    precioVarianteInput.value = "";
+  } else {
+    precioVarianteInput.disabled = false;
+  }
+});
+
+if (tipoVarianteInput.value === "Sabor") {
+  precioVarianteInput.disabled = true;
+}
+
 botonLogout.addEventListener("click", () => {
   localStorage.removeItem("tokenAdmin");
   window.location.href = "login-admin.html";
@@ -376,3 +444,5 @@ checkboxInactivos.addEventListener("change", () => cargarProductos());
 
 cargarProductos();
 cargarCategorias();
+
+

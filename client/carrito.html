@@ -38,6 +38,23 @@
       <!-- Aquí se mostrarán los productos -->
     </section>
 
+    <div id="opciones-envio" style="margin: 1rem 0;">
+  <h3>¿Cómo querés recibir tu pedido?</h3>
+  <label>
+    <input type="radio" name="tipo-envio" value="envio" onchange="calcularTotal()">
+ Retiro en local
+  </label>
+  <br>
+  <label>
+    <input type="radio" name="tipo-envio" value="retiro" checked onchange="calcularTotal()">
+ Envío a domicilio (+ ARS $1000)
+  </label>
+</div>
+
+<h3 class="total-compra">Total a pagar: <span id="total-compra" style="color: green;">ARS $0.00</span></h3>
+
+
+
     <!-- 🔘 Botón para confirmar la compra -->
 <div style="text-align: center; margin-top: 2rem;">
   <button id="confirmar-compra">Confirmar compra</button>

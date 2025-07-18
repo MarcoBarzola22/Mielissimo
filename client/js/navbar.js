@@ -44,8 +44,27 @@ export function mostrarUsuario() {
 }
 
 export function actualizarContadorCarrito() {
-  const contador = document.getElementById("contador-carrito");
-  const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-  const total = carrito.reduce((acc, p) => acc + p.cantidad, 0);
-  if (contador) contador.textContent = `(${total})`;
+  const intentoActualizar = () => {
+    const contador = document.getElementById("contador-carrito");
+    if (contador) {
+      const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+      const total = carrito.reduce((acc, p) => acc + p.cantidad, 0);
+      contador.textContent = `(${total})`;
+    } else {
+      setTimeout(intentoActualizar, 100); // vuelve a intentar si aún no existe
+    }
+  };
+
+  intentoActualizar();
+}
+
+
+export function mostrarBotonCarritoFlotante() {
+  const ruta = window.location.pathname;
+  const estaEnCarrito = ruta.includes("carrito.html");
+  const botonCarrito = document.getElementById("boton-carrito-flotante");
+
+  if (botonCarrito) {
+    botonCarrito.style.display = estaEnCarrito ? "none" : "block";
+  }
 }

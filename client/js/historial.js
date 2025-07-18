@@ -1,7 +1,7 @@
 import { mostrarUsuario } from "./navbar.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  mostrarUsuario();
+ 
 
   const id_usuario = localStorage.getItem("id_usuario");
   const contenedor = document.getElementById("historial-compras");
@@ -37,4 +37,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (err) {
     contenedor.innerHTML = "<p>Error al cargar historial.</p>";
   }
+ mostrarUsuario();
+  actualizarContadorCarrito();
+  cargarFavoritos();
+  
 });

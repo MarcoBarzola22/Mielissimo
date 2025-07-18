@@ -58,7 +58,9 @@
           <option value="Tamaño">Tamaño</option>
         </select>
         <input type="text" id="nombreVariante" name="nombre" placeholder="Nombre de la variante" required />
-        <input type="number" id="precioExtra" name="precio_extra" placeholder="Precio adicional" step="0.01" required />
+       <input type="number" id="precioExtra" name="precio_extra" placeholder="Precio" step="0.01" />
+
+
         <input type="number" id="stockVariante" name="stock" placeholder="Stock" required />
         <button type="submit" id="btnAgregarVariante">Agregar variante</button>
         <button type="button" id="btnCancelarEdicionVariante" style="display:none;">Cancelar edición</button>
@@ -70,7 +72,7 @@
           <tr>
             <th>Tipo</th>
             <th>Nombre de variante</th>
-            <th>Precio adicional</th>
+            <th>Precio</th>
             <th>Stock</th>
             <th>Acciones</th>
           </tr>
