@@ -1239,3 +1239,11 @@ main h1 {
   text-align: center;
 }
 
+#mensaje-compra {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 8px;
+  font-weight: bold;
+  background-color: #eafaf1;
+  color: green;
+}

@@ -66,8 +66,9 @@ function calcularTotal() {
   let total = carrito.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
 
   if (tipoEnvio === "envio") {
-    total += 1000; // Costo fijo de envío
-  }
+  total += 1800; // Nuevo costo de envío
+}
+
 
   const totalSpan = document.getElementById("total-compra");
   if (totalSpan) {
@@ -78,47 +79,90 @@ function calcularTotal() {
 async function confirmarCompra() {
   const mensaje = document.getElementById("mensaje-compra");
   const id_usuario = Number(localStorage.getItem("id_usuario"));
+  const token = localStorage.getItem("token_usuario");
 
-  if (!id_usuario) {
-    mensaje.textContent = "Necesitás iniciar sesión para comprar.";
+  if (!id_usuario || !token) {
+    mensaje.textContent = "❌ Necesitás iniciar sesión para comprar.";
     mensaje.style.color = "red";
+    mensaje.style.display = "block";
     return;
   }
 
   if (carrito.length === 0) {
-    mensaje.textContent = "Tu carrito está vacío.";
+    mensaje.textContent = "🛒 Tu carrito está vacío.";
     mensaje.style.color = "red";
+    mensaje.style.display = "block";
     return;
   }
 
+  const carritoCopia = [...carrito];
   const tipoEnvio = document.querySelector('input[name="tipo-envio"]:checked')?.value || "retiro";
+  const totalTexto = document.getElementById("total-compra").textContent.replace(/[^\d.-]/g, "").trim();
+  const total = parseFloat(totalTexto);
 
   try {
     const res = await fetch("/api/compras", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id_usuario, carrito, tipoEnvio }) // Enviamos tipoEnvio también
+      body: JSON.stringify({ id_usuario, carrito: carritoCopia, tipoEnvio, total })
     });
 
     const data = await res.json();
 
     if (res.ok) {
-      mensaje.textContent = "¡Compra confirmada con éxito!";
+   const nombreUsuario = localStorage.getItem("nombre_usuario") || "usuario";
+const tipo = tipoEnvio === "envio"
+  ? "📦 Entrega: Envío a domicilio"
+  : "🏠 Retiro en local";
+
+const detallesProductos = carritoCopia.map(item => {
+  let variantesTexto = "";
+  if (item.variantes?.length > 0) {
+    variantesTexto = item.variantes.map(v => `🧩 ${v.tipo}: ${v.nombre}`).join(" | ");
+  }
+  return `🧁 ${item.nombre}${variantesTexto ? " | " + variantesTexto : ""} | 🔢 Cantidad: ${item.cantidad}`;
+}).join("\n");
+
+const mensajeTexto =
+`🛒 *Hola! Quiero hacer una compra:*\n\n${detallesProductos}\n\n${tipo}\n💰 Total: $${total} ARS\n👤 Usuario: ${nombreUsuario}`;
+
+const textoCodificado = encodeURIComponent(mensajeTexto);
+const numeroWhatsapp = "2657635540";
+const linkWhatsapp = `https://wa.me/54${numeroWhatsapp}?text=${textoCodificado}`;
+
+// Redirigir en 1 segundo
+setTimeout(() => {
+  window.location.href = linkWhatsapp;
+}, 1000);
+
+
+      // Mostrar mensaje antes de redirigir
+      mensaje.innerHTML = "✅ <strong>¡Compra confirmada con éxito! Redirigiendo a WhatsApp...</strong>";
       mensaje.style.color = "green";
-      carrito = [];
-      localStorage.setItem("carrito", JSON.stringify([]));
-      renderizarCarrito();
-      actualizarContadorCarrito();
+      mensaje.style.display = "block";
+
+      // Evitar borrar el mensaje antes de redirigir
+      setTimeout(() => {
+        // Limpiar carrito
+        carrito = [];
+        localStorage.setItem("carrito", JSON.stringify([]));
+        renderizarCarrito();
+        actualizarContadorCarrito();
+        window.location.href = linkWhatsapp;
+      }, 1000);
     } else {
-      mensaje.textContent = data.error || "Error al confirmar compra.";
+      mensaje.textContent = data.error || "❌ Error al confirmar compra.";
       mensaje.style.color = "red";
+      mensaje.style.display = "block";
     }
   } catch (err) {
     console.error(err);
-    mensaje.textContent = "Error de conexión con el servidor.";
+    mensaje.textContent = "❌ Error de conexión con el servidor.";
     mensaje.style.color = "red";
+    mensaje.style.display = "block";
   }
 }
+
 
 document.addEventListener("DOMContentLoaded", () => {
   mostrarUsuario();

@@ -336,67 +336,37 @@ app.post("/api/usuarios/login", (req, res) => {
 // ==============================
 // 🧾 COMPRAS
 // ==============================
-app.post("/api/compras", async (req, res) => {
-  const { id_usuario, carrito, tipoEnvio } = req.body;
+app.post("/api/compras", (req, res) => {
+  const { id_usuario, carrito, tipoEnvio, total } = req.body;
 
-  if (!id_usuario || !Array.isArray(carrito) || carrito.length === 0) {
+  if (!id_usuario || !Array.isArray(carrito) || carrito.length === 0 || isNaN(total)) {
     return res.status(400).json({ error: "Datos inválidos para la compra." });
   }
 
-  try {
-    const fecha = new Date().toISOString().slice(0, 19).replace("T", " ");
+  const fecha_compra = new Date().toISOString().slice(0, 19).replace("T", " ");
+  const tipo = tipoEnvio || "retiro";
 
-    let total = 0;
+  let insertados = 0;
 
-    // Verificamos precios y stock reales desde la base de datos
-    for (const item of carrito) {
-      const [productoRows] = await db.query("SELECT precio, stock FROM productos WHERE id = ?", [item.id]);
+  for (const item of carrito) {
+    db.query(
+      `INSERT INTO compras (id_usuario, id_producto, cantidad, fecha_compra, tipo_envio)
+       VALUES (?, ?, ?, ?, ?)`,
+      [id_usuario, item.id, item.cantidad, fecha_compra, tipo],
+      (err) => {
+        if (err) {
+          console.error("Error al insertar producto:", err);
+          return res.status(500).json({ error: "Error al registrar la compra." });
+        }
 
-      if (productoRows.length === 0) {
-        return res.status(404).json({ error: `Producto con ID ${item.id} no encontrado.` });
+        insertados++;
+        if (insertados === carrito.length) {
+          res.json({ mensaje: "Compra registrada correctamente." });
+        }
       }
-
-      const producto = productoRows[0];
-
-      if (producto.stock < item.cantidad) {
-        return res.status(400).json({ error: `Stock insuficiente para el producto con ID ${item.id}.` });
-      }
-
-      total += item.precio * item.cantidad;
-
-      // Descontamos el stock
-      const nuevoStock = producto.stock - item.cantidad;
-      await db.query("UPDATE productos SET stock = ? WHERE id = ?", [nuevoStock, item.id]);
-    }
-
-    // Si el tipo de envío es "envio", sumamos 1000 ARS
-    if (tipoEnvio === "envio") {
-      total += 1000;
-    }
-
-    // Insertamos la compra
-    const [resultadoCompra] = await db.query(
-      "INSERT INTO compras (id_usuario, fecha, total, tipo_envio) VALUES (?, ?, ?, ?)",
-      [id_usuario, fecha, total, tipoEnvio || "retiro"]
     );
-
-    const id_compra = resultadoCompra.insertId;
-
-    // Insertamos los productos comprados
-    for (const item of carrito) {
-      await db.query(
-        "INSERT INTO productos_comprados (id_compra, id_producto, cantidad, precio_unitario) VALUES (?, ?, ?, ?)",
-        [id_compra, item.id, item.cantidad, item.precio]
-      );
-    }
-
-    res.json({ mensaje: "Compra registrada correctamente." });
-  } catch (error) {
-    console.error("Error al registrar compra:", error);
-    res.status(500).json({ error: "Error al procesar la compra." });
   }
 });
-
 
 app.get("/api/compras/:id_usuario", (req, res) => {
   const id = req.params.id_usuario;
