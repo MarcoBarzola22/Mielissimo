@@ -1,4 +1,3 @@
-// navbar.js
 export function mostrarUsuario() {
   const nombreUsuario = localStorage.getItem("nombre_usuario");
   const loginLi = document.getElementById("login-li");
@@ -11,12 +10,11 @@ export function mostrarUsuario() {
     if (usuarioLogueadoLi) {
       usuarioLogueadoLi.textContent = `👤 ${nombreUsuario}`;
       usuarioLogueadoLi.style.display = "inline";
-      usuarioLogueadoLi.style.color = "white"; // Cambiar si el navbar es blanco
+      usuarioLogueadoLi.style.color = "white";
     }
     if (historialLi) historialLi.style.display = "inline";
     if (favoritosLi) favoritosLi.style.display = "inline";
 
-    // Agregar botón de cerrar sesión
     if (!document.getElementById("btn-logout")) {
       const liCerrar = document.createElement("li");
       liCerrar.id = "btn-logout";
@@ -31,7 +29,6 @@ export function mostrarUsuario() {
 
       document.querySelector("nav ul").appendChild(liCerrar);
     }
-
   } else {
     if (loginLi) loginLi.style.display = "inline";
     if (usuarioLogueadoLi) usuarioLogueadoLi.style.display = "none";
@@ -44,27 +41,28 @@ export function mostrarUsuario() {
 }
 
 export function actualizarContadorCarrito() {
-  const intentoActualizar = () => {
-    const contador = document.getElementById("contador-carrito");
-    if (contador) {
-      const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-      const total = carrito.reduce((acc, p) => acc + p.cantidad, 0);
-      contador.textContent = `(${total})`;
-    } else {
-      setTimeout(intentoActualizar, 100); // vuelve a intentar si aún no existe
-    }
-  };
+  const contador = document.getElementById("contador-carrito");
+  const contadorFlotante = document.getElementById("contador-carrito-flotante");
+  const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+  const total = carrito.reduce((acc, p) => acc + p.cantidad, 0);
 
-  intentoActualizar();
+  if (contador) contador.textContent = `(${total})`;
+  if (contadorFlotante) contadorFlotante.textContent = `(${total})`;
 }
 
+export function crearBotonCarritoFlotante() {
+  if (window.location.pathname.includes("carrito.html")) return;
 
-export function mostrarBotonCarritoFlotante() {
-  const ruta = window.location.pathname;
-  const estaEnCarrito = ruta.includes("carrito.html");
-  const botonCarrito = document.getElementById("boton-carrito-flotante");
+  if (document.getElementById("boton-carrito-flotante")) return; // Evita duplicados
 
-  if (botonCarrito) {
-    botonCarrito.style.display = estaEnCarrito ? "none" : "block";
-  }
+  const btn = document.createElement("div");
+  btn.id = "boton-carrito-flotante";
+  btn.innerHTML = `
+    <a href="carrito.html" class="boton-carrito-flotante">
+      🛒 <span id="contador-carrito-flotante">(0)</span>
+    </a>
+  `;
+  document.body.appendChild(btn);
+
+  actualizarContadorCarrito(); // actualiza contador al crearlo
 }

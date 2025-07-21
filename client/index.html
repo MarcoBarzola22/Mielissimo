@@ -74,6 +74,13 @@
   <p id="mensaje-newsletter"></p>
 </section>
 
+<!-- Botón flotante del carrito -->
+<a href="carrito.html" class="boton-carrito-flotante" id="boton-carrito-flotante">
+  🛒 <span id="contador-carrito-flotante">(0)</span>
+</a>
+
+
+
   <!-- 📞 Footer -->
   <footer>
     <p>© 2025 Mielissimo – Villa Mercedes</p>
@@ -82,6 +89,12 @@
 
   <script type="module" src="js/main.js"></script>
 
+<script type="module">
+  import { mostrarUsuario, actualizarContadorCarrito, crearBotonCarritoFlotante } from "./js/navbar.js";
+  mostrarUsuario();
+  actualizarContadorCarrito();
+  crearBotonCarritoFlotante();
+</script>
 
 
 </body>

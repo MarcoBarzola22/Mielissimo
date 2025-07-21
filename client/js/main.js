@@ -1,4 +1,5 @@
-import { mostrarUsuario, actualizarContadorCarrito } from "./navbar.js";
+import { mostrarUsuario, actualizarContadorCarrito, crearBotonCarritoFlotante } from "./navbar.js";
+
 
 
 const contenedorCategorias = document.getElementById("categorias-horizontal");
@@ -275,8 +276,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
- mostrarUsuario();
+mostrarUsuario();
   actualizarContadorCarrito();
+  crearBotonCarritoFlotante();
   cargarCategorias();
 
 });

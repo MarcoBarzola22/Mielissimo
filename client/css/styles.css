@@ -99,30 +99,16 @@ footer {
   outline: none;
 }
 
-#boton-carrito-flotante {
+.boton-carrito-flotante {
   position: fixed;
   bottom: 20px;
   right: 20px;
-  background-color: #ff69b4;
+  background-color: #ef5579;
   color: white;
-  border: none;
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  font-size: 1.5rem;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  cursor: pointer;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#boton-carrito-flotante:hover {
-  background-color: #ff1493;
-}
-
-#contador-flotante {
-  font-size: 0.9rem;
-  margin-left: 5px;
+  padding: 12px 16px;
+  border-radius: 50px;
+  text-decoration: none;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  font-size: 1.2rem;
 }

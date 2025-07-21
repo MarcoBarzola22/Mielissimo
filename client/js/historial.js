@@ -1,4 +1,5 @@
-import { mostrarUsuario } from "./navbar.js";
+import { mostrarUsuario, actualizarContadorCarrito, crearBotonCarritoFlotante } from "./navbar.js";
+
 
 document.addEventListener("DOMContentLoaded", async () => {
  
@@ -37,8 +38,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   } catch (err) {
     contenedor.innerHTML = "<p>Error al cargar historial.</p>";
   }
- mostrarUsuario();
+mostrarUsuario();
   actualizarContadorCarrito();
+  crearBotonCarritoFlotante();
   cargarFavoritos();
   
 });

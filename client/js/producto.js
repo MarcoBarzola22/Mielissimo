@@ -1,4 +1,5 @@
-import { mostrarUsuario, actualizarContadorCarrito } from "./navbar.js";
+import { mostrarUsuario, actualizarContadorCarrito, crearBotonCarritoFlotante } from "./navbar.js";
+
 
 const infoProducto = document.getElementById("info-producto");
 const variantesSection = document.getElementById("variantes-producto");
@@ -179,7 +180,9 @@ function cargarVariantesVisuales() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  mostrarUsuario();
+ mostrarUsuario();
   actualizarContadorCarrito();
+  crearBotonCarritoFlotante();
   cargarProducto();
+  
 });

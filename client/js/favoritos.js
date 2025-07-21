@@ -1,4 +1,5 @@
-import { mostrarUsuario, actualizarContadorCarrito } from "./navbar.js";
+import { mostrarUsuario, actualizarContadorCarrito, crearBotonCarritoFlotante } from "./navbar.js";
+
 
 const contenedor = document.getElementById("productos");
 const token = localStorage.getItem("token_usuario");
@@ -114,7 +115,9 @@ function agregarAlCarrito(id) {
 
 // 🚀 Inicio
 document.addEventListener("DOMContentLoaded", () => {
-  mostrarUsuario();
+mostrarUsuario();
   actualizarContadorCarrito();
+  crearBotonCarritoFlotante();
   cargarFavoritos();
+  
 });
