@@ -138,28 +138,28 @@ app.get("/api/productos", (req, res) => {
 });
 
 app.post("/api/productos", verificarToken, upload.single("imagen"), (req, res) => {
-  const { nombre, precio, stock, categoria_id } = req.body;
+  const { nombre, precio, categoria_id } = req.body;
   const imagen = req.file ? "/uploads/" + req.file.filename : null;
 
-  if (!nombre || !precio || stock === undefined || !categoria_id || !imagen) {
+  if (!nombre || !precio || !categoria_id || !imagen) {
     return res.status(400).json({ error: "Faltan datos del producto" });
   }
 
   db.query(
-    "INSERT INTO productos (nombre, precio, imagen, stock, categoria_id) VALUES (?, ?, ?, ?, ?)",
-    [nombre, precio, imagen, stock, categoria_id],
+    "INSERT INTO productos (nombre, precio, imagen, categoria_id) VALUES (?, ?, ?, ?)",
+    [nombre, precio, imagen, categoria_id],
     (err, resultado) => {
       if (err) return res.status(500).json({ error: "Error al insertar producto" });
       res.status(201).json({ mensaje: "Producto agregado", id: resultado.insertId });
     }
   );
 });
- 
-app.put("/api/productos/:id", verificarToken, upload.single("imagen"), (req, res) => {
-  const { id } = req.params;
-  const { nombre, precio, stock, categoria_id } = req.body;
 
-  if (!nombre || !precio || stock === undefined || !categoria_id) {
+ app.put("/api/productos/:id", verificarToken, upload.single("imagen"), (req, res) => {
+  const { id } = req.params;
+  const { nombre, precio, categoria_id } = req.body;
+
+  if (!nombre || !precio || !categoria_id) {
     return res.status(400).json({ error: "Faltan datos" });
   }
 
@@ -172,11 +172,11 @@ app.put("/api/productos/:id", verificarToken, upload.single("imagen"), (req, res
     if (req.file) {
       const nuevaImagen = "/uploads/" + req.file.filename;
       fs.unlink(path.join(__dirname, producto.imagen), () => {});
-      sql = "UPDATE productos SET nombre = ?, precio = ?, imagen = ?, stock = ?, categoria_id = ? WHERE id = ?";
-      valores = [nombre, precio, nuevaImagen, stock, categoria_id, id];
+      sql = "UPDATE productos SET nombre = ?, precio = ?, imagen = ?, categoria_id = ? WHERE id = ?";
+      valores = [nombre, precio, nuevaImagen, categoria_id, id];
     } else {
-      sql = "UPDATE productos SET nombre = ?, precio = ?, stock = ?, categoria_id = ? WHERE id = ?";
-      valores = [nombre, precio, stock, categoria_id, id];
+      sql = "UPDATE productos SET nombre = ?, precio = ?, categoria_id = ? WHERE id = ?";
+      valores = [nombre, precio, categoria_id, id];
     }
 
     db.query(sql, valores, err => {
@@ -185,6 +185,8 @@ app.put("/api/productos/:id", verificarToken, upload.single("imagen"), (req, res
     });
   });
 });
+
+
 
 app.delete("/api/productos/:id", verificarToken, (req, res) => {
   const { id } = req.params;
@@ -396,15 +398,15 @@ app.get("/api/variantes/:id_producto", (req, res) => {
 });
 
 app.post("/api/variantes", upload.single("imagen"), (req, res) => {
-  const { id_producto, nombre, precio, stock, tipo } = req.body;
+  const { id_producto, nombre, precio, tipo } = req.body;
 
   const precioFinal = precio === "" || precio === undefined || precio === null
     ? null
     : parseFloat(precio);
 
   db.query(
-    "INSERT INTO variantes (id_producto, nombre, precio_extra, stock, tipo) VALUES (?, ?, ?, ?, ?)",
-    [id_producto, nombre, precioFinal, stock, tipo],
+    "INSERT INTO variantes (id_producto, nombre, precio_extra, tipo) VALUES (?, ?, ?, ?)",
+    [id_producto, nombre, precioFinal, tipo],
     (err, resultado) => {
       if (err) return res.status(500).json({ error: "Error al crear variante" });
       res.status(201).json({ mensaje: "Variante creada correctamente", id: resultado.insertId });
@@ -415,7 +417,7 @@ app.post("/api/variantes", upload.single("imagen"), (req, res) => {
 
 app.put("/api/variantes/:id", upload.single("imagen"), (req, res) => {
   const { id } = req.params;
-  const { nombre, precio_extra, stock } = req.body;
+  const { nombre, precio_extra } = req.body;
   const nuevaImagen = req.file ? "/uploads/" + req.file.filename : null;
 
   const precioFinal = precio_extra === "" || precio_extra === undefined || precio_extra === null
@@ -435,11 +437,11 @@ app.put("/api/variantes/:id", upload.single("imagen"), (req, res) => {
     if (nuevaImagen) {
       const rutaVieja = path.join(__dirname, imagenAnterior);
       fs.unlink(rutaVieja, () => {});
-      sql = "UPDATE variantes SET nombre=?, precio_extra=?, stock=?, imagen=? WHERE id=?";
-      valores = [nombre, precioFinal, stock, nuevaImagen, id];
+      sql = "UPDATE variantes SET nombre=?, precio_extra=?, imagen=? WHERE id=?";
+      valores = [nombre, precioFinal, nuevaImagen, id];
     } else {
-      sql = "UPDATE variantes SET nombre=?, precio_extra=?, stock=? WHERE id=?";
-      valores = [nombre, precioFinal, stock, id];
+      sql = "UPDATE variantes SET nombre=?, precio_extra=? WHERE id=?";
+      valores = [nombre, precioFinal, id];
     }
 
     db.query(sql, valores, (err) => {
@@ -448,6 +450,7 @@ app.put("/api/variantes/:id", upload.single("imagen"), (req, res) => {
     });
   });
 });
+
 
 app.delete("/api/variantes/:id", (req, res) => {
   const { id } = req.params;
