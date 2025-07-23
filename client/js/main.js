@@ -9,7 +9,7 @@ let productosVisibles = []; // cache local de lo que se muestra ahora
 
 // 🔃 Cargar categorías como botones pill
 function cargarCategorias() {
-  fetch("/api/categorias")
+  fetch("https://mielissimo.onrender.com/api/categorias")
     .then(res => res.json())
     .then(categorias => {
       if (!contenedorCategorias) return;
@@ -44,8 +44,8 @@ document.addEventListener("click", (e) => {
     e.target.classList.add("activa");
 
     const url = idCategoria === "todas"
-      ? "/api/productos"
-      : `/api/productos?categoria=${idCategoria}`;
+      ? "https://mielissimo.onrender.com/api/productos"
+      : `https://mielissimo.onrender.com/api/productos?categoria=${idCategoria}`;
 
     fetch(url)
       .then(res => res.json())
@@ -60,7 +60,7 @@ async function obtenerFavoritos() {
   if (!tokenUsuario) return [];
 
   try {
-    const res = await fetch("/api/favoritos", {
+    const res = await fetch("https://mielissimo.onrender.com/api/favoritos", {
       headers: { Authorization: `Bearer ${tokenUsuario}` }
     });
 
@@ -134,7 +134,7 @@ async function renderizarProductos(productos) {
 
         try {
           if (favoritos.includes(id)) {
-            await fetch(`/api/favoritos/${id}`, {
+            await fetch(`https://mielissimo.onrender.com/api/favoritos/${id}`, {
               method: "DELETE",
               headers: { Authorization: `Bearer ${tokenUsuario}` }
             });
@@ -142,7 +142,7 @@ async function renderizarProductos(productos) {
             icono.style.color = "#999";
             favoritos.splice(favoritos.indexOf(id), 1);
           } else {
-            await fetch("/api/favoritos", {
+            await fetch("https://mielissimo.onrender.com/api/favoritos", {
               method: "POST",
               headers: {
                 "Content-Type": "application/json",
@@ -188,7 +188,7 @@ function agregarAlCarrito(id) {
     productoExistente.cantidad++;
     guardarCarrito();
   } else {
-    fetch(`/api/productos`)
+    fetch(`https://mielissimo.onrender.com/api/productos`)
       .then(res => res.json())
       .then(productos => {
         const prod = productos.find(p => p.id === id);
@@ -237,7 +237,7 @@ if (formNewsletter) {
     const email = inputEmail.value.trim();
 
     try {
-      const res = await fetch("/api/newsletter", {
+      const res = await fetch("https://mielissimo.onrender.com/api/newsletter", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -266,7 +266,7 @@ if (formNewsletter) {
 document.addEventListener("DOMContentLoaded", async () => {
   
 
-  productosCache = await fetch("/api/productos").then(r => r.json());
+  productosCache = await fetch("https://mielissimo.onrender.com/api/productos").then(r => r.json());
   renderizarProductos(productosCache);
 
   // 🔍 Búsqueda en tiempo real por nombre (optimizada)

@@ -6,7 +6,7 @@ if (!id) {
   throw new Error("ID faltante");
 }
 
-fetch(`/api/productos`)
+fetch(`https://mielissimo.onrender.com/api/productos`)
   .then(res => res.json())
   .then(productos => {
     const producto = productos.find(p => p.id == id);

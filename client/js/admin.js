@@ -46,7 +46,7 @@ tipoVarianteInput.addEventListener("change", () => {
 function cargarProductos(filtro = "") {
   const mostrarInactivos = checkboxInactivos.checked;
 
-  fetch(`/api/productos?mostrarInactivos=${mostrarInactivos}`, {
+  fetch(`https://mielissimo.onrender.com/api/productos?mostrarInactivos=${mostrarInactivos}`, {
     headers: { Authorization: `Bearer ${token}` }
   })
     .then(res => res.json())
@@ -94,7 +94,7 @@ function cargarProductos(filtro = "") {
 }
 
 function cargarCategorias() {
-  fetch("/api/categorias")
+  fetch("https://mielissimo.onrender.com/api/categorias")
     .then(res => res.json())
     .then(categorias => {
       selectCategoria.innerHTML = '<option value="">Seleccionar categoría</option>';
@@ -122,7 +122,7 @@ function cargarCategorias() {
 formulario.addEventListener("submit", async (e) => {
   e.preventDefault();
   const datos = new FormData(formulario);
-  const url = productoEnEdicion ? `/api/productos/${productoEnEdicion}` : "/api/productos";
+  const url = productoEnEdicion ? `https://mielissimo.onrender.com/api/productos/${productoEnEdicion}` : "https://mielissimo.onrender.com/api/productos";
   const metodo = productoEnEdicion ? "PUT" : "POST";
 
   try {
@@ -185,7 +185,7 @@ function editarProducto(id, nombre, precio, imagen, categoria_id) {
 }
 
 function desactivarProducto(id) {
-  fetch(`/api/productos/desactivar/${id}`, {
+  fetch(`https://mielissimo.onrender.com/api/productos/desactivar/${id}`, {
     method: "PUT",
     headers: { Authorization: `Bearer ${token}` }
   })
@@ -203,7 +203,7 @@ function desactivarProducto(id) {
 
 
 function reactivarProducto(id) {
-  fetch(`/api/productos/activar/${id}`, {
+  fetch(`https://mielissimo.onrender.com/api/productos/activar/${id}`, {
     method: "PUT",
     headers: { Authorization: `Bearer ${token}` }
   })
@@ -224,7 +224,7 @@ formularioCategoria.addEventListener("submit", async (e) => {
   e.preventDefault();
   const nombre = formularioCategoria.nombre.value;
 
-  const url = categoriaEnEdicion ? `/api/categorias/${categoriaEnEdicion}` : "/api/categorias";
+  const url = categoriaEnEdicion ? `https://mielissimo.onrender.com/api/categorias/${categoriaEnEdicion}` : "https://mielissimo.onrender.com/api/categorias";
   const metodo = categoriaEnEdicion ? "PUT" : "POST";
 
   const res = await fetch(url, {
@@ -248,7 +248,7 @@ formularioCategoria.addEventListener("submit", async (e) => {
 });
 
 function eliminarCategoria(id) {
-  fetch(`/api/categorias/${id}`, {
+  fetch(`https://mielissimo.onrender.com/api/categorias/${id}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` }
   })
@@ -355,7 +355,7 @@ function cargarVariantes(idProducto) {
       <th>Acciones</th>
     </tr>
   `;
-  fetch(`/api/variantes/${idProducto}`, {
+  fetch(`https://mielissimo.onrender.com/api/variantes/${idProducto}`, {
     headers: { Authorization: `Bearer ${token}` }
   })
     .then(res => res.json())
@@ -406,7 +406,7 @@ formularioVariante.addEventListener("submit", async (e) => {
   };
 
   const metodo = varianteEditandoId ? "PUT" : "POST";
-  const url = varianteEditandoId ? `/api/variantes/${varianteEditandoId}` : "/api/variantes";
+  const url = varianteEditandoId ? `https://mielissimo.onrender.com/api/variantes/${varianteEditandoId}` : "https://mielissimo.onrender.com/api/variantes";
 
   try {
     const res = await fetch(url, {
