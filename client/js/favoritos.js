@@ -35,8 +35,7 @@ function renderizarFavoritos(productos) {
   <img src="${producto.imagen}" alt="${producto.nombre}">
   <h3>${producto.nombre}</h3>
   <p class="categoria-nombre">${producto.categoria_nombre || "Sin categoría"}</p>
-  <p class="precio">$${parseFloat(producto.precio).toFixed(2)}</p>
-  <p class="stock">Stock: ${producto.stock}</p>
+  <p class="precio">AR$ ${parseFloat(producto.precio).toFixed(2)}</p>
   <div class="acciones-producto">
     <button class="btn-carrito" data-id="${producto.id}">Agregar al carrito</button>
     <button class="btn-favorito favorito-activo" data-id="${producto.id}" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #ef5579;">❤️</button>

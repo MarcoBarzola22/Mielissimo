@@ -6,7 +6,7 @@
   <title>Mielissimo – Tienda de Dulces</title>
  <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="css/tienda.css">
-
+<link rel="icon" href="assets/favicon/favicon.ico" type="image/x-icon" />
 </head>
 <body>
 
@@ -16,23 +16,21 @@
   <div class="logo">
     <img src="assets/logoCanva.png" alt="Logo de Mielissimo" />
   </div>
-  <nav>
-    <ul>
-      <li><a href="index.html">Inicio</a></li>
-      <li>
-        <a href="carrito.html">
-          🛒 Carrito <span id="contador-carrito">(0)</span>
-        </a>
-      </li>
-      <li id="btn-favoritos" style="display: none;"><a href="favoritos.html">❤️ Favoritos</a></li>
+  <nav class="nav-publico">
+    <button class="menu-toggle" id="menu-toggle">☰</button>
 
-      <li id="login-li"><a href="login.html">Iniciar sesión</a></li>
-      <li id="usuario-logueado" class="usuario-logueado" style="display: none;"></li>
-      <li id="btn-historial" style="display: none;"><a href="historial.html">🧾 Historial</a></li>
-    </ul>
+    <div class="nav-links" id="nav-links">
+      <ul>
+        <li><a href="index.html">Inicio</a></li>
+        <li><a href="carrito.html">🛒 Carrito <span id="contador-carrito">(0)</span></a></li>
+        <li id="btn-favoritos" style="display: none;"><a href="favoritos.html">❤️ Favoritos</a></li>
+        <li id="login-li"><a href="login.html">Iniciar sesión</a></li>
+        <li id="btn-historial" style="display: none;"><a href="historial.html">🧾 Historial</a></li>
+        <li id="usuario-logueado" style="display: none; text-align: center;"></li>
+      </ul>
+    </div>
   </nav>
 </header>
-
 
 
   <!-- 🌿 Hero destacado -->
@@ -59,7 +57,7 @@
   <input type="text" id="buscador" placeholder="Buscar productos..." />
 </div>
 
-    <section id="productos" class="productos">
+    <section id="productos" class="productos scroll-productos">
       <!-- Productos renderizados por main.js -->
     </section>
   </main>
@@ -83,9 +81,16 @@
 
   <!-- 📞 Footer -->
   <footer>
-    <p>© 2025 Mielissimo – Villa Mercedes</p>
-    <p>WhatsApp: 2657-XXXXXX | Instagram: @mielissimo</p>
-  </footer>
+  <p>© 2025 Mielissimo – Villa Mercedes</p>
+  <p>
+    WhatsApp: <a href="https://wa.me/5492657603387" target="_blank">2657-603387</a> |
+    Instagram: <a href="https://www.instagram.com/mielissimo__/" target="_blank">@mielissimo_</a>
+  </p>
+  <p style="font-size: 0.9em;">
+    Todos los derechos reservados. Sitio desarrollado por Marco Barzola.
+  </p>
+</footer>
+
 
   <script type="module" src="js/main.js"></script>
 

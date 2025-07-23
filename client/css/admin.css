@@ -255,3 +255,47 @@ form select {
 #tabla-variantes tr:nth-child(even) {
   background-color: #f9f9f9;
 }
+
+/* Scroll para la lista de categorías */
+#lista-categorias {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+/* Scroll para la lista de productos */
+#lista-productos {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.tarjeta-historial {
+  display: flex;
+  gap: 1rem;
+  background-color: #fff0f5;
+  border-radius: 16px;
+  padding: 1rem;
+  margin: 1rem 0;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.tarjeta-historial img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+.tarjeta-historial .info {
+  flex: 1;
+}
+
+.tarjeta-historial .info h3 {
+  margin: 0 0 0.5rem 0;
+  color: #e75480;
+}

@@ -34,8 +34,7 @@ async function cargarProducto() {
           </div>
           <div class="producto-info">
             <div id="seccion-variantes-dentro"></div>
-            <p><strong>Precio:</strong> <span id="precio-dinamico">$${precioBase.toFixed(2)}</span></p>
-            <p><strong>Stock:</strong> ${prod.stock}</p>
+            <p><strong>Precio:</strong> <span id="precio-dinamico">AR$ ${precioBase.toFixed(2)}</span></p>
             <p><strong>Categoría:</strong> ${prod.categoria_nombre || "Sin categoría"}</p>
             <div class="botones-producto">
               <button id="btn-agregar" class="btn">Agregar al carrito</button>

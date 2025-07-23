@@ -1,46 +1,55 @@
-import { mostrarUsuario, actualizarContadorCarrito, crearBotonCarritoFlotante } from "./navbar.js";
+document.addEventListener("DOMContentLoaded", () => {
+  cargarHistorial();
+});
 
+async function cargarHistorial() {
+  const token = localStorage.getItem("token_usuario");
+  if (!token) return;
 
-document.addEventListener("DOMContentLoaded", async () => {
- 
+  try {
+    const res = await fetch("/api/historial", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
 
-  const id_usuario = localStorage.getItem("id_usuario");
-  const contenedor = document.getElementById("historial-compras");
+    const compras = await res.json();
+    mostrarHistorial(compras);
+  } catch (error) {
+    console.error("Error al cargar historial:", error);
+  }
+}
 
-  if (!id_usuario) {
-    contenedor.innerHTML = "<p>Debes iniciar sesión para ver tu historial.</p>";
+function mostrarHistorial(compras) {
+  const contenedor = document.getElementById("historial-container");
+  if (!contenedor) return;
+  contenedor.innerHTML = "";
+
+  if (compras.length === 0) {
+    contenedor.innerHTML = "<p>No hay compras registradas.</p>";
     return;
   }
 
-  try {
-    const res = await fetch(`/api/compras/${id_usuario}`);
-    const compras = await res.json();
+  compras.forEach(compra => {
+    const card = document.createElement("div");
+    card.className = "historial-card";
 
-    if (compras.length === 0) {
-      contenedor.innerHTML = "<p>No tenés compras registradas.</p>";
-      return;
-    }
+    const variantesHTML = compra.variantes.length > 0
+      ? `<div class="variantes-historial"><strong>Variantes:</strong><ul>` +
+        compra.variantes.map(v => `<li>${v.tipo}: ${v.nombre} (${v.precio ? `$${v.precio}` : "sin precio"})</li>`).join("") +
+        `</ul></div>`
+      : "";
 
-    compras.forEach(compra => {
-      const div = document.createElement("div");
-      div.classList.add("item-compra");
-      div.innerHTML = `
-        <img src="${compra.imagen}" alt="${compra.nombre}">
-        <div>
-          <h3>${compra.nombre}</h3>
-          <p>Cantidad: ${compra.cantidad}</p>
-          <p>Precio unitario: $${parseFloat(compra.precio).toFixed(2)}</p>
-          <p>Fecha: ${new Date(compra.fecha_compra).toLocaleString()}</p>
-        </div>
-      `;
-      contenedor.appendChild(div);
-    });
-  } catch (err) {
-    contenedor.innerHTML = "<p>Error al cargar historial.</p>";
-  }
-mostrarUsuario();
-  actualizarContadorCarrito();
-  crearBotonCarritoFlotante();
-  cargarFavoritos();
-  
-});
+    card.innerHTML = `
+      <img src="${compra.imagen}" alt="${compra.nombre_producto}" />
+      <h3>${compra.nombre_producto}</h3>
+      <p>Precio base: AR$ ${compra.precio}</p>
+      <p>Cantidad: ${compra.cantidad}</p>
+      <p>Fecha: ${new Date(compra.fecha_compra).toLocaleDateString()}</p>
+      <p>Tipo de envío: ${compra.tipo_envio}</p>
+      ${variantesHTML}
+    `;
+
+    contenedor.appendChild(card);
+  });
+}

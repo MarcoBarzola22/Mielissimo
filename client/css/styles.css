@@ -112,3 +112,119 @@ footer {
   z-index: 9999;
   font-size: 1.2rem;
 }
+
+
+
+/* Estilo general */
+.header-publico {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ef5579;
+  padding: 0.5rem 1rem;
+}
+
+.logo img {
+  height: 50px;
+}
+
+/* Botón hamburguesa oculto por defecto */
+.menu-toggle {
+  display: none;
+  font-size: 2rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: white;
+}
+
+/* Navbar en pantallas grandes */
+@media (max-width: 1000px) {
+  .header-publico {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 1000;
+  }
+
+
+  .menu-toggle {
+    display: block;
+    font-size: 2rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: white;
+    z-index: 1001;
+  }
+
+  .nav-links {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 220px; /* ✅ Cambiamos este valor si hace falta */
+  background-color: #ef5579;
+  padding: 1rem 0;
+  z-index: 1000;
+  border-radius: 0 0 0 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+
+ .nav-links.active {
+  display: block;
+}
+
+
+  .nav-links ul {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* ✅ centrado horizontal */
+  padding: 0;
+  margin: 0;
+}
+
+
+  .nav-links ul li {
+    list-style: none;
+    width: 100%;
+  }
+
+  .nav-links ul li a {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* ⭐ centrado horizontal del contenido */
+  gap: 10px;
+  padding: 0.75rem 1rem;
+  width: 100%;
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+  .nav-links ul li a i {
+    font-size: 1.2rem; /* asegúrate de usar íconos del mismo tamaño */
+  }
+}
+
+.header-publico {
+  position: sticky;
+  top: 0;
+  z-index: 999;
+}
+
+/* 🔒 Footer fijo solo para historial */
+.footer-fijo {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+}

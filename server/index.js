@@ -385,6 +385,47 @@ app.get("/api/compras/:id_usuario", (req, res) => {
   );
 });
 
+app.get("/api/historial", verificarToken, (req, res) => {
+  const usuarioId = req.usuario.id;
+
+  const query = `
+    SELECT 
+      c.id,
+      p.nombre AS nombre_producto,
+      p.imagen,
+      c.cantidad,
+      c.fecha_compra,
+      c.tipo_envio,
+      p.precio,
+      c.variantes
+    FROM compras c
+    JOIN productos p ON c.id_producto = p.id
+    WHERE c.id_usuario = ?
+    ORDER BY c.fecha_compra DESC
+  `;
+
+  db.query(query, [usuarioId], (err, results) => {
+    if (err) {
+      console.error("Error al obtener historial:", err);
+      return res.status(500).json({ error: "Error al obtener historial" });
+    }
+
+    // Convertir JSON string de variantes a objeto (si existe)
+    const historialConVariantes = results.map(compra => {
+      try {
+        compra.variantes = compra.variantes ? JSON.parse(compra.variantes) : [];
+      } catch (e) {
+        compra.variantes = [];
+      }
+      return compra;
+    });
+
+    res.json(historialConVariantes);
+  });
+});
+
+
+
 // ==============================
 // 🧩 VARIANTES
 // ==============================

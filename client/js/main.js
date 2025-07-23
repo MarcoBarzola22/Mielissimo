@@ -64,7 +64,14 @@ async function obtenerFavoritos() {
       headers: { Authorization: `Bearer ${tokenUsuario}` }
     });
 
-    if (!res.ok) throw new Error("No autorizado");
+    if (res.status === 401 || res.status === 403) {
+      console.warn("Token inválido o expirado. Cerrando sesión...");
+      localStorage.removeItem("token_usuario");
+      location.href = "login.html"; // 🔁 redirige al login
+      return [];
+    }
+
+    if (!res.ok) throw new Error("Error al obtener favoritos");
 
     const data = await res.json();
     return data.map(f => f.producto_id);
@@ -73,6 +80,7 @@ async function obtenerFavoritos() {
     return [];
   }
 }
+
 
 // 🖼 Renderizar productos
 async function renderizarProductos(productos) {
@@ -101,8 +109,7 @@ async function renderizarProductos(productos) {
       <img src="${prod.imagen}" alt="${prod.nombre}">
       <h3>${prod.nombre}</h3>
       <p class="categoria-nombre">${prod.categoria_nombre || "Sin categoría"}</p>
-      <p>Precio: $${parseFloat(prod.precio).toFixed(2)}</p>
-      <p>Stock: ${prod.stock}</p>
+      <p>Precio: AR$ ${parseFloat(prod.precio).toFixed(2)}</p>
       <button class="btn-carrito" data-id="${prod.id}">Agregar al carrito</button>
       ${tokenUsuario ? `<button class="btn-favorito" data-id="${prod.id}" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: ${colorCorazon};">
         ${iconoCorazon}

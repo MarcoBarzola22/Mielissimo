@@ -7,6 +7,8 @@
   <title>Panel de Administración - Mielissimo</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/admin.css">
+  <link rel="icon" href="assets/favicon/favicon.ico" type="image/x-icon" />
+
 </head>
 <body>
   <header class="header-admin">
@@ -25,6 +27,8 @@
         <button type="submit">Agregar categoría</button>
         <button type="button" id="cancelar-edicion-categoria" style="display:none;">Cancelar edición</button>
       </form>
+      <p id="mensaje-categoria" style="margin-top: 5px;"></p>
+
     </section>
 
     <section class="seccion">
@@ -40,7 +44,6 @@
         <input type="text" name="nombre" placeholder="Nombre" required />
         <input type="number" name="precio" step="0.01" placeholder="Precio base" required />
         <input type="file" name="imagen" accept="image/*" />
-        <input type="number" name="stock" placeholder="Stock general" required />
         <select id="categoria-producto" name="categoria_id" required>
           <option value="">Seleccionar categoría</option>
         </select>
@@ -59,9 +62,6 @@
         </select>
         <input type="text" id="nombreVariante" name="nombre" placeholder="Nombre de la variante" required />
        <input type="number" id="precioExtra" name="precio_extra" placeholder="Precio" step="0.01" />
-
-
-        <input type="number" id="stockVariante" name="stock" placeholder="Stock" required />
         <button type="submit" id="btnAgregarVariante">Agregar variante</button>
         <button type="button" id="btnCancelarEdicionVariante" style="display:none;">Cancelar edición</button>
       </form>
@@ -73,7 +73,6 @@
             <th>Tipo</th>
             <th>Nombre de variante</th>
             <th>Precio</th>
-            <th>Stock</th>
             <th>Acciones</th>
           </tr>
         </thead>
@@ -94,8 +93,15 @@
   </main>
 
   <footer>
-    <p>© 2025 Mielissimo – Panel de Administración</p>
-  </footer>
+  <p>© 2025 Mielissimo – Villa Mercedes</p>
+  <p>
+    WhatsApp: <a href="https://wa.me/5492657603387" target="_blank">2657-603387</a> |
+    Instagram: <a href="https://www.instagram.com/mielissimo__/" target="_blank">@mielissimo_</a>
+  </p>
+  <p style="font-size: 0.9em;">
+    Todos los derechos reservados. Sitio desarrollado por Marco Barzola.
+  </p>
+</footer>
 
   <script src="js/admin.js"></script>
 </body>

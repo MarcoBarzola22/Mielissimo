@@ -7,6 +7,8 @@ const listaCategorias = document.getElementById("lista-categorias");
 const botonLogout = document.getElementById("logout");
 const buscador = document.getElementById("buscador-productos");
 const checkboxInactivos = document.getElementById("mostrarInactivos");
+const mensajeCategoria = document.getElementById("mensaje-categoria");
+
 
 const seccionFormulario = document.getElementById("seccion-formulario");
 const seccionVariantes = document.getElementById("seccion-variantes");
@@ -66,7 +68,6 @@ function cargarProductos(filtro = "") {
             <p><strong>${prod.nombre}</strong></p>
             <p><em>Categoría: ${prod.categoria_nombre || "Sin categoría"}</em></p>
             <p>Precio: $${parseFloat(prod.precio).toFixed(2)}</p>
-            <p>Stock: ${prod.stock}</p>
             <p><strong>Activo:</strong> ${estaActivo ? "Sí" : "No"}</p>
             <div class="btns" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
               ${estaActivo
@@ -75,7 +76,6 @@ function cargarProductos(filtro = "") {
                           data-nombre="${prod.nombre}"
                           data-precio="${prod.precio}"
                           data-imagen="${prod.imagen}"
-                          data-stock="${prod.stock}"
                           data-categoria="${prod.categoria_id}">✏ Editar</button>
                   <button class="btn-eliminar" data-id="${prod.id}">🗑 Desactivar</button>
                   <button class="btn-variante" data-id="${prod.id}" data-nombre="${prod.nombre}">➕ Variantes</button>
@@ -171,10 +171,10 @@ btnCancelarVariante.addEventListener("click", () => {
   mensajeVariante.textContent = "";
 });
 
-function editarProducto(id, nombre, precio, imagen, stock, categoria_id) {
+function editarProducto(id, nombre, precio, imagen, categoria_id) {
   formulario.nombre.value = nombre;
   formulario.precio.value = precio;
-  formulario.stock.value = stock;
+  
   selectCategoria.value = categoria_id;
   productoEnEdicion = id;
 
@@ -185,32 +185,40 @@ function editarProducto(id, nombre, precio, imagen, stock, categoria_id) {
 }
 
 function desactivarProducto(id) {
-  if (!confirm("¿Estás seguro de que querés desactivar este producto?")) return;
-
   fetch(`/api/productos/desactivar/${id}`, {
     method: "PUT",
     headers: { Authorization: `Bearer ${token}` }
   })
     .then((res) => res.json())
     .then((data) => {
-      alert(data.mensaje);
+      mensaje.textContent = data.mensaje || "Producto desactivado";
+      mensaje.style.color = "green";
       cargarProductos();
+    })
+    .catch(() => {
+      mensaje.textContent = "Error al desactivar producto";
+      mensaje.style.color = "red";
     });
 }
 
-function reactivarProducto(id) {
-  if (!confirm("¿Reactivar este producto?")) return;
 
+function reactivarProducto(id) {
   fetch(`/api/productos/activar/${id}`, {
     method: "PUT",
     headers: { Authorization: `Bearer ${token}` }
   })
     .then((res) => res.json())
     .then((data) => {
-      alert(data.mensaje);
+      mensaje.textContent = data.mensaje || "Producto reactivado";
+      mensaje.style.color = "green";
       cargarProductos();
+    })
+    .catch(() => {
+      mensaje.textContent = "Error al reactivar producto";
+      mensaje.style.color = "red";
     });
 }
+
 
 formularioCategoria.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -240,22 +248,31 @@ formularioCategoria.addEventListener("submit", async (e) => {
 });
 
 function eliminarCategoria(id) {
-  if (confirm("¿Eliminar esta categoría?")) {
-    fetch(`/api/categorias/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          alert(data.error);
-        } else {
-          alert("✅ Categoría eliminada correctamente");
-          cargarCategorias();
-        }
-      });
-  }
+  fetch(`/api/categorias/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then(res => res.json())
+    .then(data => {
+      if (data.error) {
+  mensajeCategoria.textContent = data.error;
+  mensajeCategoria.style.color = "red";
+} else {
+  mensajeCategoria.textContent = "✅ Categoría eliminada correctamente";
+  mensajeCategoria.style.color = "green";
+  cargarCategorias();
+  setTimeout(() => {
+    mensajeCategoria.textContent = "";
+  }, 3000);
 }
+
+    })
+    .catch(() => {
+      mensaje.textContent = "Error al eliminar categoría";
+      mensaje.style.color = "red";
+    });
+}
+
 
 document.addEventListener("click", (e) => {
   if (e.target.classList.contains("btn-editar")) {
@@ -265,7 +282,6 @@ document.addEventListener("click", (e) => {
       btn.dataset.nombre,
       btn.dataset.precio,
       btn.dataset.imagen,
-      btn.dataset.stock,
       btn.dataset.categoria
     );
   }
@@ -292,14 +308,23 @@ document.addEventListener("click", (e) => {
   }
 
   if (e.target.classList.contains("eliminar-variante")) {
-    const id = e.target.dataset.id;
-    if (confirm("¿Eliminar variante?")) {
-      fetch(`/api/variantes/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      }).then(() => cargarVariantes(productoParaVariantes));
-    }
-  }
+  const id = e.target.dataset.id;
+  fetch(`/api/variantes/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` }
+  })
+    .then(res => res.json())
+    .then(data => {
+      mensajeVariante.textContent = "✅ Variante eliminada";
+      mensajeVariante.style.color = "green";
+      cargarVariantes(productoParaVariantes);
+    })
+    .catch(() => {
+      mensajeVariante.textContent = "Error al eliminar variante";
+      mensajeVariante.style.color = "red";
+    });
+}
+
 
   if (e.target.classList.contains("editar-variante")) {
     const id = e.target.dataset.id;
@@ -307,7 +332,6 @@ document.addEventListener("click", (e) => {
     document.getElementById("tipoVariante").value = e.target.dataset.tipo;
     document.getElementById("nombreVariante").value = e.target.dataset.nombre;
     document.getElementById("precioExtra").value = e.target.dataset.precio;
-    document.getElementById("stockVariante").value = e.target.dataset.stock;
     btnAgregarVariante.textContent = "Guardar cambios";
     btnCancelarVariante.style.display = "inline";
 
@@ -328,7 +352,6 @@ function cargarVariantes(idProducto) {
       <th>Tipo</th>
       <th>Nombre de variante</th>
       <th>Precio</th>
-      <th>Stock</th>
       <th>Acciones</th>
     </tr>
   `;
@@ -351,9 +374,8 @@ function cargarVariantes(idProducto) {
     <td>${v.tipo}</td>
     <td>${v.nombre}</td>
     <td>${precioTexto}</td>
-    <td>${v.stock}</td>
     <td>
-      <button class="editar-variante" data-id="${v.id}" data-tipo="${v.tipo}" data-nombre="${v.nombre}" data-precio="${v.precio_extra}" data-stock="${v.stock}">✏</button>
+      <button class="editar-variante" data-id="${v.id}" data-tipo="${v.tipo}" data-nombre="${v.nombre}" data-precio="${v.precio_extra}">✏</button>
       <button class="eliminar-variante" data-id="${v.id}">🗑</button>
     </td>
   `;
@@ -370,7 +392,6 @@ formularioVariante.addEventListener("submit", async (e) => {
   const tipo = document.getElementById("tipoVariante").value;
   const nombre = document.getElementById("nombreVariante").value;
   const inputPrecio = document.getElementById("precioExtra");
-  const inputStock = document.getElementById("stockVariante");
 
  const precioAdicional = inputPrecio.disabled || inputPrecio.value.trim() === "" ? null : parseFloat(inputPrecio.value);
 
@@ -381,7 +402,7 @@ formularioVariante.addEventListener("submit", async (e) => {
     tipo,
     nombre,
     precio: precioAdicional,
-    stock: parseInt(inputStock.value),
+    
   };
 
   const metodo = varianteEditandoId ? "PUT" : "POST";
