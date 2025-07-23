@@ -335,26 +335,36 @@ app.post("/api/usuarios/login", (req, res) => {
   });
 });
  
+
 // ==============================
-// 🧾 COMPRAS
+// 🧾 COMPRAS (con y sin sesión)
 // ==============================
 app.post("/api/compras", (req, res) => {
-  const { id_usuario, carrito, tipoEnvio, total } = req.body;
+  const { id_usuario, carrito, tipoEnvio } = req.body;
 
-  if (!id_usuario || !Array.isArray(carrito) || carrito.length === 0 || isNaN(total)) {
+  // Validar datos
+  if (!Array.isArray(carrito) || carrito.length === 0) {
     return res.status(400).json({ error: "Datos inválidos para la compra." });
   }
 
   const fecha_compra = new Date().toISOString().slice(0, 19).replace("T", " ");
   const tipo = tipoEnvio || "retiro";
 
+  // Guardar cada producto en la tabla compras
   let insertados = 0;
+  carrito.forEach(item => {
+    // Si el producto no tiene variantes, guardamos "Sin variantes"
+    const variantesTexto = item.variantes && item.variantes.length > 0
+      ? item.variantes.map(v => `${v.tipo}: ${v.nombre}`).join(", ")
+      : "Sin variantes";
 
-  for (const item of carrito) {
+    // Usar NULL si el usuario no está logueado
+    const usuarioId = id_usuario && !isNaN(id_usuario) ? id_usuario : null;
+
     db.query(
-      `INSERT INTO compras (id_usuario, id_producto, cantidad, fecha_compra, tipo_envio)
-       VALUES (?, ?, ?, ?, ?)`,
-      [id_usuario, item.id, item.cantidad, fecha_compra, tipo],
+      `INSERT INTO compras (id_usuario, id_producto, cantidad, fecha_compra, tipo_envio, variantes)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [usuarioId, item.id, item.cantidad, fecha_compra, tipo, variantesTexto],
       (err) => {
         if (err) {
           console.error("Error al insertar producto:", err);
@@ -363,12 +373,15 @@ app.post("/api/compras", (req, res) => {
 
         insertados++;
         if (insertados === carrito.length) {
+          // Enviamos respuesta solo cuando se insertaron todos los productos
           res.json({ mensaje: "Compra registrada correctamente." });
         }
       }
     );
-  }
+  });
 });
+
+
 
 app.get("/api/compras/:id_usuario", (req, res) => {
   const id = req.params.id_usuario;

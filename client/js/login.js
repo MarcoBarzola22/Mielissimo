@@ -1,4 +1,5 @@
-// login.js (frontend)
+const mensajeLogin = document.getElementById("mensaje-login");
+
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('loginForm');
 
@@ -9,7 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const password = document.getElementById('password').value;
 
     if (!email || !password) {
-      alert("Por favor completá ambos campos.");
+      mensajeLogin.textContent = "Por favor completá todos los campos.";
+      mensajeLogin.style.color = "red";
       return;
     }
 
@@ -25,19 +27,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await res.json();
 
       if (res.ok) {
-        // 🔐 Guardamos token y datos del usuario
+        // Guardar datos en localStorage
         localStorage.setItem("token_usuario", data.token);
         localStorage.setItem("id_usuario", data.usuario.id);
         localStorage.setItem("nombre_usuario", data.usuario.nombre);
 
-        alert("¡Bienvenido!");
-        window.location.href = "index.html";
+        mensajeLogin.textContent = "✅ Inicio de sesión exitoso. Redirigiendo...";
+        mensajeLogin.style.color = "green";
+
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 2000);
       } else {
-        alert(data.error || "Credenciales incorrectas.");
+        mensajeLogin.textContent = data.error || "Credenciales incorrectas.";
+        mensajeLogin.style.color = "red";
       }
     } catch (err) {
       console.error(err);
-      alert("Error al conectar con el servidor.");
+      mensajeLogin.textContent = "❌ Error al conectar con el servidor.";
+      mensajeLogin.style.color = "red";
     }
   });
 });

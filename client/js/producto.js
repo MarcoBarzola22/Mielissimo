@@ -1,11 +1,12 @@
 import { mostrarUsuario, actualizarContadorCarrito, crearBotonCarritoFlotante } from "./navbar.js";
 
-
 const infoProducto = document.getElementById("info-producto");
 const variantesSection = document.getElementById("variantes-producto");
 const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 const token = localStorage.getItem("token_usuario");
+const mensajeProducto = document.getElementById("mensaje-producto");
+
 
 let esFavorito = false;
 let variantesSeleccionadas = [];
@@ -44,6 +45,8 @@ async function cargarProducto() {
         </div>
       </div>
     `;
+   
+
 
     document.getElementById("btn-agregar").addEventListener("click", () => agregarAlCarrito(prod));
     if (token) {
@@ -130,8 +133,18 @@ function agregarAlCarrito(prod) {
 
   localStorage.setItem("carrito", JSON.stringify(carrito));
   actualizarContadorCarrito();
-  alert("Producto agregado con éxito");
+
+  // Mostrar mensaje pegado a la tarjeta
+  const mensajeProducto = document.getElementById("mensaje-producto");
+  mensajeProducto.textContent = "✅ Producto agregado al carrito.";
+  mensajeProducto.style.color = "green";
+  mensajeProducto.style.display = "block";
+
+  setTimeout(() => {
+    mensajeProducto.textContent = "";
+  }, 2000);
 }
+
 
 function cargarVariantesVisuales() {
   fetch(`/api/variantes/${id}`)
@@ -179,9 +192,8 @@ function cargarVariantesVisuales() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
- mostrarUsuario();
+  mostrarUsuario();
   actualizarContadorCarrito();
   crearBotonCarritoFlotante();
   cargarProducto();
-  
 });

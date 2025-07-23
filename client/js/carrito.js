@@ -79,14 +79,7 @@ function calcularTotal() {
 async function confirmarCompra() {
   const mensaje = document.getElementById("mensaje-compra");
   const id_usuario = Number(localStorage.getItem("id_usuario"));
-  const token = localStorage.getItem("token_usuario");
-
-  if (!id_usuario || !token) {
-    mensaje.textContent = "❌ Necesitás iniciar sesión para comprar.";
-    mensaje.style.color = "red";
-    mensaje.style.display = "block";
-    return;
-  }
+  const nombreUsuario = localStorage.getItem("nombre_usuario") || "Anónimo";
 
   if (carrito.length === 0) {
     mensaje.textContent = "🛒 Tu carrito está vacío.";
@@ -95,73 +88,67 @@ async function confirmarCompra() {
     return;
   }
 
+  // Copiamos el carrito y calculamos total
   const carritoCopia = [...carrito];
   const tipoEnvio = document.querySelector('input[name="tipo-envio"]:checked')?.value || "retiro";
   const totalTexto = document.getElementById("total-compra").textContent.replace(/[^\d.-]/g, "").trim();
   const total = parseFloat(totalTexto);
 
-  try {
-    const res = await fetch("/api/compras", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id_usuario, carrito: carritoCopia, tipoEnvio, total })
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-   const nombreUsuario = localStorage.getItem("nombre_usuario") || "usuario";
-const tipo = tipoEnvio === "envio"
-  ? "📦 Entrega: Envío a domicilio"
-  : "🏠 Retiro en local";
-
-const detallesProductos = carritoCopia.map(item => {
-  let variantesTexto = "";
-  if (item.variantes?.length > 0) {
-    variantesTexto = item.variantes.map(v => `🧩 ${v.tipo}: ${v.nombre}`).join(" | ");
-  }
-  return `🧁 ${item.nombre}${variantesTexto ? " | " + variantesTexto : ""} | 🔢 Cantidad: ${item.cantidad}`;
-}).join("\n");
-
-const mensajeTexto =
-`🛒 *Hola! Quiero hacer una compra:*\n\n${detallesProductos}\n\n${tipo}\n💰 Total: $${total} ARS\n👤 Usuario: ${nombreUsuario}`;
-
-const textoCodificado = encodeURIComponent(mensajeTexto);
-const numeroWhatsapp = "2657635540";
-const linkWhatsapp = `https://wa.me/54${numeroWhatsapp}?text=${textoCodificado}`;
-
-// Redirigir en 1 segundo
-setTimeout(() => {
-  window.location.href = linkWhatsapp;
-}, 1000);
-
-
-      // Mostrar mensaje antes de redirigir
-      mensaje.innerHTML = "✅ <strong>¡Compra confirmada con éxito! Redirigiendo a WhatsApp...</strong>";
-      mensaje.style.color = "green";
-      mensaje.style.display = "block";
-
-      // Evitar borrar el mensaje antes de redirigir
-      setTimeout(() => {
-        // Limpiar carrito
-        carrito = [];
-        localStorage.setItem("carrito", JSON.stringify([]));
-        renderizarCarrito();
-        actualizarContadorCarrito();
-        window.location.href = linkWhatsapp;
-      }, 1000);
-    } else {
-      mensaje.textContent = data.error || "❌ Error al confirmar compra.";
-      mensaje.style.color = "red";
-      mensaje.style.display = "block";
+  // --- Guardar en DB SOLO si el usuario está logueado ---
+  if (id_usuario) {
+    try {
+      await fetch("/api/compras", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id_usuario, carrito: carritoCopia, tipoEnvio, total })
+      });
+    } catch (err) {
+      console.error("Error guardando en historial:", err);
     }
-  } catch (err) {
-    console.error(err);
-    mensaje.textContent = "❌ Error de conexión con el servidor.";
-    mensaje.style.color = "red";
-    mensaje.style.display = "block";
   }
+
+  // --- Generar mensaje para WhatsApp ---
+  const tipo = tipoEnvio === "envio" ? "🚚 Envío a domicilio" : "🏠 Retiro en local";
+
+  const detallesProductos = carritoCopia.map(item => {
+    // Si tiene variantes, las ponemos entre paréntesis
+    const variantesTexto = item.variantes?.length
+      ? ` (${item.variantes.map(v => v.nombre).join(", ")})`
+      : "";
+
+    return `❤️ ${item.cantidad} x ${item.nombre}${variantesTexto} = $${(item.precio * item.cantidad).toFixed(2)}`;
+  }).join("\n");
+
+  const mensajeTexto = 
+`Hola, quiero hacer un pedido en Mielíssimo 🍬❤️
+✨ ¡Más golosinas, más contento! 😋
+
+Detalles del Pedido:
+${detallesProductos}
+
+💲 Total: $${total.toFixed(2)}
+
+👤 Nombre: ${nombreUsuario}
+${tipo}`;
+
+  const textoCodificado = encodeURIComponent(mensajeTexto);
+  const numeroWhatsapp = "2657635540"; // Cambia por el número de tu cliente
+  const linkWhatsapp = `https://wa.me/54${numeroWhatsapp}?text=${textoCodificado}`;
+
+  // Mostrar mensaje y redirigir
+  mensaje.innerHTML = "✅ <strong>¡Compra confirmada con éxito! Redirigiendo a WhatsApp...</strong>";
+  mensaje.style.color = "green";
+  mensaje.style.display = "block";
+
+  setTimeout(() => {
+    carrito = [];
+    localStorage.setItem("carrito", JSON.stringify([]));
+    renderizarCarrito();
+    actualizarContadorCarrito();
+    window.location.href = linkWhatsapp;
+  }, 1000);
 }
+
 
 
 document.addEventListener("DOMContentLoaded", () => {

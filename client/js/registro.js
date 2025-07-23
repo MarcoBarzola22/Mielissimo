@@ -1,3 +1,5 @@
+const mensajeRegistro = document.getElementById("mensaje-registro");
+
 document.addEventListener('DOMContentLoaded', () => {
   const form = document.getElementById('registroForm');
 
@@ -9,19 +11,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const password = document.getElementById('password').value;
 
     if (!nombre || !email || !password) {
-      alert("Por favor completá todos los campos.");
-      return;
-    }
+  mensajeRegistro.textContent = "Por favor completá todos los campos.";
+  mensajeRegistro.style.color = "red";
+  return;
+}
 
-    if (!validarEmail(email)) {
-      alert("Ingresá un correo electrónico válido.");
-      return;
-    }
+if (!validarEmail(email)) {
+  mensajeRegistro.textContent = "Ingresá un correo electrónico válido.";
+  mensajeRegistro.style.color = "red";
+  return;
+}
 
-    if (password.length < 6) {
-      alert("La contraseña debe tener al menos 6 caracteres.");
-      return;
-    }
+if (password.length < 6) {
+  mensajeRegistro.textContent = "La contraseña debe tener al menos 6 caracteres.";
+  mensajeRegistro.style.color = "red";
+  return;
+}
+
 
     try {
       const res = await fetch("/api/usuarios/registro", {
@@ -34,15 +40,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const data = await res.json();
 
-      if (res.ok) {
-        alert(data.mensaje);
-        window.location.href = "login.html";
-      } else {
-        alert(data.error || "Ocurrió un error");
-      }
+     if (res.ok) {
+  mensajeRegistro.textContent = "✅ Usuario registrado con éxito. Ahora podés iniciar sesión.";
+  mensajeRegistro.style.color = "green";
+
+  // Redirigir después de 2 segundos
+  setTimeout(() => {
+    window.location.href = "login.html";
+  }, 2000);
+} else {
+  mensajeRegistro.textContent = data.error || "Ocurrió un error";
+  mensajeRegistro.style.color = "red";
+}
+
     } catch (err) {
       console.error(err);
-      alert("Error al conectar con el servidor.");
+     mensajeRegistro.textContent = "❌ Error al conectar con el servidor.";
+mensajeRegistro.style.color = "red";
+
     }
   });
 });

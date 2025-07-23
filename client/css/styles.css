@@ -228,3 +228,11 @@ footer {
   width: 100%;
   z-index: 1000;
 }
+
+.mensaje-login,
+.mensaje-producto,
+.mensaje-registro {
+  margin-top: 1rem;
+  font-weight: bold;
+  text-align: center;
+}
