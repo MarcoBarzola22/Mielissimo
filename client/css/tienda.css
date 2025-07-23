@@ -1506,3 +1506,17 @@ main h1 {
   margin-top: 0.5rem;
   color: #555;
 }
+
+.nombre-producto {
+  text-align: center;
+  margin-top: 0;       /* elimina espacio superior */
+  margin-bottom: 20px; /* deja un poco de espacio abajo */
+  padding-top: 10px;   /* ajusta si necesitas separación con el borde */
+  font-size: 2rem;     /* opcional: tamaño más destacado */
+}
+
+.tarjeta-producto-detalle {
+  padding: 20px;      /* en lugar de mucho padding arriba/abajo */
+  margin-top: 20px;   /* ajusta si había demasiado espacio antes */
+}
+

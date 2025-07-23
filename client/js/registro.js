@@ -47,7 +47,7 @@ if (password.length < 6) {
   // Redirigir después de 2 segundos
   setTimeout(() => {
     window.location.href = "login.html";
-  }, 2000);
+  }, 500);
 } else {
   mensajeRegistro.textContent = data.error || "Ocurrió un error";
   mensajeRegistro.style.color = "red";

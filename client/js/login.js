@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setTimeout(() => {
           window.location.href = "index.html";
-        }, 2000);
+        }, 500);
       } else {
         mensajeLogin.textContent = data.error || "Credenciales incorrectas.";
         mensajeLogin.style.color = "red";

@@ -181,7 +181,9 @@ function guardarCarrito() {
 }
 
 function agregarAlCarrito(id) {
-  const productoExistente = carrito.find(p => p.id === id);
+  // Buscar producto existente pero solo si NO tiene variantes
+  const productoExistente = carrito.find(p => p.id === id && (!p.variantes || p.variantes.length === 0));
+
   if (productoExistente) {
     productoExistente.cantidad++;
     guardarCarrito();
@@ -196,13 +198,15 @@ function agregarAlCarrito(id) {
             nombre: prod.nombre,
             precio: parseFloat(prod.precio),
             cantidad: 1,
-            imagen: prod.imagen
+            imagen: prod.imagen,
+            variantes: [] // <-- Esto asegura que siempre sea SIN variantes
           });
           guardarCarrito();
         }
       });
   }
 }
+
 window.agregarAlCarrito = agregarAlCarrito;
 
 function actualizarContadorCarritoFlotante() {
