@@ -6,10 +6,30 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const nodemailer = require("nodemailer");
+
+
+require('dotenv').config();
 
 const app = express();
 const PORT = 3000;
 const JWT_SECRET = "claveultrasecreta123";
+const mailchimp = require("@mailchimp/mailchimp_marketing");
+
+mailchimp.setConfig({
+  apiKey: process.env.MAILCHIMP_API_KEY,
+  server: process.env.MAILCHIMP_SERVER_PREFIX
+}); 
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
+
+
 
 // 🔸 Multer configuración para subir imágenes
 const storage = multer.diskStorage({
@@ -279,16 +299,36 @@ app.post("/api/admin/login", (req, res) => {
 // ==============================
 // 📬 NEWSLETTER
 // ==============================
-app.post("/api/newsletter", (req, res) => {
+app.post("/api/newsletter", async (req, res) => {
   const { email } = req.body;
-  if (!email || !email.includes("@")) return res.status(400).json({ error: "Email inválido" });
+  if (!email || !email.includes("@")) {
+    return res.status(400).json({ error: "Email inválido" });
+  }
 
-  db.query("INSERT INTO suscriptores (email) VALUES (?)", [email], (err) => {
-    if (err && err.code === "ER_DUP_ENTRY") return res.status(400).json({ error: "Correo ya registrado" });
-    if (err) return res.status(500).json({ error: "Error al suscribir" });
-    res.status(201).json({ mensaje: "¡Gracias por suscribirte!" });
+  // Primero, guardar en tu base de datos local (como ya lo hacías)
+  db.query("INSERT INTO suscriptores (email) VALUES (?)", [email], async (err) => {
+    if (err && err.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({ error: "Correo ya registrado" });
+    }
+    if (err) {
+      return res.status(500).json({ error: "Error al suscribir" });
+    }
+
+    // Luego, enviar a Mailchimp
+    try {
+      await mailchimp.lists.addListMember(process.env.MAILCHIMP_LIST_ID, {
+        email_address: email,
+        status: "subscribed"
+      });
+
+      return res.status(201).json({ mensaje: "¡Suscripción exitosa!" });
+    } catch (mcError) {
+      console.error("Error al enviar a Mailchimp:", mcError.response?.body || mcError.message);
+      return res.status(500).json({ error: "Suscripto localmente, pero error en Mailchimp" });
+    }
   });
 });
+
 
 // ==============================
 // 👥 USUARIOS
@@ -562,7 +602,215 @@ app.delete('/api/favoritos/:producto_id', verificarToken, (req, res) => {
       res.json({ mensaje: 'Eliminado de favoritos' });
     }
   );
+}); 
+
+// ==============================
+// 🔑 RECUPERACIÓN DE CONTRASEÑA USUARIOS
+// ==============================
+app.post("/api/usuarios/recuperar", (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ error: "Email requerido" });
+  }
+
+  // Buscar si el email existe
+  db.query("SELECT * FROM usuarios WHERE email = ?", [email], (err, results) => {
+    if (err) return res.status(500).json({ error: "Error en la base de datos" });
+    if (results.length === 0) return res.status(404).json({ error: "Usuario no encontrado" });
+
+    // Generar token
+    const token = require("crypto").randomBytes(32).toString("hex");
+
+    // Guardar token en la base
+    db.query("UPDATE usuarios SET reset_token = ? WHERE email = ?", [token, email], (err) => {
+      if (err) return res.status(500).json({ error: "Error al guardar token" });
+
+      // URL para resetear contraseña (ajustá la carpeta si es distinta)
+     const resetUrl = `http://localhost:3000/reset-password.html?token=${token}`;
+
+
+      // Responder rápido al frontend
+      res.json({ mensaje: "Correo de recuperación enviado. Revisá tu bandeja de entrada." });
+
+      // Enviar el correo en segundo plano
+      const mailOptions = {
+        from: `"Mielissimo" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "Recuperación de contraseña",
+        html: `
+          <h2>Recuperación de contraseña</h2>
+          <p>Hacé clic en el siguiente enlace para restablecer tu contraseña:</p>
+          <a href="${resetUrl}">${resetUrl}</a>
+          <p>Si no solicitaste este cambio, ignorá este correo.</p>
+        `
+      };
+
+      transporter.sendMail(mailOptions, (error) => {
+        if (error) {
+          console.error("Error al enviar correo:", error);
+        }
+      });
+    });
+  });
 });
+
+
+// ==============================
+// 🔑 RESET DE CONTRASEÑA USUARIOS
+// ==============================
+
+app.post("/api/usuarios/reset-password", async (req, res) => {
+  const { token, nuevaPassword } = req.body;
+
+  if (!token || !nuevaPassword) {
+    return res.status(400).json({ error: "Token y nueva contraseña son requeridos" });
+  }
+
+  // Validar longitud mínima
+  if (nuevaPassword.length < 6) {
+    return res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres" });
+  }
+
+  // Buscar usuario con ese token
+  db.query("SELECT * FROM usuarios WHERE reset_token = ?", [token], async (err, results) => {
+    if (err) return res.status(500).json({ error: "Error en la base de datos" });
+    if (results.length === 0) return res.status(400).json({ error: "Token inválido o expirado" });
+
+    const userId = results[0].id;
+    const emailUsuario = results[0].email;
+
+    try {
+      // Encriptar nueva contraseña
+      const hashedPassword = await bcrypt.hash(nuevaPassword, 10);
+
+      // Actualizar contraseña y borrar token
+      db.query(
+        "UPDATE usuarios SET password = ?, reset_token = NULL WHERE id = ?",
+        [hashedPassword, userId],
+        (err2) => {
+          if (err2) return res.status(500).json({ error: "Error al actualizar contraseña" });
+
+          // Enviar correo de confirmación
+          const mailOptions = {
+            from: `"Mielissimo" <${process.env.EMAIL_USER}>`,
+            to: emailUsuario,
+            subject: "Contraseña cambiada correctamente",
+            html: `
+              <h2>Tu contraseña fue cambiada con éxito</h2>
+              <p>Si vos no realizaste este cambio, contactá con nuestro soporte inmediatamente.</p>
+            `
+          };
+
+          transporter.sendMail(mailOptions, (error) => {
+            if (error) {
+              console.error("Error al enviar correo de confirmación:", error);
+            }
+          });
+
+          res.json({ mensaje: "Contraseña actualizada correctamente" });
+        }
+      );
+    } catch (e) {
+      res.status(500).json({ error: "Error al procesar la contraseña" });
+    }
+  });
+});
+
+// ==============================
+// 🔑 RECUPERACION Y RESETEO DE CONTRASEÑA ADMIN
+// ==============================
+app.post("/api/admin/recuperar", (req, res) => {
+  const email = process.env.ADMIN_EMAIL; // correo fijo de tu cliente
+
+  // Validamos que exista al menos un admin
+  db.query("SELECT * FROM admins LIMIT 1", (err, results) => {
+    if (err) return res.status(500).json({ error: "Error en la base de datos" });
+    if (results.length === 0) return res.status(404).json({ error: "Administrador no configurado" });
+
+    const token = require("crypto").randomBytes(32).toString("hex");
+
+    db.query("UPDATE admins SET reset_token = ? WHERE id = ?", [token, results[0].id], (err) => {
+      if (err) return res.status(500).json({ error: "Error al guardar token" });
+
+      const resetUrl = `http://localhost:3000/reset-password-admin.html?token=${token}`;
+
+      res.json({ mensaje: "Correo de recuperación enviado. Revisá tu bandeja de entrada." });
+
+      const mailOptions = {
+        from: `"Mielissimo" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "Recuperación de contraseña - Administrador",
+        html: `
+          <h2>Recuperación de contraseña</h2>
+          <p>Hacé clic en el siguiente enlace para restablecer tu contraseña:</p>
+          <a href="${resetUrl}">${resetUrl}</a>
+          <p>Si no solicitaste este cambio, ignorá este correo.</p>
+        `
+      };
+
+      transporter.sendMail(mailOptions, (error) => {
+        if (error) {
+          console.error("Error al enviar correo de recuperación admin:", error);
+        }
+      });
+    });
+  });
+});
+
+app.post("/api/admin/reset-password", async (req, res) => {
+  const { token, nuevaPassword } = req.body;
+
+  if (!token || !nuevaPassword) {
+    return res.status(400).json({ error: "Token y nueva contraseña son requeridos" });
+  }
+
+  if (nuevaPassword.length < 6) {
+    return res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres" });
+  }
+
+  db.query("SELECT * FROM admins WHERE reset_token = ?", [token], async (err, results) => {
+    if (err) return res.status(500).json({ error: "Error en la base de datos" });
+    if (results.length === 0) return res.status(400).json({ error: "Token inválido o expirado" });
+
+    const adminId = results[0].id;
+    const emailAdmin = process.env.ADMIN_EMAIL; // mismo correo fijo
+
+    try {
+      const hashedPassword = await bcrypt.hash(nuevaPassword, 10);
+
+      db.query(
+        "UPDATE admins SET clave = ?, reset_token = NULL WHERE id = ?",
+        [hashedPassword, adminId],
+        (err2) => {
+          if (err2) return res.status(500).json({ error: "Error al actualizar contraseña" });
+
+          const mailOptions = {
+            from: `"Mielissimo" <${process.env.EMAIL_USER}>`,
+            to: emailAdmin,
+            subject: "Contraseña de administrador cambiada correctamente",
+            html: `
+              <h2>Tu contraseña de administrador fue cambiada con éxito</h2>
+              <p>Si no realizaste este cambio, contactá con soporte.</p>
+            `
+          };
+
+          transporter.sendMail(mailOptions, (error) => {
+            if (error) {
+              console.error("Error al enviar correo de confirmación admin:", error);
+            }
+          });
+
+          res.json({ mensaje: "Contraseña de administrador actualizada correctamente" });
+        }
+      );
+    } catch (e) {
+      res.status(500).json({ error: "Error al procesar la contraseña" });
+    }
+  });
+});
+
+
 
 // ==============================
 // 🚀 INICIAR SERVIDOR

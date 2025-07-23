@@ -30,6 +30,11 @@
         <button type="submit">Ingresar</button>
       </form>
       <p id="mensaje-login" style="color: red;"></p>
+      <p style="margin-top: 10px; text-align: center;">
+  <a href="#" id="recuperar-link">¿Olvidaste tu contraseña?</a>
+</p>
+<p id="mensaje-recuperacion" style="margin-top: 10px; text-align: center;"></p>
+
     </div>
   </main>
 
@@ -45,5 +50,29 @@
 </footer>
 
   <script src="js/login-admin.js"></script>
+
+  <script>
+document.getElementById("recuperar-link").addEventListener("click", async (e) => {
+  e.preventDefault();
+
+  const res = await fetch("/api/admin/recuperar", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({}) // correo fijo se maneja en backend
+  });
+
+  const data = await res.json();
+  const mensajeRecuperacion = document.getElementById("mensaje-recuperacion");
+mensajeRecuperacion.innerText = data.mensaje || data.error;
+
+if (res.ok) {
+  mensajeRecuperacion.style.color = "green";
+} else {
+  mensajeRecuperacion.style.color = "red";
+}
+
+});
+</script>
+
 </body>
 </html>
