@@ -55,7 +55,7 @@
 document.getElementById("recuperar-link").addEventListener("click", async (e) => {
   e.preventDefault();
 
-  const res = await fetch("/api/admin/recuperar", {
+  const res = await fetch("https://mielissimo.onrender.com/api/admin/recuperar", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({}) // correo fijo se maneja en backend

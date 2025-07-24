@@ -15,9 +15,6 @@ const app = express();
 const PORT = 3000;
 const JWT_SECRET = "claveultrasecreta123";
 const mailchimp = require("@mailchimp/mailchimp_marketing");
-// Usar configuración desde db.js
-const db = require('./db');
-
 
 mailchimp.setConfig({
   apiKey: process.env.MAILCHIMP_API_KEY,
@@ -63,7 +60,6 @@ db.connect(err => {
   else console.log("MySQL conectado correctamente");
 });
 */
-
 // 🔐 Middleware para validar token
 function verificarToken(req, res, next) {
   const auth = req.headers.authorization;
