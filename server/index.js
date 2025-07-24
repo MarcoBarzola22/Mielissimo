@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 const nodemailer = require("nodemailer");
 const db = require('./db');
+const cloudinary = require('./config/cloudinary');
 
 
 require('dotenv').config();
@@ -159,26 +160,37 @@ app.get("/api/productos", (req, res) => {
   });
 });
 
-app.post("/api/productos", verificarToken, upload.single("imagen"), (req, res) => {
+app.post("/api/productos", verificarToken, upload.single("imagen"), async (req, res) => {
   const { nombre, precio, categoria_id } = req.body;
-  const imagen = req.file ? "/uploads/" + req.file.filename : null;
 
-  if (!nombre || !precio || !categoria_id || !imagen) {
-    return res.status(400).json({ error: "Faltan datos del producto" });
+  if (!req.file) {
+    return res.status(400).json({ error: "Imagen requerida" });
   }
 
- db.query(
-  "INSERT INTO productos (nombre, precio, imagen, categoria_id, activo) VALUES (?, ?, ?, ?, 1)",
-  [nombre, precio, imagen, categoria_id],
-  (err, resultado) => {
-    if (err) return res.status(500).json({ error: "Error al insertar producto" });
-    res.status(201).json({ mensaje: "Producto agregado", id: resultado.insertId });
-  }
-);
+  try {
+    // Subir a Cloudinary
+    const resultado = await cloudinary.uploader.upload(req.file.path, {
+      folder: "productos_mielissimo"
+    });
 
+    const imagenUrl = resultado.secure_url;
+
+    db.query(
+      "INSERT INTO productos (nombre, precio, imagen, categoria_id, activo) VALUES (?, ?, ?, ?, 1)",
+      [nombre, precio, imagenUrl, categoria_id],
+      (err, resultadoDb) => {
+        if (err) return res.status(500).json({ error: "Error al insertar producto" });
+        res.status(201).json({ mensaje: "Producto agregado", id: resultadoDb.insertId });
+      }
+    );
+  } catch (error) {
+    console.error("Error subiendo a Cloudinary:", error);
+    res.status(500).json({ error: "Error al subir la imagen" });
+  }
 });
 
- app.put("/api/productos/:id", verificarToken, upload.single("imagen"), (req, res) => {
+
+app.put("/api/productos/:id", verificarToken, upload.single("imagen"), async (req, res) => {
   const { id } = req.params;
   const { nombre, precio, categoria_id } = req.body;
 
@@ -186,27 +198,32 @@ app.post("/api/productos", verificarToken, upload.single("imagen"), (req, res) =
     return res.status(400).json({ error: "Faltan datos" });
   }
 
-  db.query("SELECT imagen FROM productos WHERE id = ?", [id], (err, resultado) => {
-    if (err || resultado.length === 0) return res.status(404).json({ error: "Producto no encontrado" });
-
-    const producto = resultado[0];
-    let sql, valores;
+  try {
+    let nuevaImagenUrl = null;
 
     if (req.file) {
-      const nuevaImagen = "/uploads/" + req.file.filename;
-      fs.unlink(path.join(__dirname, producto.imagen), () => {});
-      sql = "UPDATE productos SET nombre = ?, precio = ?, imagen = ?, categoria_id = ? WHERE id = ?";
-      valores = [nombre, precio, nuevaImagen, categoria_id, id];
-    } else {
-      sql = "UPDATE productos SET nombre = ?, precio = ?, categoria_id = ? WHERE id = ?";
-      valores = [nombre, precio, categoria_id, id];
+      const resultado = await cloudinary.uploader.upload(req.file.path, {
+        folder: "productos_mielissimo"
+      });
+      nuevaImagenUrl = resultado.secure_url;
     }
+
+    const sql = nuevaImagenUrl
+      ? "UPDATE productos SET nombre=?, precio=?, imagen=?, categoria_id=? WHERE id=?"
+      : "UPDATE productos SET nombre=?, precio=?, categoria_id=? WHERE id=?";
+
+    const valores = nuevaImagenUrl
+      ? [nombre, precio, nuevaImagenUrl, categoria_id, id]
+      : [nombre, precio, categoria_id, id];
 
     db.query(sql, valores, err => {
       if (err) return res.status(500).json({ error: "Error al actualizar producto" });
       res.json({ mensaje: "Producto actualizado correctamente" });
     });
-  });
+  } catch (error) {
+    console.error("Error actualizando producto:", error);
+    res.status(500).json({ error: "Error al subir la imagen" });
+  }
 });
 
 
