@@ -399,6 +399,8 @@ formularioVariante.addEventListener("submit", async (e) => {
   ? null 
   : parseFloat(inputPrecio.value);
 
+
+
 const body = {
   id_producto: parseInt(productoParaVariantes),
   tipo,

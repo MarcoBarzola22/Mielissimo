@@ -512,22 +512,23 @@ app.get("/api/variantes/:id_producto", (req, res) => {
   });
 });
 
-app.post("/api/variantes", upload.single("imagen"), (req, res) => {
-  const { id_producto, nombre, precio, tipo } = req.body;
+app.post("/api/variantes", (req, res) => {
+  const { id_producto, tipo, nombre, precio_extra } = req.body;
 
-  const precioFinal = precio === "" || precio === undefined || precio === null
+  const precioFinal = precio_extra === "" || precio_extra === undefined || precio_extra === null
     ? null
-    : parseFloat(precio);
+    : parseFloat(precio_extra);
 
   db.query(
-    "INSERT INTO variantes (id_producto, nombre, precio_extra, tipo) VALUES (?, ?, ?, ?)",
-    [id_producto, nombre, precioFinal, tipo],
-    (err, resultado) => {
+    "INSERT INTO variantes (id_producto, tipo, nombre, precio_extra) VALUES (?, ?, ?, ?)",
+    [id_producto, tipo, nombre, precioFinal],
+    (err, result) => {
       if (err) return res.status(500).json({ error: "Error al crear variante" });
-      res.status(201).json({ mensaje: "Variante creada correctamente", id: resultado.insertId });
+      res.json({ mensaje: "Variante creada correctamente", id: result.insertId });
     }
   );
 });
+
 
 
 app.put("/api/variantes/:id", (req, res) => {
