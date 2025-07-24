@@ -395,17 +395,17 @@ formularioVariante.addEventListener("submit", async (e) => {
   const nombre = document.getElementById("nombreVariante").value;
   const inputPrecio = document.getElementById("precioExtra");
 
- const precioAdicional = inputPrecio.disabled || inputPrecio.value.trim() === "" ? null : parseFloat(inputPrecio.value);
+ const precioAdicional = inputPrecio.disabled || inputPrecio.value.trim() === "" 
+  ? null 
+  : parseFloat(inputPrecio.value);
 
+const body = {
+  id_producto: parseInt(productoParaVariantes),
+  tipo,
+  nombre,
+  precio_extra: precioAdicional  // <-- enviar el nombre correcto que espera backend
+};
 
-
-  const body = {
-    id_producto: parseInt(productoParaVariantes),
-    tipo,
-    nombre,
-    precio: precioAdicional,
-    
-  };
 
   const metodo = varianteEditandoId ? "PUT" : "POST";
   const url = varianteEditandoId ? `https://mielissimo.onrender.com/api/variantes/${varianteEditandoId}` : "https://mielissimo.onrender.com/api/variantes";

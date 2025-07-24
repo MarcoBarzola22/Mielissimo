@@ -530,39 +530,24 @@ app.post("/api/variantes", upload.single("imagen"), (req, res) => {
 });
 
 
-app.put("/api/variantes/:id", upload.single("imagen"), (req, res) => {
+app.put("/api/variantes/:id", (req, res) => {
   const { id } = req.params;
   const { nombre, precio_extra } = req.body;
-  const nuevaImagen = req.file ? "/uploads/" + req.file.filename : null;
 
+  // Convertimos precio_extra a null o número
   const precioFinal = precio_extra === "" || precio_extra === undefined || precio_extra === null
     ? null
     : parseFloat(precio_extra);
 
-  db.query("SELECT imagen FROM variantes WHERE id = ?", [id], (err, resultados) => {
-    if (err || resultados.length === 0) {
-      return res.status(404).json({ error: "Variante no encontrada" });
+  // Query para actualizar (sin imágenes porque ya no usamos)
+  const sql = "UPDATE variantes SET nombre=?, precio_extra=? WHERE id=?";
+
+  db.query(sql, [nombre, precioFinal, id], (err) => {
+    if (err) {
+      console.error("Error al actualizar variante:", err);
+      return res.status(500).json({ error: "Error al actualizar variante" });
     }
-
-    const varianteActual = resultados[0];
-    const imagenAnterior = varianteActual.imagen;
-
-    let sql, valores;
-
-    if (nuevaImagen) {
-      const rutaVieja = path.join(__dirname, imagenAnterior);
-      fs.unlink(rutaVieja, () => {});
-      sql = "UPDATE variantes SET nombre=?, precio_extra=?, imagen=? WHERE id=?";
-      valores = [nombre, precioFinal, nuevaImagen, id];
-    } else {
-      sql = "UPDATE variantes SET nombre=?, precio_extra=? WHERE id=?";
-      valores = [nombre, precioFinal, id];
-    }
-
-    db.query(sql, valores, (err) => {
-      if (err) return res.status(500).json({ error: "Error al actualizar variante" });
-      res.json({ mensaje: "Variante actualizada correctamente" });
-    });
+    res.json({ mensaje: "Variante actualizada correctamente" });
   });
 });
 
