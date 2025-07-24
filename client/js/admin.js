@@ -1,3 +1,10 @@
+// Verificación inmediata al cargar admin.html
+const tokenAdmin = localStorage.getItem("tokenAdmin");
+if (!tokenAdmin) {
+  window.location.href = "login-admin.html"; // Redirige si no hay token
+}
+
+
 const formulario = document.getElementById("formulario-producto");
 const mensaje = document.getElementById("mensaje");
 const productosContainer = document.getElementById("lista-productos");
