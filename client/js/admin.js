@@ -309,7 +309,7 @@ document.addEventListener("click", (e) => {
 
   if (e.target.classList.contains("eliminar-variante")) {
   const id = e.target.dataset.id;
-  fetch(`/api/variantes/${id}`, {
+  fetch(`https://mielissimo.onrender.com/api/variantes/${id}`, {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` }
   })
@@ -331,7 +331,9 @@ document.addEventListener("click", (e) => {
     varianteEditandoId = id;
     document.getElementById("tipoVariante").value = e.target.dataset.tipo;
     document.getElementById("nombreVariante").value = e.target.dataset.nombre;
-    document.getElementById("precioExtra").value = e.target.dataset.precio;
+    document.getElementById("precioExtra").value =  e.target.dataset.precio && e.target.dataset.precio !== "null"
+    ? e.target.dataset.precio
+    : "";
     btnAgregarVariante.textContent = "Guardar cambios";
     btnCancelarVariante.style.display = "inline";
 
