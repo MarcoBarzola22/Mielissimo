@@ -629,7 +629,7 @@ app.post("/api/usuarios/recuperar", (req, res) => {
       if (err) return res.status(500).json({ error: "Error al guardar token" });
 
       // URL para resetear contraseña (ajustá la carpeta si es distinta)
-     const resetUrl = `http://localhost:3000/reset-password.html?token=${token}`;
+     const resetUrl = `https://mielissimo.com.ar/reset-password.html?token=${token}`;
 
 
       // Responder rápido al frontend
@@ -735,7 +735,7 @@ app.post("/api/admin/recuperar", (req, res) => {
     db.query("UPDATE admins SET reset_token = ? WHERE id = ?", [token, results[0].id], (err) => {
       if (err) return res.status(500).json({ error: "Error al guardar token" });
 
-      const resetUrl = `http://localhost:3000/reset-password-admin.html?token=${token}`;
+      const resetUrl = `https://mielissimo.com.ar/reset-password-admin.html?token=${token}`;
 
       res.json({ mensaje: "Correo de recuperación enviado. Revisá tu bandeja de entrada." });
 
