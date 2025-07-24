@@ -190,6 +190,7 @@ app.post("/api/productos", verificarToken, upload.single("imagen"), async (req, 
 });
 
 
+
 app.put("/api/productos/:id", verificarToken, upload.single("imagen"), async (req, res) => {
   const { id } = req.params;
   const { nombre, precio, categoria_id } = req.body;
