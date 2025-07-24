@@ -7,6 +7,7 @@ const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require("nodemailer");
+const db = require('./db');
 
 
 require('dotenv').config();

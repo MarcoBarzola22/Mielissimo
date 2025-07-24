@@ -1,15 +1,18 @@
 const mysql = require('mysql2');
 const bcrypt = require('bcrypt');
 
+// Conexión a Railway usando variables de entorno
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '44994334marco',
-  database: 'mielissimo'
+  host: process.env.DB_HOST,      // host de Railway
+  user: process.env.DB_USER,      // usuario de Railway
+  password: process.env.DB_PASSWORD, // contraseña de Railway
+  database: process.env.DB_NAME,  // nombre de la base
+  port: process.env.DB_PORT       // puerto de Railway
 });
 
+// Cambiá el usuario y contraseña si querés
 const usuario = 'admin';
-const clavePlano = '1234'; // Cambialo si querés
+const clavePlano = '123456';
 
 // Verificar si el usuario ya existe
 const verificarSQL = 'SELECT * FROM admins WHERE usuario = ?';
@@ -33,7 +36,7 @@ db.query(verificarSQL, [usuario], (err, resultados) => {
     }
 
     const insertSQL = 'INSERT INTO admins (usuario, clave) VALUES (?, ?)';
-    db.query(insertSQL, [usuario, hash], (err, resultado) => {
+    db.query(insertSQL, [usuario, hash], (err) => {
       if (err) {
         console.error('Error al insertar admin:', err);
       } else {
