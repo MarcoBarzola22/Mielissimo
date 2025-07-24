@@ -1,13 +1,14 @@
+require('dotenv').config();
 const mysql = require('mysql2');
 const bcrypt = require('bcrypt');
 
 // Conexión a Railway usando variables de entorno
 const db = mysql.createConnection({
-  host: process.env.DB_HOST,      // host de Railway
-  user: process.env.DB_USER,      // usuario de Railway
-  password: process.env.DB_PASSWORD, // contraseña de Railway
-  database: process.env.DB_NAME,  // nombre de la base
-  port: process.env.DB_PORT       // puerto de Railway
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: process.env.DB_PORT
 });
 
 // Cambiá el usuario y contraseña si querés
