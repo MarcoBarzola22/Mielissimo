@@ -167,14 +167,15 @@ app.post("/api/productos", verificarToken, upload.single("imagen"), (req, res) =
     return res.status(400).json({ error: "Faltan datos del producto" });
   }
 
-  db.query(
-    "INSERT INTO productos (nombre, precio, imagen, categoria_id) VALUES (?, ?, ?, ?)",
-    [nombre, precio, imagen, categoria_id],
-    (err, resultado) => {
-      if (err) return res.status(500).json({ error: "Error al insertar producto" });
-      res.status(201).json({ mensaje: "Producto agregado", id: resultado.insertId });
-    }
-  );
+ db.query(
+  "INSERT INTO productos (nombre, precio, imagen, categoria_id, activo) VALUES (?, ?, ?, ?, 1)",
+  [nombre, precio, imagen, categoria_id],
+  (err, resultado) => {
+    if (err) return res.status(500).json({ error: "Error al insertar producto" });
+    res.status(201).json({ mensaje: "Producto agregado", id: resultado.insertId });
+  }
+);
+
 });
 
  app.put("/api/productos/:id", verificarToken, upload.single("imagen"), (req, res) => {
