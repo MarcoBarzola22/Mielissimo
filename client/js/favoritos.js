@@ -6,13 +6,13 @@ const token = localStorage.getItem("token_usuario");
 
 async function cargarFavoritos() {
   try {
-    const res = await fetch("https://mielissimo.onrender.com/api/favoritos", {
+    const res = await fetch("https://api.mielissimo.com.ar/api/favoritos", {
       headers: { Authorization: `Bearer ${token}` }
     });
     if (!res.ok) throw new Error("Error al obtener favoritos");
 
     const favoritos = await res.json();
-    const productos = await fetch("https://mielissimo.onrender.com/api/productos").then(r => r.json());
+    const productos = await fetch("https://api.mielissimo.com.ar/api/productos").then(r => r.json());
 
     const favoritosCompletos = productos.filter(p =>
       favoritos.some(fav => fav.producto_id === p.id)
@@ -66,7 +66,7 @@ function renderizarFavoritos(productos) {
       const id = parseInt(btn.dataset.id);
 
       try {
-        const res = await fetch(`https://mielissimo.onrender.com/api/favoritos/${id}`, {
+        const res = await fetch(`https://api.mielissimo.com.ar/api/favoritos/${id}`, {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`
@@ -90,7 +90,7 @@ function agregarAlCarrito(id) {
   if (productoExistente) {
     productoExistente.cantidad++;
   } else {
-    fetch("https://mielissimo.onrender.com/api/productos")
+    fetch("https://api.mielissimo.com.ar/api/productos")
       .then(res => res.json())
       .then(productos => {
         const prod = productos.find(p => p.id == id);

@@ -7,7 +7,7 @@ async function cargarHistorial() {
   if (!token) return;
 
   try {
-    const res = await fetch("https://mielissimo.onrender.com/api/historial", {
+    const res = await fetch("https://api.mielissimo.com.ar/api/historial", {
       headers: {
         Authorization: `Bearer ${token}`
       }

@@ -97,7 +97,7 @@ async function confirmarCompra() {
   // --- Guardar en DB SOLO si el usuario está logueado ---
   if (id_usuario) {
     try {
-      await fetch("https://mielissimo.onrender.com/api/compras", {
+      await fetch("https://api.mielissimo.com.ar/api/compras", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id_usuario, carrito: carritoCopia, tipoEnvio, total })
