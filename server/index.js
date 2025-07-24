@@ -46,6 +46,11 @@ const upload = multer({ storage });
 // 🔸 Middlewares
 app.use(cors());
 app.use(express.json());
+// Proteger admin.html para acceso directo
+app.get('/admin.html', (req, res) => {
+  res.redirect('/login-admin.html'); // Redirige siempre al login
+});
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
