@@ -176,7 +176,7 @@ function configurarBuscador() {
   });
 }
 
-// NEWSLETTER (versión anterior estable)
+// 📧 Newsletter
 const formNewsletter = document.getElementById("form-newsletter");
 const inputEmail = document.getElementById("email-newsletter");
 const mensajeNewsletter = document.getElementById("mensaje-newsletter");
@@ -187,20 +187,22 @@ if (formNewsletter) {
     const email = inputEmail.value.trim();
 
     try {
-      const res = await fetch(`${API_URL}/suscriptores`, {
+      const res = await fetch("https://api.mielissimo.com.ar/api/newsletter", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({ email })
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        mensajeNewsletter.textContent = data.mensaje || "¡Gracias por suscribirte!";
+        mensajeNewsletter.textContent = data.mensaje;
         mensajeNewsletter.style.color = "green";
         formNewsletter.reset();
       } else {
-        mensajeNewsletter.textContent = data.error || "Error al suscribirte";
+        mensajeNewsletter.textContent = data.error;
         mensajeNewsletter.style.color = "red";
       }
     } catch (err) {
