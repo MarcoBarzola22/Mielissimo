@@ -76,78 +76,50 @@ function calcularTotal() {
   }
 }
 
-async function confirmarCompra() {
-  const mensaje = document.getElementById("mensaje-compra");
-  const id_usuario = Number(localStorage.getItem("id_usuario"));
-  const nombreUsuario = localStorage.getItem("nombre_usuario") || "Anónimo";
+function finalizarCompra() {
+  const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 
   if (carrito.length === 0) {
-    mensaje.textContent = "🛒 Tu carrito está vacío.";
-    mensaje.style.color = "red";
-    mensaje.style.display = "block";
+    mensajeConfirmacion.textContent = "El carrito está vacío.";
+    mensajeConfirmacion.style.color = "red";
     return;
   }
 
-  // COPIAR CARRITO ANTES DE VACIARLO
-  const carritoCopia = [...carrito];
+  // Armar mensaje para WhatsApp
+  let mensaje = "Hola, quiero hacer un pedido en Mielíssimo\n\n";
 
-  // Mostrar mensaje instantáneo
-  mensaje.innerHTML = "✅ <strong>¡Compra confirmada! Redirigiendo a WhatsApp...</strong>";
-  mensaje.style.color = "green";
-  mensaje.style.display = "block";
-
-  const tipoEnvio = document.querySelector('input[name="tipo-envio"]:checked')?.value || "retiro";
-  const totalTexto = document.getElementById("total-compra").textContent.replace(/[^\d.-]/g, "").trim();
-  const total = parseFloat(totalTexto);
-
-  // Guardar en DB si hay usuario logueado
-  if (id_usuario) {
-    try {
-      await fetch("https://api.mielissimo.com.ar/api/compras", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id_usuario, carrito: carritoCopia, tipoEnvio, total })
-      });
-    } catch (err) {
-      console.error("Error guardando en historial:", err);
-    }
-  }
-
-  // Generar mensaje WhatsApp usando carritoCopia
-  const tipo = tipoEnvio === "envio" ? "🚚 Envío a domicilio" : "🏠 Retiro en local";
-
-  const detallesProductos = carritoCopia.map(item => {
-    const variantesTexto = item.variantes?.length
+  let total = 0;
+  carrito.forEach(item => {
+    const variantesTexto = item.variantes && item.variantes.length > 0
       ? ` (${item.variantes.map(v => v.nombre).join(", ")})`
       : "";
+    mensaje += `- ${item.nombre}${variantesTexto} x${item.cantidad}: $${(item.precio * item.cantidad).toFixed(2)}\n`;
+    total += item.precio * item.cantidad;
+  });
 
-    return `❤️ ${item.cantidad} x ${item.nombre}${variantesTexto} = $${(item.precio * item.cantidad).toFixed(2)}`;
-  }).join("\n");
+  mensaje += `\nTotal: $${total.toFixed(2)}\n`;
 
-  const mensajeTexto = 
-`Hola, quiero hacer un pedido en Mielíssimo 🍬❤️
-✨ ¡Más golosinas, más contento! 😋
+  const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
+  mensaje += `\nNombre: ${usuario.nombre || "No especificado"}\n`;
 
-Detalles del Pedido:
-${detallesProductos}
+  // Forma de entrega (retiro/envío)
+  const metodoEntrega = document.querySelector('input[name="entrega"]:checked');
+  if (metodoEntrega) {
+    mensaje += `${metodoEntrega.value}\n`;
+  }
 
-💲 Total: $${total.toFixed(2)}
+  // Obtener número de WhatsApp y generar enlace
+  const numeroWhatsapp = "92657603387"; // SIN el +54 9 inicial
+  const linkWhatsapp = `https://wa.me/54${numeroWhatsapp}?text=${encodeURIComponent(mensaje)}`;
 
-👤 Nombre: ${nombreUsuario}
-${tipo}`;
+  // Mostrar mensaje de confirmación antes de redirigir
+  mensajeConfirmacion.textContent = "Redirigiendo a WhatsApp...";
+  mensajeConfirmacion.style.color = "green";
 
-  const textoCodificado = encodeURIComponent(mensajeTexto);
- const numeroWhatsapp = "2657635540";
-const linkWhatsapp = `https://wa.me/54${numeroWhatsapp}?text=${mensaje}`;
-
-
-  // Redirigir a WhatsApp y luego vaciar carrito
+  // Abrir WhatsApp y limpiar carrito después de un pequeño delay
   setTimeout(() => {
-    window.location.href = linkWhatsapp;
-
-    // Vaciar carrito después
-    carrito = [];
-    localStorage.setItem("carrito", JSON.stringify([]));
+    window.open(linkWhatsapp, "_blank");
+    localStorage.removeItem("carrito");
     actualizarContadorCarrito();
     renderizarCarrito();
   }, 500);
