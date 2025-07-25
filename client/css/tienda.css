@@ -1520,43 +1520,14 @@ main h1 {
   margin-top: 20px;   /* ajusta si había demasiado espacio antes */
 }
 
-/* Botón "Sin variantes" en móviles */
 .btn-sin-variante {
-  background-color: #f4f4f4;        /* Fondo neutro para diferenciarlo */
-  color: #333;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  padding: 8px 12px;
-  margin-top: 10px;
-  font-size: 0.95rem;
-  width: 100%;                      /* Ocupa todo el ancho en móviles */
-  text-align: center;
-  transition: background-color 0.3s ease;
-}
-
-.btn-sin-variante:hover {
-  background-color: #e2e2e2;
-}
-
-.btn-sin-variante:active {
-  background-color: #d6d6d6;
-}
-
-/* Alinearlo con el resto de botones de variantes */
-@media (min-width: 768px) {
-  .btn-sin-variante {
-    width: auto;                     /* En desktop que se comporte como los demás */
-    display: inline-block;
-    margin-left: 5px;
-  }
-}
-
-.btn-sin-variante {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   background: #ffffff;
   border: 2px dashed #f06292;   /* Bordes punteados para diferenciarlo */
-  color: #d81b60;               /* Rosa oscuro coherente con tu paleta */
+  color: #d81b60;
   font-weight: bold;
   border-radius: 12px;
   padding: 10px 14px;
@@ -1568,20 +1539,26 @@ main h1 {
 }
 
 .btn-sin-variante:hover {
-  background: #fce4ec;          /* Rosa clarito al pasar el mouse */
+  background: #fce4ec;
   cursor: pointer;
 }
 
 .btn-sin-variante:active {
-  background: #f8bbd0;          /* Un poco más fuerte al presionar */
-  transform: scale(0.98);       /* Pequeño efecto de “clic” */
+  background: #f8bbd0;
+  transform: scale(0.98);
 }
 
-/* En pantallas grandes (desktop), alineación horizontal */
+.btn-sin-variante span {
+  margin-left: 6px;
+  font-size: 1rem;
+}
+
+/* En desktop */
 @media (min-width: 768px) {
   .btn-sin-variante {
     width: auto;
-    display: inline-block;
+    display: inline-flex;
     margin-left: 8px;
   }
 }
+
