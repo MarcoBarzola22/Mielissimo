@@ -1550,3 +1550,38 @@ main h1 {
     margin-left: 5px;
   }
 }
+
+.btn-sin-variante {
+  display: block;
+  width: 100%;
+  background: #ffffff;
+  border: 2px dashed #f06292;   /* Bordes punteados para diferenciarlo */
+  color: #d81b60;               /* Rosa oscuro coherente con tu paleta */
+  font-weight: bold;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 12px 0;
+  font-size: 1rem;
+  text-align: center;
+  transition: all 0.3s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.btn-sin-variante:hover {
+  background: #fce4ec;          /* Rosa clarito al pasar el mouse */
+  cursor: pointer;
+}
+
+.btn-sin-variante:active {
+  background: #f8bbd0;          /* Un poco más fuerte al presionar */
+  transform: scale(0.98);       /* Pequeño efecto de “clic” */
+}
+
+/* En pantallas grandes (desktop), alineación horizontal */
+@media (min-width: 768px) {
+  .btn-sin-variante {
+    width: auto;
+    display: inline-block;
+    margin-left: 8px;
+  }
+}
