@@ -88,13 +88,13 @@ async function confirmarCompra() {
     return;
   }
 
-  // Copiamos el carrito y calculamos total
+  // Copiar datos actuales del carrito
   const carritoCopia = [...carrito];
   const tipoEnvio = document.querySelector('input[name="tipo-envio"]:checked')?.value || "retiro";
   const totalTexto = document.getElementById("total-compra").textContent.replace(/[^\d.-]/g, "").trim();
   const total = parseFloat(totalTexto);
 
-  // --- Guardar en DB SOLO si el usuario está logueado ---
+  // Guardar en DB si hay usuario logueado
   if (id_usuario) {
     try {
       await fetch("https://api.mielissimo.com.ar/api/compras", {
@@ -107,11 +107,10 @@ async function confirmarCompra() {
     }
   }
 
-  // --- Generar mensaje para WhatsApp ---
+  // Generar mensaje para WhatsApp
   const tipo = tipoEnvio === "envio" ? "🚚 Envío a domicilio" : "🏠 Retiro en local";
 
   const detallesProductos = carritoCopia.map(item => {
-    // Si tiene variantes, las ponemos entre paréntesis
     const variantesTexto = item.variantes?.length
       ? ` (${item.variantes.map(v => v.nombre).join(", ")})`
       : "";
@@ -132,22 +131,25 @@ ${detallesProductos}
 ${tipo}`;
 
   const textoCodificado = encodeURIComponent(mensajeTexto);
-  const numeroWhatsapp = "2657635540"; // Cambia por el número de tu cliente
+  const numeroWhatsapp = "2657635540"; // Número del cliente
   const linkWhatsapp = `https://wa.me/54${numeroWhatsapp}?text=${textoCodificado}`;
 
-  // Mostrar mensaje y redirigir
-  mensaje.innerHTML = "✅ <strong>¡Compra confirmada con éxito! Redirigiendo a WhatsApp...</strong>";
+  // Mostrar mensaje rápido
+  mensaje.innerHTML = "✅ <strong>¡Compra confirmada! Redirigiendo a WhatsApp...</strong>";
   mensaje.style.color = "green";
   mensaje.style.display = "block";
 
+  // Redirigir rápidamente y luego limpiar carrito
   setTimeout(() => {
+    window.location.href = linkWhatsapp;
+
+    // Limpiar carrito después de abrir WhatsApp
     carrito = [];
     localStorage.setItem("carrito", JSON.stringify([]));
-    renderizarCarrito();
     actualizarContadorCarrito();
-    window.location.href = linkWhatsapp;
-  }, 1000);
+  }, 500); // Menor delay para sensación instantánea
 }
+
 
 
 
