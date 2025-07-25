@@ -826,7 +826,6 @@ app.post("/api/admin/reset-password", async (req, res) => {
 app.get("/api/productos/:id", (req, res) => {
   const { id } = req.params;
 
-  // Consulta principal: producto + categoría
   const sqlProducto = `
     SELECT p.*, c.nombre AS categoria_nombre
     FROM productos p
@@ -836,24 +835,20 @@ app.get("/api/productos/:id", (req, res) => {
 
   db.query(sqlProducto, [id], (err, productoRes) => {
     if (err) return res.status(500).json({ error: "Error al obtener producto" });
-
-    if (productoRes.length === 0) {
-      return res.status(404).json({ error: "Producto no encontrado" });
-    }
+    if (productoRes.length === 0) return res.status(404).json({ error: "Producto no encontrado" });
 
     const producto = productoRes[0];
 
-    // Consulta para las variantes del producto
+    // CORREGIDO: usamos la columna correcta `id_producto`
     const sqlVariantes = `
       SELECT id, nombre, tipo, precio_extra
       FROM variantes
-      WHERE producto_id = ?
+      WHERE id_producto = ?
     `;
 
     db.query(sqlVariantes, [id], (err, variantesRes) => {
       if (err) return res.status(500).json({ error: "Error al obtener variantes" });
 
-      // Devolvemos todo junto
       res.json({
         ...producto,
         variantes: variantesRes || []
@@ -861,6 +856,7 @@ app.get("/api/productos/:id", (req, res) => {
     });
   });
 });
+
 
 
 // ==============================
