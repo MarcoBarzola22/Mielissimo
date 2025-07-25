@@ -88,24 +88,27 @@ function renderVariantes(variantes) {
       const btn = document.createElement("button");
       btn.className = "btn-variante";
       btn.textContent = `${v.nombre} ${v.precio_extra ? `- $${parseFloat(v.precio_extra).toFixed(2)}` : ""}`;
-      btn.addEventListener("click", () => {
-        const yaSeleccionada = variantesSeleccionadas.find(sel => sel.id === v.id);
-        if (yaSeleccionada) {
-          variantesSeleccionadas = variantesSeleccionadas.filter(sel => sel.id !== v.id);
-          btn.classList.remove("activo");
-        } else {
-          variantesSeleccionadas = variantesSeleccionadas.filter(sel => sel.tipo !== v.tipo);
-          variantesSeleccionadas.push({
-            id: v.id,
-            nombre: v.nombre,
-            precio: parseFloat(v.precio_extra) || precioBase,
-            tipo: v.tipo
-          });
-          grupo.querySelectorAll(".btn-variante").forEach(b => b.classList.remove("activo"));
-          btn.classList.add("activo");
-        }
-        actualizarPrecio();
+      ["click", "pointerdown"].forEach(eventType => {
+  btn.addEventListener(eventType, () => {
+    const yaSeleccionada = variantesSeleccionadas.find(sel => sel.id === v.id);
+    if (yaSeleccionada) {
+      variantesSeleccionadas = variantesSeleccionadas.filter(sel => sel.id !== v.id);
+      btn.classList.remove("activo");
+    } else {
+      variantesSeleccionadas = variantesSeleccionadas.filter(sel => sel.tipo !== v.tipo);
+      variantesSeleccionadas.push({
+        id: v.id,
+        nombre: v.nombre,
+        precio: parseFloat(v.precio_extra) || precioBase,
+        tipo: v.tipo
       });
+      grupo.querySelectorAll(".btn-variante").forEach(b => b.classList.remove("activo"));
+      btn.classList.add("activo");
+    }
+    actualizarPrecio();
+  });
+});
+
       grupo.appendChild(btn);
     });
 
