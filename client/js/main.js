@@ -27,6 +27,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderizarCategorias();
     renderizarProductos(productosCache, favoritosCache);
 
+    configurarNewsletter();
+
     configurarBuscador();
     mostrarUsuario();
     actualizarContadorCarrito();
@@ -79,7 +81,12 @@ function renderizarCategorias() {
         const boton = document.createElement("button");
         boton.textContent = cat.nombre;
         boton.className = "boton-categoria";
-        boton.addEventListener("click", () => filtrarPorCategoria(cat.id));
+        boton.addEventListener("click", () => {
+          const filtrados = productosCache.filter(
+            p => String(p.id_categoria) === String(cat.id)
+          );
+          renderizarProductos(filtrados, favoritosCache);
+        });
         fragment.appendChild(boton);
       });
       contenedorCategorias.appendChild(fragment);
@@ -164,8 +171,8 @@ function configurarBotonesFavoritos(favoritos) {
     btn.addEventListener("click", async (e) => {
       e.stopPropagation();
 
-      const idProducto = btn.dataset.id;
-      const esFavorito = favoritos.includes(parseInt(idProducto));
+      const idProducto = parseInt(btn.dataset.id);
+      const esFavorito = favoritos.includes(idProducto);
 
       try {
         const metodo = esFavorito ? "DELETE" : "POST";
@@ -179,11 +186,11 @@ function configurarBotonesFavoritos(favoritos) {
 
         if (res.ok) {
           if (esFavorito) {
-            favoritosCache = favoritosCache.filter(id => id !== parseInt(idProducto));
+            favoritosCache = favoritosCache.filter(id => id !== idProducto);
             btn.textContent = "🤍";
             btn.style.color = "#999";
           } else {
-            favoritosCache.push(parseInt(idProducto));
+            favoritosCache.push(idProducto);
             btn.textContent = "❤️";
             btn.style.color = "#ef5579";
           }
@@ -261,4 +268,44 @@ function crearBotonCarritoFlotante() {
     window.location.href = "carrito.html";
   });
   document.body.appendChild(botonFlotante);
+}
+
+function configurarNewsletter() {
+  const formularioNewsletter = document.querySelector("#newsletter form");
+  if (!formularioNewsletter) return;
+
+  formularioNewsletter.addEventListener("submit", async e => {
+    e.preventDefault();
+
+    const emailInput = formularioNewsletter.querySelector("input[type='email']");
+    const email = emailInput.value.trim();
+
+    if (!email) {
+      alert("Por favor ingresa un correo válido.");
+      return;
+    }
+
+    try {
+      const res = await fetch(`${API_URL}/suscriptores`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+
+      if (!res.ok) throw new Error("Error al suscribirse");
+
+      // Mostrar mensaje sin mover la pantalla
+      const mensaje = document.createElement("p");
+      mensaje.textContent = "¡Gracias por suscribirte!";
+      mensaje.style.color = "green";
+      formularioNewsletter.appendChild(mensaje);
+
+      setTimeout(() => mensaje.remove(), 3000);
+      emailInput.value = "";
+
+    } catch (error) {
+      console.error("Error en newsletter:", error);
+      alert("Hubo un problema al suscribirte.");
+    }
+  });
 }
