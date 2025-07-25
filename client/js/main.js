@@ -1,108 +1,109 @@
-import { mostrarUsuario, actualizarContadorCarrito, crearBotonCarritoFlotante } from "./navbar.js";
+const API_URL = "https://api.mielissimo.com.ar/api";
 
-
-
+// Elementos del DOM
 const contenedorCategorias = document.getElementById("categorias-horizontal");
 const contenedorProductos = document.getElementById("productos");
+const contadorCarrito = document.getElementById("contador-carrito");
+const contadorCarritoFlotante = document.getElementById("contador-carrito-flotante");
+const searchInput = document.getElementById("buscador");
+
 let productosCache = [];
-let productosVisibles = []; // cache local de lo que se muestra ahora
+let favoritosCache = [];
+let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 
-// 🔃 Cargar categorías como botones pill
-function cargarCategorias() {
-  fetch("https://api.mielissimo.com.ar/api/categorias")
-    .then(res => res.json())
-    .then(categorias => {
-      if (!contenedorCategorias) return;
+// ===============================
+// Inicialización
+// ===============================
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    const [productos, favoritos] = await Promise.all([
+      fetch(`${API_URL}/productos`).then(r => r.json()),
+      obtenerFavoritos()
+    ]);
 
-      contenedorCategorias.innerHTML = "";
+    productosCache = productos;
+    favoritosCache = favoritos;
 
-      const btnTodas = document.createElement("button");
-      btnTodas.textContent = "Todas";
-      btnTodas.classList.add("btn-categoria", "activa");
-      btnTodas.dataset.id = "todas";
-      contenedorCategorias.appendChild(btnTodas);
+    renderizarCategorias();
+    renderizarProductos(productosCache, favoritosCache);
 
-      categorias.forEach(cat => {
-        const btn = document.createElement("button");
-        btn.textContent = cat.nombre;
-        btn.dataset.id = cat.id;
-        btn.classList.add("btn-categoria");
-        contenedorCategorias.appendChild(btn);
-      });
-    })
-    .catch(err => console.error("Error al cargar categorías:", err));
-}
+    configurarBuscador();
+    mostrarUsuario();
+    actualizarContadorCarrito();
+    crearBotonCarritoFlotante();
 
-// 🖱️ Filtro por categoría
-document.addEventListener("click", (e) => {
-  if (e.target.classList.contains("btn-categoria")) {
-    const idCategoria = e.target.dataset.id;
-
-    document.querySelectorAll(".btn-categoria").forEach(btn =>
-      btn.classList.remove("activa")
-    );
-    e.target.classList.add("activa");
-
-    const url = idCategoria === "todas"
-      ? "https://api.mielissimo.com.ar/api/productos"
-      : `https://api.mielissimo.com.ar/api/productos?categoria=${idCategoria}`;
-
-    fetch(url)
-      .then(res => res.json())
-      .then(productos => renderizarProductos(productos))
-      .catch(err => console.error("Error al filtrar productos:", err));
+  } catch (error) {
+    console.error("Error inicial:", error);
   }
 });
 
-// 🔄 Obtener favoritos del usuario si está logueado
+// ===============================
+// Obtener favoritos del usuario
+// ===============================
 async function obtenerFavoritos() {
   const tokenUsuario = localStorage.getItem("token_usuario");
   if (!tokenUsuario) return [];
 
   try {
-    const res = await fetch("https://api.mielissimo.com.ar/api/favoritos", {
+    const res = await fetch(`${API_URL}/favoritos`, {
       headers: { Authorization: `Bearer ${tokenUsuario}` }
     });
-
-    if (res.status === 401 || res.status === 403) {
-      console.warn("Token inválido o expirado. Cerrando sesión...");
-      localStorage.removeItem("token_usuario");
-      location.href = "login.html"; // 🔁 redirige al login
-      return [];
-    }
-
-    if (!res.ok) throw new Error("Error al obtener favoritos");
-
-    const data = await res.json();
-    return data.map(f => f.producto_id);
-  } catch (err) {
-    console.error("Error al obtener favoritos:", err);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
     return [];
   }
 }
 
+// ===============================
+// Renderizar categorías con botón "Todos"
+// ===============================
+function renderizarCategorias() {
+  if (!contenedorCategorias) return;
+  contenedorCategorias.innerHTML = "";
 
-// 🖼 Renderizar productos
-async function renderizarProductos(productos) {
+  const fragment = document.createDocumentFragment();
+
+  // Botón "Todos"
+  const botonTodos = document.createElement("button");
+  botonTodos.textContent = "Todos";
+  botonTodos.className = "boton-categoria";
+  botonTodos.addEventListener("click", () => renderizarProductos(productosCache, favoritosCache));
+  fragment.appendChild(botonTodos);
+
+  // Categorías dinámicas
+  fetch(`${API_URL}/categorias`)
+    .then(r => r.json())
+    .then(categorias => {
+      categorias.forEach(cat => {
+        const boton = document.createElement("button");
+        boton.textContent = cat.nombre;
+        boton.className = "boton-categoria";
+        boton.addEventListener("click", () => filtrarPorCategoria(cat.id));
+        fragment.appendChild(boton);
+      });
+      contenedorCategorias.appendChild(fragment);
+    });
+}
+
+// ===============================
+// Renderizar productos optimizado
+// ===============================
+function renderizarProductos(lista, favoritos) {
   if (!contenedorProductos) return;
-
-  // Si los productos son los mismos que ya están, no renderizamos de nuevo
-  const mismosProductos = JSON.stringify(productos) === JSON.stringify(productosVisibles);
-  if (mismosProductos) return;
-
-  productosVisibles = productos;
-
   contenedorProductos.innerHTML = "";
 
-  const favoritos = await obtenerFavoritos();
+  const fragment = document.createDocumentFragment();
   const tokenUsuario = localStorage.getItem("token_usuario");
 
-  productos.forEach(prod => {
+  lista.forEach(prod => {
+    if (!prod.activo) return;
+
     const div = document.createElement("div");
     div.classList.add("producto");
 
     const esFavorito = favoritos.includes(prod.id);
-    const iconoCorazon = esFavorito ? "❤️" : "🤍"; 
+    const iconoCorazon = esFavorito ? "❤️" : "🤍";
     const colorCorazon = esFavorito ? "#ef5579" : "#999";
 
     div.innerHTML = `
@@ -111,185 +112,153 @@ async function renderizarProductos(productos) {
       <p class="categoria-nombre">${prod.categoria_nombre || "Sin categoría"}</p>
       <p>Precio: AR$ ${parseFloat(prod.precio).toFixed(2)}</p>
       <button class="btn-carrito" data-id="${prod.id}">Agregar al carrito</button>
-      ${tokenUsuario ? `<button class="btn-favorito" data-id="${prod.id}" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: ${colorCorazon};">
-        ${iconoCorazon}
-      </button>` : ""}
+      ${tokenUsuario ? `<button class="btn-favorito" data-id="${prod.id}" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: ${colorCorazon};">${iconoCorazon}</button>` : ""}
     `;
 
+    // Redirección a detalle de producto
     div.addEventListener("click", (e) => {
       if (!e.target.classList.contains("btn-carrito") && !e.target.classList.contains("btn-favorito")) {
         window.location.href = `producto.html?id=${prod.id}`;
       }
     });
 
-    contenedorProductos.appendChild(div);
+    fragment.appendChild(div);
   });
 
-  if (tokenUsuario) {
-    document.querySelectorAll(".btn-favorito").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        const id = parseInt(e.target.dataset.id);
-        const icono = e.target;
+  contenedorProductos.appendChild(fragment);
 
-        try {
-          if (favoritos.includes(id)) {
-            await fetch(`https://api.mielissimo.com.ar/api/favoritos/${id}`, {
-              method: "DELETE",
-              headers: { Authorization: `Bearer ${tokenUsuario}` }
-            });
-            icono.textContent = "🤍";
-            icono.style.color = "#999";
-            favoritos.splice(favoritos.indexOf(id), 1);
-          } else {
-            await fetch("https://api.mielissimo.com.ar/api/favoritos", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${tokenUsuario}`
-              },
-              body: JSON.stringify({ producto_id: id })
-            });
-            icono.textContent = "❤️";
-            icono.style.color = "#ef5579";
-            favoritos.push(id);
+  // Eventos favoritos y carrito
+  if (tokenUsuario) configurarBotonesFavoritos(favoritos);
+  configurarBotonesCarrito();
+}
+
+// ===============================
+// Filtrar categorías usando cache
+// ===============================
+function filtrarPorCategoria(idCategoria) {
+  const filtrados = productosCache.filter(p => String(p.id_categoria) === String(idCategoria));
+  renderizarProductos(filtrados, favoritosCache);
+}
+
+// ===============================
+// Buscador en tiempo real
+// ===============================
+function configurarBuscador() {
+  if (!searchInput) return;
+
+  searchInput.addEventListener("input", e => {
+    const texto = e.target.value.toLowerCase();
+    const filtrados = productosCache.filter(p =>
+      p.nombre.toLowerCase().includes(texto)
+    );
+    renderizarProductos(filtrados, favoritosCache);
+  });
+}
+
+// ===============================
+// Favoritos
+// ===============================
+function configurarBotonesFavoritos(favoritos) {
+  const botonesFavorito = document.querySelectorAll(".btn-favorito");
+  botonesFavorito.forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+
+      const idProducto = btn.dataset.id;
+      const esFavorito = favoritos.includes(parseInt(idProducto));
+
+      try {
+        const metodo = esFavorito ? "DELETE" : "POST";
+        const url = `${API_URL}/favoritos/${idProducto}`;
+        const res = await fetch(url, {
+          method: metodo,
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token_usuario")}`
           }
-        } catch (err) {
-          console.error("Error al actualizar favoritos:", err);
-        }
-      });
-    });
-  }
+        });
 
-  document.querySelectorAll(".btn-carrito").forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = parseInt(btn.dataset.id);
-      agregarAlCarrito(id);
+        if (res.ok) {
+          if (esFavorito) {
+            favoritosCache = favoritosCache.filter(id => id !== parseInt(idProducto));
+            btn.textContent = "🤍";
+            btn.style.color = "#999";
+          } else {
+            favoritosCache.push(parseInt(idProducto));
+            btn.textContent = "❤️";
+            btn.style.color = "#ef5579";
+          }
+        }
+      } catch (error) {
+        console.error("Error al actualizar favoritos:", error);
+      }
     });
   });
 }
 
+// ===============================
+// Carrito
+// ===============================
+function configurarBotonesCarrito() {
+  const botonesCarrito = document.querySelectorAll(".btn-carrito");
+  botonesCarrito.forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const idProducto = btn.dataset.id;
+      agregarAlCarrito(idProducto);
+    });
+  });
+}
 
-// 🛒 Carrito con LocalStorage
-let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+function agregarAlCarrito(idProducto) {
+  const producto = productosCache.find(p => p.id == idProducto);
+  const itemExistente = carrito.find(item => item.id == idProducto);
 
-function guardarCarrito() {
+  if (itemExistente) {
+    itemExistente.cantidad += 1;
+  } else {
+    carrito.push({ ...producto, cantidad: 1 });
+  }
+
   localStorage.setItem("carrito", JSON.stringify(carrito));
   actualizarContadorCarrito();
-  actualizarContadorCarritoFlotante();
-
 }
 
-function agregarAlCarrito(id) {
-  // Buscar producto existente pero solo si NO tiene variantes
-  const productoExistente = carrito.find(p => p.id === id && (!p.variantes || p.variantes.length === 0));
+function actualizarContadorCarrito() {
+  const total = carrito.reduce((acc, item) => acc + item.cantidad, 0);
+  if (contadorCarrito) contadorCarrito.textContent = `(${total})`;
+  if (contadorCarritoFlotante) contadorCarritoFlotante.textContent = `(${total})`;
+}
 
-  if (productoExistente) {
-    productoExistente.cantidad++;
-    guardarCarrito();
+// ===============================
+// Usuario y botón flotante (igual que tu versión estable)
+// ===============================
+function mostrarUsuario() {
+  const nombreUsuario = localStorage.getItem("nombre_usuario");
+  const botonLogin = document.getElementById("boton-login");
+  const nombreUsuarioElemento = document.getElementById("nombre-usuario");
+  const botonLogout = document.getElementById("boton-logout");
+
+  if (nombreUsuario) {
+    if (botonLogin) botonLogin.style.display = "none";
+    if (nombreUsuarioElemento) nombreUsuarioElemento.textContent = nombreUsuario;
+    if (botonLogout) botonLogout.style.display = "inline-block";
   } else {
-    fetch(`https://api.mielissimo.com.ar/api/productos`)
-      .then(res => res.json())
-      .then(productos => {
-        const prod = productos.find(p => p.id === id);
-        if (prod) {
-          carrito.push({
-            id: prod.id,
-            nombre: prod.nombre,
-            precio: parseFloat(prod.precio),
-            cantidad: 1,
-            imagen: prod.imagen,
-            variantes: [] // <-- Esto asegura que siempre sea SIN variantes
-          });
-          guardarCarrito();
-        }
-      });
+    if (botonLogin) botonLogin.style.display = "inline-block";
+    if (nombreUsuarioElemento) nombreUsuarioElemento.textContent = "";
+    if (botonLogout) botonLogout.style.display = "none";
   }
 }
 
-window.agregarAlCarrito = agregarAlCarrito;
-
-function actualizarContadorCarritoFlotante() {
-  const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
-  const total = carrito.reduce((sum, prod) => sum + prod.cantidad, 0);
-  const contador = document.getElementById("contador-flotante");
-  if (contador) {
-    contador.textContent = total;
-  }
-}
-
-const botonCarritoFlotante = document.getElementById("boton-carrito-flotante");
-if (botonCarritoFlotante) {
-  botonCarritoFlotante.addEventListener("click", () => {
+function crearBotonCarritoFlotante() {
+  const botonFlotante = document.createElement("button");
+  botonFlotante.id = "boton-carrito-flotante";
+  botonFlotante.innerHTML = `🛒 <span id="contador-carrito-flotante">(0)</span>`;
+  botonFlotante.style.position = "fixed";
+  botonFlotante.style.bottom = "20px";
+  botonFlotante.style.right = "20px";
+  botonFlotante.style.zIndex = "1000";
+  botonFlotante.addEventListener("click", () => {
     window.location.href = "carrito.html";
   });
+  document.body.appendChild(botonFlotante);
 }
-
-
-// 📧 Newsletter
-const formNewsletter = document.getElementById("form-newsletter");
-const inputEmail = document.getElementById("email-newsletter");
-const mensajeNewsletter = document.getElementById("mensaje-newsletter");
-
-if (formNewsletter) {
-  formNewsletter.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const email = inputEmail.value.trim();
-
-    try {
-      const res = await fetch("https://api.mielissimo.com.ar/api/newsletter", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ email })
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        mensajeNewsletter.textContent = data.mensaje;
-        mensajeNewsletter.style.color = "green";
-        formNewsletter.reset();
-      } else {
-        mensajeNewsletter.textContent = data.error;
-        mensajeNewsletter.style.color = "red";
-      }
-    } catch (err) {
-      mensajeNewsletter.textContent = "Error de conexión";
-      mensajeNewsletter.style.color = "red";
-    }
-  });
-}
-
-// 🚀 Inicio
-document.addEventListener("DOMContentLoaded", async () => {
-  
-
-  productosCache = await fetch("https://api.mielissimo.com.ar/api/productos").then(r => r.json());
-  renderizarProductos(productosCache);
-
-  // 🔍 Búsqueda en tiempo real por nombre (optimizada)
-  const inputBuscador = document.getElementById("buscador");
-  let ultimoTexto = "";
-
-  if (inputBuscador) {
-    inputBuscador.addEventListener("input", () => {
-      const texto = inputBuscador.value.trim().toLowerCase();
-
-      if (texto === ultimoTexto) return;
-      ultimoTexto = texto;
-
-      const filtrados = productosCache.filter(p =>
-        p.nombre.toLowerCase().includes(texto)
-      );
-      renderizarProductos(filtrados);
-    });
-  }
-
-mostrarUsuario();
-  actualizarContadorCarrito();
-  crearBotonCarritoFlotante();
-  cargarCategorias();
-
-});
