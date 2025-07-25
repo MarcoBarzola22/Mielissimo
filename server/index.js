@@ -823,6 +823,44 @@ app.post("/api/admin/reset-password", async (req, res) => {
   });
 });
 
+app.get("/api/productos/:id", (req, res) => {
+  const { id } = req.params;
+
+  // Consulta principal: producto + categoría
+  const sqlProducto = `
+    SELECT p.*, c.nombre AS categoria_nombre
+    FROM productos p
+    LEFT JOIN categorias c ON p.categoria_id = c.id
+    WHERE p.id = ? AND p.activo = 1
+  `;
+
+  db.query(sqlProducto, [id], (err, productoRes) => {
+    if (err) return res.status(500).json({ error: "Error al obtener producto" });
+
+    if (productoRes.length === 0) {
+      return res.status(404).json({ error: "Producto no encontrado" });
+    }
+
+    const producto = productoRes[0];
+
+    // Consulta para las variantes del producto
+    const sqlVariantes = `
+      SELECT id, nombre, tipo, precio_extra
+      FROM variantes
+      WHERE producto_id = ?
+    `;
+
+    db.query(sqlVariantes, [id], (err, variantesRes) => {
+      if (err) return res.status(500).json({ error: "Error al obtener variantes" });
+
+      // Devolvemos todo junto
+      res.json({
+        ...producto,
+        variantes: variantesRes || []
+      });
+    });
+  });
+});
 
 
 // ==============================
