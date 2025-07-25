@@ -88,7 +88,17 @@ async function confirmarCompra() {
     return;
   }
 
-  // Copiar datos actuales del carrito
+  // Mostrar mensaje INMEDIATO y limpiar visualmente
+  mensaje.innerHTML = "✅ <strong>¡Compra confirmada! Redirigiendo a WhatsApp...</strong>";
+  mensaje.style.color = "green";
+  mensaje.style.display = "block";
+
+  carrito = [];
+  localStorage.setItem("carrito", JSON.stringify([]));
+  renderizarCarrito(); // Limpia la interfaz
+  actualizarContadorCarrito();
+
+  // Copiar datos del carrito original para enviar a la DB
   const carritoCopia = [...carrito];
   const tipoEnvio = document.querySelector('input[name="tipo-envio"]:checked')?.value || "retiro";
   const totalTexto = document.getElementById("total-compra").textContent.replace(/[^\d.-]/g, "").trim();
@@ -107,7 +117,7 @@ async function confirmarCompra() {
     }
   }
 
-  // Generar mensaje para WhatsApp
+  // Generar mensaje WhatsApp
   const tipo = tipoEnvio === "envio" ? "🚚 Envío a domicilio" : "🏠 Retiro en local";
 
   const detallesProductos = carritoCopia.map(item => {
@@ -134,20 +144,10 @@ ${tipo}`;
   const numeroWhatsapp = "2657635540"; // Número del cliente
   const linkWhatsapp = `https://wa.me/54${numeroWhatsapp}?text=${textoCodificado}`;
 
-  // Mostrar mensaje rápido
-  mensaje.innerHTML = "✅ <strong>¡Compra confirmada! Redirigiendo a WhatsApp...</strong>";
-  mensaje.style.color = "green";
-  mensaje.style.display = "block";
-
-  // Redirigir rápidamente y luego limpiar carrito
+  // Redirigir rápido
   setTimeout(() => {
     window.location.href = linkWhatsapp;
-
-    // Limpiar carrito después de abrir WhatsApp
-    carrito = [];
-    localStorage.setItem("carrito", JSON.stringify([]));
-    actualizarContadorCarrito();
-  }, 500); // Menor delay para sensación instantánea
+  }, 500);
 }
 
 
