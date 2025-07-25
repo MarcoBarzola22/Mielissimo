@@ -155,6 +155,13 @@ function renderizarProductos(lista, favoritos) {
       }
     });
 
+    gtag('event', 'ver_producto', {
+  event_category: 'Productos',
+  event_label: prod.nombre,
+  value: prod.precio
+});
+
+
     fragment.appendChild(div);
   });
 
@@ -218,6 +225,11 @@ function configurarBotonesCarrito() {
   botones.forEach(btn => {
     btn.addEventListener("click", e => {
       e.stopPropagation();
+      gtag('event', 'agregar_al_carrito', {
+  event_category: 'Carrito',
+  event_label: producto?.nombre || `ID ${btn.dataset.id}`
+});
+
       agregarAlCarrito(btn.dataset.id);
     });
   });

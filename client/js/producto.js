@@ -127,6 +127,13 @@ function agregarAlCarrito(prod) {
     });
   }
 
+  gtag('event', 'agregar_al_carrito', {
+  event_category: 'Carrito',
+  event_label: prod.nombre,
+  value: prod.precio
+});
+
+
   localStorage.setItem("carrito", JSON.stringify(carrito));
   actualizarContadorCarrito();
 
@@ -200,6 +207,12 @@ function cargarVariantesVisuales() {
                 btn.classList.add("activo");
               }
             }
+            gtag('event', 'seleccionar_variante', {
+  event_category: 'Variantes',
+  event_label: v.nombre,
+  value: v.precio_extra || 0
+});
+
 
             actualizarPrecio();
           });

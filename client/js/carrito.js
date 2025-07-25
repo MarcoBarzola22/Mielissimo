@@ -141,6 +141,12 @@ ${tipo}`;
   const linkWhatsapp = `https://wa.me/549${numeroWhatsapp}?text=${textoCodificado}`;
   // Redirigir a WhatsApp y luego vaciar carrito
   setTimeout(() => {
+    gtag('event', 'compra_confirmada', {
+  event_category: 'Carrito',
+  event_label: `Total: $${total.toFixed(2)}`,
+  value: total
+});
+
     window.location.href = linkWhatsapp;
 
     // Vaciar carrito después
