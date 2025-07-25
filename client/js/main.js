@@ -18,13 +18,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     ]);
 
     productosCache = productos;
-    favoritosCache = favoritos.map(f => f.producto_id); // solo IDs
+    favoritosCache = favoritos.map(f => f.producto_id);
 
-    renderizarCategorias(); // ahora después de cargar productos
+    renderizarCategorias();
     renderizarProductos(productosCache, favoritosCache);
 
     configurarBuscador();
-    configurarNewsletter();
     mostrarUsuario();
     actualizarContadorCarrito();
     crearBotonCarritoFlotante();
@@ -33,9 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
-// =======================================
 // FAVORITOS
-// =======================================
 async function obtenerFavoritos() {
   const token = localStorage.getItem("token_usuario");
   if (!token) return [];
@@ -62,7 +59,6 @@ function configurarBotonesFavoritos() {
 
       try {
         if (esFavorito) {
-          // Eliminar
           const res = await fetch(`${API_URL}/favoritos/${idProducto}`, {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` }
@@ -73,7 +69,6 @@ function configurarBotonesFavoritos() {
             btn.style.color = "#999";
           }
         } else {
-          // Agregar
           const res = await fetch(`${API_URL}/favoritos`, {
             method: "POST",
             headers: {
@@ -95,16 +90,13 @@ function configurarBotonesFavoritos() {
   });
 }
 
-// =======================================
 // CATEGORÍAS
-// =======================================
 function renderizarCategorias() {
   if (!contenedorCategorias) return;
   contenedorCategorias.innerHTML = "";
 
   const fragment = document.createDocumentFragment();
 
-  // Botón "Todos"
   const botonTodos = document.createElement("button");
   botonTodos.textContent = "Todos";
   botonTodos.className = "boton-categoria";
@@ -130,9 +122,7 @@ function renderizarCategorias() {
     });
 }
 
-// =======================================
 // RENDERIZAR PRODUCTOS
-// =======================================
 function renderizarProductos(lista, favoritos) {
   if (!contenedorProductos) return;
   contenedorProductos.innerHTML = "";
@@ -174,9 +164,7 @@ function renderizarProductos(lista, favoritos) {
   configurarBotonesCarrito();
 }
 
-// =======================================
 // BUSCADOR
-// =======================================
 function configurarBuscador() {
   if (!searchInput) return;
   searchInput.addEventListener("input", e => {
@@ -188,19 +176,15 @@ function configurarBuscador() {
   });
 }
 
-// =======================================
-// NEWSLETTER (sin alert y sin scroll)
-// =======================================
-function configurarNewsletter() {
-  const form = document.querySelector("#newsletter form");
-  if (!form) return;
+// NEWSLETTER (versión anterior estable)
+const formNewsletter = document.getElementById("form-newsletter");
+const inputEmail = document.getElementById("email-newsletter");
+const mensajeNewsletter = document.getElementById("mensaje-newsletter");
 
-  form.addEventListener("submit", async e => {
+if (formNewsletter) {
+  formNewsletter.addEventListener("submit", async (e) => {
     e.preventDefault();
-
-    const emailInput = form.querySelector("input[type='email']");
-    const email = emailInput.value.trim();
-    if (!email) return;
+    const email = inputEmail.value.trim();
 
     try {
       const res = await fetch(`${API_URL}/suscriptores`, {
@@ -209,23 +193,24 @@ function configurarNewsletter() {
         body: JSON.stringify({ email })
       });
 
+      const data = await res.json();
+
       if (res.ok) {
-        const msg = document.createElement("p");
-        msg.textContent = "¡Gracias por suscribirte!";
-        msg.style.color = "green";
-        form.appendChild(msg);
-        setTimeout(() => msg.remove(), 3000);
-        emailInput.value = "";
+        mensajeNewsletter.textContent = data.mensaje || "¡Gracias por suscribirte!";
+        mensajeNewsletter.style.color = "green";
+        formNewsletter.reset();
+      } else {
+        mensajeNewsletter.textContent = data.error || "Error al suscribirte";
+        mensajeNewsletter.style.color = "red";
       }
     } catch (err) {
-      console.error("Error newsletter:", err);
+      mensajeNewsletter.textContent = "Error de conexión";
+      mensajeNewsletter.style.color = "red";
     }
   });
 }
 
-// =======================================
 // CARRITO
-// =======================================
 function configurarBotonesCarrito() {
   const botones = document.querySelectorAll(".btn-carrito");
   botones.forEach(btn => {
@@ -256,9 +241,7 @@ function actualizarContadorCarrito() {
   if (contadorCarritoFlotante) contadorCarritoFlotante.textContent = `(${total})`;
 }
 
-// =======================================
 // USUARIO Y BOTÓN CARRITO FLOTANTE
-// =======================================
 function mostrarUsuario() {
   const nombreUsuario = localStorage.getItem("nombre_usuario");
   const botonLogin = document.getElementById("boton-login");
