@@ -4,6 +4,15 @@ if (!tokenAdmin) {
   window.location.href = "login-admin.html"; // Redirige si no hay token
 }
 
+function manejarTokenExpirado(res) {
+  if (res.status === 401) {
+    localStorage.removeItem("tokenAdmin");
+    alert("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
+    window.location.href = "login-admin.html";
+    return true;
+  }
+  return false;
+}
 
 const formulario = document.getElementById("formulario-producto");
 const mensaje = document.getElementById("mensaje");
@@ -56,7 +65,11 @@ function cargarProductos(filtro = "") {
   fetch(`https://api.mielissimo.com.ar/api/productos?mostrarInactivos=${mostrarInactivos}`, {
     headers: { Authorization: `Bearer ${token}` }
   })
-    .then(res => res.json())
+    .then(res => {
+  if (manejarTokenExpirado(res)) return [];
+  return res.json();
+})
+
     .then(productos => {
       productosContainer.innerHTML = "";
       productos
@@ -102,7 +115,11 @@ function cargarProductos(filtro = "") {
 
 function cargarCategorias() {
   fetch("https://api.mielissimo.com.ar/api/categorias")
-    .then(res => res.json())
+    .then(res => {
+  if (manejarTokenExpirado(res)) return [];
+  return res.json();
+})
+
     .then(categorias => {
       selectCategoria.innerHTML = '<option value="">Seleccionar categoría</option>';
       listaCategorias.innerHTML = "";
@@ -134,10 +151,13 @@ formulario.addEventListener("submit", async (e) => {
 
   try {
     const res = await fetch(url, {
-      method: metodo,
-      headers: { Authorization: `Bearer ${token}` },
-      body: datos
-    });
+  method: metodo,
+  headers: { Authorization: `Bearer ${token}` },
+  body: datos
+});
+
+if (manejarTokenExpirado(res)) return;
+
 
     const resultado = await res.json();
     if (res.ok) {
@@ -235,15 +255,19 @@ formularioCategoria.addEventListener("submit", async (e) => {
   const url = categoriaEnEdicion ? `https://api.mielissimo.com.ar/api/categorias/${categoriaEnEdicion}` : "https://api.mielissimo.com.ar/api/categorias";
   const metodo = categoriaEnEdicion ? "PUT" : "POST";
 
-  const res = await fetch(url, {
-    method: metodo,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`
-    },
-    body: JSON.stringify({ nombre })
-  });
-  const data = await res.json();
+const res = await fetch(url, {
+  method: metodo,
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`
+  },
+  body: JSON.stringify(body)
+});
+
+if (manejarTokenExpirado(res)) return;
+
+const data = await res.json();
+
   if (res.ok) {
     formularioCategoria.reset();
     categoriaEnEdicion = null;
@@ -260,7 +284,11 @@ function eliminarCategoria(id) {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` }
   })
-    .then(res => res.json())
+    .then(res => {
+  if (manejarTokenExpirado(res)) return [];
+  return res.json();
+})
+
     .then(data => {
       if (data.error) {
   mensajeCategoria.textContent = data.error;
@@ -321,7 +349,11 @@ document.addEventListener("click", (e) => {
     method: "DELETE",
     headers: { Authorization: `Bearer ${token}` }
   })
-    .then(res => res.json())
+    .then(res => {
+  if (manejarTokenExpirado(res)) return [];
+  return res.json();
+})
+
     .then(data => {
       mensajeVariante.textContent = "✅ Variante eliminada";
       mensajeVariante.style.color = "green";
@@ -368,7 +400,11 @@ function cargarVariantes(idProducto) {
   fetch(`https://api.mielissimo.com.ar/api/variantes/${idProducto}`, {
     headers: { Authorization: `Bearer ${token}` }
   })
-    .then(res => res.json())
+    .then(res => {
+  if (manejarTokenExpirado(res)) return [];
+  return res.json();
+})
+
     .then(variantes => {
      variantes.forEach(v => {
   const fila = document.createElement("tr");
@@ -422,15 +458,18 @@ const body = {
 
   try {
     const res = await fetch(url, {
-      method: metodo,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify(body)
-    });
+  method: metodo,
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`
+  },
+  body: JSON.stringify(body)
+});
 
-    const data = await res.json();
+if (manejarTokenExpirado(res)) return;
+
+const data = await res.json();
+
     if (res.ok) {
       mensajeVariante.textContent = varianteEditandoId ? "✅ Variante actualizada" : "✅ Variante agregada";
       mensajeVariante.style.color = "green";
