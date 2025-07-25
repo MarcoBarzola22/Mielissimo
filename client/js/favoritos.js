@@ -5,24 +5,44 @@ const contenedor = document.getElementById("productos");
 const token = localStorage.getItem("token_usuario");
 
 async function cargarFavoritos() {
+  const token = localStorage.getItem("token_usuario");
+
+  if (!token) {
+    console.error("No hay token, no se pueden cargar favoritos");
+    return;
+  }
+
   try {
     const res = await fetch("https://api.mielissimo.com.ar/api/favoritos", {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
     });
-    if (!res.ok) throw new Error("Error al obtener favoritos");
 
-    const favoritos = await res.json();
-    const productos = await fetch("https://api.mielissimo.com.ar/api/productos").then(r => r.json());
+    if (res.status === 403) {
+      // Token vencido o inválido
+      localStorage.removeItem("token_usuario");
+      alert("Tu sesión expiró. Inicia sesión nuevamente.");
+      window.location.href = "login.html";
+      return;
+    }
 
-    const favoritosCompletos = productos.filter(p =>
-      favoritos.some(fav => fav.producto_id === p.id)
-    );
+    if (!res.ok) {
+      throw new Error("Error al obtener favoritos");
+    }
 
-    renderizarFavoritos(favoritosCompletos);
+    const data = await res.json();
+
+    if (!Array.isArray(data)) {
+      throw new Error("Formato inesperado de favoritos");
+    }
+
+    renderizarFavoritos(data); // tu función de renderizado existente
   } catch (err) {
     console.error("Error al cargar favoritos:", err);
   }
 }
+
 
 function renderizarFavoritos(productos) {
   contenedor.innerHTML = "";

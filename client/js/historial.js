@@ -4,7 +4,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 async function cargarHistorial() {
   const token = localStorage.getItem("token_usuario");
-  if (!token) return;
+
+  if (!token) {
+    console.error("No hay token, no se puede cargar historial");
+    return;
+  }
 
   try {
     const res = await fetch("https://api.mielissimo.com.ar/api/historial", {
@@ -13,12 +17,30 @@ async function cargarHistorial() {
       }
     });
 
+    if (res.status === 403) {
+      // Token vencido o inválido
+      localStorage.removeItem("token_usuario");
+      alert("Tu sesión expiró. Inicia sesión nuevamente.");
+      window.location.href = "login.html";
+      return;
+    }
+
+    if (!res.ok) {
+      throw new Error("Error al obtener historial");
+    }
+
     const compras = await res.json();
-    mostrarHistorial(compras);
+
+    if (!Array.isArray(compras)) {
+      throw new Error("Formato inesperado del historial");
+    }
+
+    mostrarHistorial(compras); // tu función existente
   } catch (error) {
     console.error("Error al cargar historial:", error);
   }
 }
+
 
 function mostrarHistorial(compras) {
   const contenedor = document.getElementById("historial-container");

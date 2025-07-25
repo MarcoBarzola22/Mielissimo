@@ -60,12 +60,23 @@ async function verificarFavorito() {
     const res = await fetch("https://api.mielissimo.com.ar/api/favoritos", {
       headers: { Authorization: `Bearer ${token}` }
     });
+
+    // Si el token expiró
+    if (res.status === 403) {
+      localStorage.removeItem("token_usuario");
+      localStorage.removeItem("nombre_usuario");
+      alert("Tu sesión ha expirado. Vuelve a iniciar sesión.");
+      window.location.href = "login.html"; // o la ruta de login
+      return;
+    }
+
     const favoritos = await res.json();
     esFavorito = favoritos.some(f => f.producto_id == id);
   } catch (err) {
     console.error("Error al verificar favorito:", err);
   }
 }
+
 
 async function toggleFavorito() {
   try {
