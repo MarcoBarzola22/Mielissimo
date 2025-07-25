@@ -88,18 +88,14 @@ async function confirmarCompra() {
     return;
   }
 
-  // Mostrar mensaje INMEDIATO y limpiar visualmente
+  // COPIAR CARRITO ANTES DE VACIARLO
+  const carritoCopia = [...carrito];
+
+  // Mostrar mensaje instantáneo
   mensaje.innerHTML = "✅ <strong>¡Compra confirmada! Redirigiendo a WhatsApp...</strong>";
   mensaje.style.color = "green";
   mensaje.style.display = "block";
 
-  carrito = [];
-  localStorage.setItem("carrito", JSON.stringify([]));
-  renderizarCarrito(); // Limpia la interfaz
-  actualizarContadorCarrito();
-
-  // Copiar datos del carrito original para enviar a la DB
-  const carritoCopia = [...carrito];
   const tipoEnvio = document.querySelector('input[name="tipo-envio"]:checked')?.value || "retiro";
   const totalTexto = document.getElementById("total-compra").textContent.replace(/[^\d.-]/g, "").trim();
   const total = parseFloat(totalTexto);
@@ -117,7 +113,7 @@ async function confirmarCompra() {
     }
   }
 
-  // Generar mensaje WhatsApp
+  // Generar mensaje WhatsApp usando carritoCopia
   const tipo = tipoEnvio === "envio" ? "🚚 Envío a domicilio" : "🏠 Retiro en local";
 
   const detallesProductos = carritoCopia.map(item => {
@@ -141,12 +137,18 @@ ${detallesProductos}
 ${tipo}`;
 
   const textoCodificado = encodeURIComponent(mensajeTexto);
-  const numeroWhatsapp = "2657635540"; // Número del cliente
+  const numeroWhatsapp = "2657635540";
   const linkWhatsapp = `https://wa.me/54${numeroWhatsapp}?text=${textoCodificado}`;
 
-  // Redirigir rápido
+  // Redirigir a WhatsApp y luego vaciar carrito
   setTimeout(() => {
     window.location.href = linkWhatsapp;
+
+    // Vaciar carrito después
+    carrito = [];
+    localStorage.setItem("carrito", JSON.stringify([]));
+    actualizarContadorCarrito();
+    renderizarCarrito();
   }, 500);
 }
 
