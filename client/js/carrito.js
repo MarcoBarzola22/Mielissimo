@@ -137,8 +137,9 @@ ${detallesProductos}
 ${tipo}`;
 
   const textoCodificado = encodeURIComponent(mensajeTexto);
- const numeroWhatsapp = "2657603387"; // sin espacios ni guiones
-const linkWhatsapp = `https://wa.me/549${numeroWhatsapp}?text=${mensaje}`;
+ const numeroWhatsapp = "2657635540";
+const linkWhatsapp = `https://wa.me/54${numeroWhatsapp}?text=${mensaje}`;
+
 
   // Redirigir a WhatsApp y luego vaciar carrito
   setTimeout(() => {
