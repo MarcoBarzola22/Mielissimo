@@ -221,19 +221,26 @@ if (formNewsletter) {
 
 // CARRITO
 function configurarBotonesCarrito() {
-  const botones = document.querySelectorAll(".btn-carrito");
-  botones.forEach(btn => {
-    btn.addEventListener("click", e => {
-      e.stopPropagation();
-      gtag('event', 'agregar_al_carrito', {
-  event_category: 'Carrito',
-  event_label: producto?.nombre || `ID ${btn.dataset.id}`
-});
+  document.querySelectorAll(".btn-carrito").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const productoId = parseInt(btn.dataset.id);
 
-      agregarAlCarrito(btn.dataset.id);
+      // Buscar el producto en productosCache
+      const productoSeleccionado = productosCache.find(p => p.id === productoId);
+
+      // Llamar función que ya tenés para agregar al carrito
+      agregarAlCarrito(productoId);
+
+      // Enviar evento a Google Analytics
+      gtag('event', 'agregar_al_carrito', {
+        event_category: 'Carrito',
+        event_label: productoSeleccionado ? productoSeleccionado.nombre : `ID ${productoId}`,
+        value: productoSeleccionado ? productoSeleccionado.precio : 0
+      });
     });
   });
 }
+
 
 function agregarAlCarrito(idProducto) {
   const producto = productosCache.find(p => p.id == idProducto);
