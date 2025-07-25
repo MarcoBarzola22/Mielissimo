@@ -71,7 +71,7 @@ function cargarProductos(filtro = "") {
           div.classList.add("producto-admin");
 
           div.innerHTML = `
-            <img src="${prod.imagen}" alt="${prod.nombre}" />
+            <img src="${prod.imagen}" alt="${prod.nombre}" loading="lazy"/>
             <p><strong>${prod.nombre}</strong></p>
             <p><em>Categoría: ${prod.categoria_nombre || "Sin categoría"}</em></p>
             <p>Precio: $${parseFloat(prod.precio).toFixed(2)}</p>
@@ -146,7 +146,8 @@ formulario.addEventListener("submit", async (e) => {
       formulario.reset();
       productoEnEdicion = null;
       btnCancelarProducto.style.display = "none";
-      setTimeout(() => cargarProductos(), 300);
+      cargarProductos();
+
     } else {
       mensaje.textContent = resultado.error || "Error en la operación";
       mensaje.style.color = "red";

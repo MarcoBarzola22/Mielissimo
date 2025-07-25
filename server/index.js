@@ -176,8 +176,11 @@ app.post("/api/productos", verificarToken, upload.single("imagen"), async (req, 
   try {
     // Subir a Cloudinary
     const resultado = await cloudinary.uploader.upload(req.file.path, {
-      folder: "productos_mielissimo"
-    });
+  folder: "productos_mielissimo",
+  quality: "auto",
+  fetch_format: "auto"
+});
+
 
     const imagenUrl = resultado.secure_url;
 
@@ -210,8 +213,11 @@ app.put("/api/productos/:id", verificarToken, upload.single("imagen"), async (re
 
     if (req.file) {
       const resultado = await cloudinary.uploader.upload(req.file.path, {
-        folder: "productos_mielissimo"
-      });
+  folder: "productos_mielissimo",
+  quality: "auto",
+  fetch_format: "auto"
+});
+
       nuevaImagenUrl = resultado.secure_url;
     }
 
