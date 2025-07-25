@@ -76,7 +76,7 @@ function calcularTotal() {
   }
 }
 
-function finalizarCompra() {
+function confirmarCompra() {
   const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 
   if (carrito.length === 0) {
@@ -102,21 +102,20 @@ function finalizarCompra() {
   const usuario = JSON.parse(localStorage.getItem("usuario")) || {};
   mensaje += `\nNombre: ${usuario.nombre || "No especificado"}\n`;
 
-  // Forma de entrega (retiro/envío)
+  // Forma de entrega
   const metodoEntrega = document.querySelector('input[name="entrega"]:checked');
   if (metodoEntrega) {
     mensaje += `${metodoEntrega.value}\n`;
   }
 
-  // Obtener número de WhatsApp y generar enlace
-  const numeroWhatsapp = "92657603387"; // SIN el +54 9 inicial
+  // Usar número correcto sin el 9
+  const numeroWhatsapp = "2657603387"; 
   const linkWhatsapp = `https://wa.me/54${numeroWhatsapp}?text=${encodeURIComponent(mensaje)}`;
 
-  // Mostrar mensaje de confirmación antes de redirigir
+  // Mensaje de confirmación y redirección
   mensajeConfirmacion.textContent = "Redirigiendo a WhatsApp...";
   mensajeConfirmacion.style.color = "green";
 
-  // Abrir WhatsApp y limpiar carrito después de un pequeño delay
   setTimeout(() => {
     window.open(linkWhatsapp, "_blank");
     localStorage.removeItem("carrito");
@@ -124,6 +123,8 @@ function finalizarCompra() {
     renderizarCarrito();
   }, 500);
 }
+
+
 
 
 
