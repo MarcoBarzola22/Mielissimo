@@ -213,7 +213,7 @@ function cargarVariantesVisuales() {
       // Botón "Sin variantes" solo para táctiles
       if ("ontouchstart" in window) {
         const botonSinVariante = document.createElement("button");
-        botonSinVariante.textContent = "Sin variantes";
+        btnSinVariante.innerHTML = `❌ <span>Sin variantes</span>`;
         botonSinVariante.className = "btn-variante btn-sin-variante";
 
         botonSinVariante.addEventListener("pointerup", () => {
