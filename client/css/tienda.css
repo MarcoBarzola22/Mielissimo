@@ -1520,3 +1520,33 @@ main h1 {
   margin-top: 20px;   /* ajusta si había demasiado espacio antes */
 }
 
+/* Botón "Sin variantes" en móviles */
+.btn-sin-variante {
+  background-color: #f4f4f4;        /* Fondo neutro para diferenciarlo */
+  color: #333;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 10px;
+  font-size: 0.95rem;
+  width: 100%;                      /* Ocupa todo el ancho en móviles */
+  text-align: center;
+  transition: background-color 0.3s ease;
+}
+
+.btn-sin-variante:hover {
+  background-color: #e2e2e2;
+}
+
+.btn-sin-variante:active {
+  background-color: #d6d6d6;
+}
+
+/* Alinearlo con el resto de botones de variantes */
+@media (min-width: 768px) {
+  .btn-sin-variante {
+    width: auto;                     /* En desktop que se comporte como los demás */
+    display: inline-block;
+    margin-left: 5px;
+  }
+}
