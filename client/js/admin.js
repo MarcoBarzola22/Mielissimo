@@ -453,9 +453,10 @@ document.getElementById("btn-buscar-compra").addEventListener("click", async () 
   }
 
   try {
-    const res = await fetch(`https://api.mielissimo.com.ar/api/compras/${idCompra}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const res = await fetch(`https://api.mielissimo.com.ar/api/compras/detalle/${idCompra}`, {
+  headers: { Authorization: `Bearer ${token}` }
+});
+
 
     if (manejarTokenExpirado(res)) return;
 
@@ -466,13 +467,17 @@ document.getElementById("btn-buscar-compra").addEventListener("click", async () 
     }
 
     resultadoDiv.innerHTML = `
-      <p><strong>ID:</strong> ${data.id}</p>
-      <p><strong>Fecha:</strong> ${data.fecha_compra}</p>
-      <p><strong>Producto:</strong> ${data.nombre}</p>
-      <p><strong>Cantidad:</strong> ${data.cantidad}</p>
-      <p><strong>Variantes:</strong> ${data.variantes || 'Sin variantes'}</p>
-      <p><strong>Tipo de envío:</strong> ${data.tipo_envio}</p>
-    `;
+  <div style="border: 1px solid #ccc; padding: 10px; border-radius: 8px; margin-top: 10px;">
+    <p><strong>Pedido #${data.id}</strong></p>
+    <p><strong>Fecha:</strong> ${new Date(data.fecha_compra).toLocaleString()}</p>
+    <p><strong>Producto:</strong> ${data.nombre_producto}</p>
+    <p><strong>Cantidad:</strong> ${data.cantidad}</p>
+    <p><strong>Variantes:</strong> ${data.variantes || 'Sin variantes'}</p>
+    <p><strong>Tipo de envío:</strong> ${data.tipo_envio}</p>
+    <img src="${data.imagen}" alt="${data.nombre_producto}" style="width:80px; margin-top:10px;" />
+  </div>
+`;
+
   } catch (err) {
     resultadoDiv.innerHTML = "<p style='color:red'>Error al buscar compra.</p>";
   }
