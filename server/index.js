@@ -413,7 +413,7 @@ app.post("/api/usuarios/login", (req, res) => {
 // 🧾 COMPRAS (con y sin sesión)
 // ==============================
 app.post("/api/compras", (req, res) => {
-  const { id_usuario, carrito, tipoEnvio } = req.body;
+  const { id_usuario, carrito, tipoEnvio, total } = req.body;
 
   if (!Array.isArray(carrito) || carrito.length === 0) {
     return res.status(400).json({ error: "Datos inválidos para la compra." });
@@ -421,50 +421,62 @@ app.post("/api/compras", (req, res) => {
 
   const fecha_compra = new Date().toISOString().slice(0, 19).replace("T", " ");
   const tipo = tipoEnvio || "retiro";
+  const usuarioId = id_usuario && !isNaN(id_usuario) ? id_usuario : null;
 
-  let pedidoId = null;
-  let insertados = 0;
+  // 1. Insertar el primer producto y usar su ID como pedido_id
+  const primerItem = carrito[0];
+  const variantesTexto = primerItem.variantes && primerItem.variantes.length > 0
+    ? primerItem.variantes.map(v => `${v.tipo}: ${v.nombre}`).join(", ")
+    : "Sin variantes";
 
-  carrito.forEach((item, index) => {
-    const variantesTexto = item.variantes && item.variantes.length > 0
-      ? item.variantes.map(v => `${v.tipo}: ${v.nombre}`).join(", ")
-      : "Sin variantes";
-
-    const usuarioId = id_usuario && !isNaN(id_usuario) ? id_usuario : null;
-
-    db.query(
-      `INSERT INTO compras (id_usuario, id_producto, cantidad, fecha_compra, tipo_envio, variantes)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-      [usuarioId, item.id, item.cantidad, fecha_compra, tipo, variantesTexto],
-      (err, result) => {
-        if (err) {
-          console.error("Error al insertar producto:", err);
-          return res.status(500).json({ error: "Error al registrar la compra." });
-        }
-
-        if (pedidoId === null) {
-          pedidoId = result.insertId;
-
-          // Actualizamos el primer registro para que su pedido_id sea igual a su propio ID
-          db.query(
-            `UPDATE compras SET pedido_id = ? WHERE id = ?`,
-            [pedidoId, pedidoId]
-          );
-        }
-
-        // Para los siguientes productos del carrito, también asignamos pedido_id
-        db.query(
-          `UPDATE compras SET pedido_id = ? WHERE id = ?`,
-          [pedidoId, result.insertId]
-        );
-
-        insertados++;
-        if (insertados === carrito.length) {
-          res.json({ mensaje: "Compra registrada correctamente", id: pedidoId });
-        }
+  db.query(
+    `INSERT INTO compras (id_usuario, id_producto, cantidad, fecha_compra, tipo_envio, variantes)
+     VALUES (?, ?, ?, ?, ?, ?)`,
+    [usuarioId, primerItem.id, primerItem.cantidad, fecha_compra, tipo, variantesTexto],
+    (err, result) => {
+      if (err) {
+        console.error("Error al insertar producto:", err);
+        return res.status(500).json({ error: "Error al registrar la compra." });
       }
-    );
-  });
+
+      const pedidoId = result.insertId;
+
+      // Actualizar el primer producto para que tenga pedido_id igual a su id
+      db.query(`UPDATE compras SET pedido_id = ? WHERE id = ?`, [pedidoId, pedidoId]);
+
+      // 2. Insertar los demás productos usando el mismo pedido_id
+      let insertados = 1;
+      for (let i = 1; i < carrito.length; i++) {
+        const item = carrito[i];
+        const variantesTextoItem = item.variantes && item.variantes.length > 0
+          ? item.variantes.map(v => `${v.tipo}: ${v.nombre}`).join(", ")
+          : "Sin variantes";
+
+        db.query(
+          `INSERT INTO compras (id_usuario, id_producto, cantidad, fecha_compra, tipo_envio, variantes, pedido_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [usuarioId, item.id, item.cantidad, fecha_compra, tipo, variantesTextoItem, pedidoId],
+          (err2) => {
+            if (err2) {
+              console.error("Error al insertar producto:", err2);
+              return res.status(500).json({ error: "Error al registrar la compra." });
+            }
+
+            insertados++;
+            if (insertados === carrito.length) {
+              // Responder solo una vez
+              res.json({ mensaje: "Compra registrada correctamente", id: pedidoId });
+            }
+          }
+        );
+      }
+
+      // Si solo había 1 producto en el carrito
+      if (carrito.length === 1) {
+        res.json({ mensaje: "Compra registrada correctamente", id: pedidoId });
+      }
+    }
+  );
 });
 
 
