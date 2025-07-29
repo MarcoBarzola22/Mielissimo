@@ -126,11 +126,20 @@ function actualizarPrecio() {
 }
 
 function agregarAlCarrito(prod) {
-  
+  const sinVariantes = variantesSeleccionadas.length === 0;
 
-  const igual = p =>
-    p.id === prod.id &&
-    JSON.stringify(p.variantes) === JSON.stringify(variantesSeleccionadas);
+  const igual = p => {
+    if (sinVariantes) {
+      // Comparar solo por id y variantes vacías/undefined
+      return p.id === prod.id && (!p.variantes || p.variantes.length === 0);
+    } else {
+      // Comparar id + variantes específicas
+      return (
+        p.id === prod.id &&
+        JSON.stringify(p.variantes) === JSON.stringify(variantesSeleccionadas)
+      );
+    }
+  };
 
   const existente = carrito.find(igual);
   const varianteTamanio = variantesSeleccionadas.find(v => v.tipo === "Tamaño");
@@ -145,23 +154,20 @@ function agregarAlCarrito(prod) {
       precio: precioFinal,
       imagen: prod.imagen,
       cantidad: 1,
-      variantes: variantesSeleccionadas
+      variantes: sinVariantes ? [] : variantesSeleccionadas
     });
   }
 
   gtag('event', 'agregar_al_carrito', {
-  event_category: 'Carrito',
-  event_label: prod.nombre,
-  value: prod.precio
-});
-
+    event_category: 'Carrito',
+    event_label: prod.nombre,
+    value: prod.precio
+  });
 
   localStorage.setItem("carrito", JSON.stringify(carrito));
   actualizarContadorProducto(prod.id);
-
   actualizarContadorCarrito();
 
-  // Mostrar mensaje pegado a la tarjeta
   const mensajeProducto = document.getElementById("mensaje-producto");
   mensajeProducto.textContent = "✅ Producto agregado al carrito.";
   mensajeProducto.style.color = "green";
@@ -171,6 +177,7 @@ function agregarAlCarrito(prod) {
     mensajeProducto.textContent = "";
   }, 2000);
 }
+
 
 function cargarVariantesVisuales() {
   fetch(`https://api.mielissimo.com.ar/api/variantes/${id}`)
