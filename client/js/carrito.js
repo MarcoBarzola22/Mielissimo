@@ -50,8 +50,13 @@ function renderizarCarrito() {
       <div class="info">
         <h3>${item.nombre}</h3>
         ${variantesHTML}
-        <p>Cantidad: ${item.cantidad}</p>
-        <p>Precio: ARS $${(item.precio * item.cantidad).toFixed(2)}</p>
+        <div class="cantidad-controles">
+  <button class="btn-cantidad" data-index="${index}" data-accion="restar">-</button>
+  <span class="cantidad-valor">${item.cantidad}</span>
+  <button class="btn-cantidad" data-index="${index}" data-accion="sumar">+</button>
+</div>
+<p>Precio: ARS $${(item.precio * item.cantidad).toFixed(2)}</p>
+
       </div>
       <button class="btn-eliminar" data-index="${index}">Eliminar</button>
     `;
@@ -68,6 +73,26 @@ function renderizarCarrito() {
       actualizarContadorCarrito();
     });
   });
+
+  document.querySelectorAll(".btn-cantidad").forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    const index = e.target.dataset.index;
+    const accion = e.target.dataset.accion;
+
+    if (accion === "sumar") {
+      carrito[index].cantidad++;
+    } else if (accion === "restar" && carrito[index].cantidad > 1) {
+      carrito[index].cantidad--;
+    } else if (accion === "restar" && carrito[index].cantidad === 1) {
+      carrito.splice(index, 1); // Eliminar producto si llega a 0
+    }
+
+    localStorage.setItem("carrito", JSON.stringify(carrito));
+    renderizarCarrito();
+    actualizarContadorCarrito();
+  });
+});
+
 
   actualizarContadorCarrito();
   calcularTotal();

@@ -1651,3 +1651,30 @@ main h1 {
   border-radius: 12px;
   display: none;
 }
+
+.cantidad-controles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0;
+}
+
+.btn-cantidad {
+  background-color: #ef5579;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-cantidad:hover {
+  background-color: #d44870;
+}
+
+.cantidad-valor {
+  font-weight: bold;
+  font-size: 1rem;
+}
