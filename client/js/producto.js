@@ -264,17 +264,25 @@ function cargarVariantesVisuales() {
 }
 
 function actualizarContadorProducto(idProducto) {
-  const item = carrito.find(p => p.id == idProducto);
+  // Cargar carrito actualizado
+  const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+
+  // Sumar todas las variantes del mismo producto
+  const totalCantidad = carrito
+    .filter(item => item.id == idProducto)
+    .reduce((sum, item) => sum + item.cantidad, 0);
+
   const contadorElemento = document.querySelector(`.contador-carrito-producto[data-id="${idProducto}"]`);
   if (contadorElemento) {
-    if (item && item.cantidad > 0) {
-      contadorElemento.textContent = item.cantidad;
+    if (totalCantidad > 0) {
+      contadorElemento.textContent = totalCantidad;
       contadorElemento.style.display = "inline-flex";
     } else {
       contadorElemento.style.display = "none";
     }
   }
 }
+
 
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -284,8 +292,12 @@ document.addEventListener("DOMContentLoaded", () => {
   cargarProducto();
 const prodId = parseInt(id);
 if (carrito.length > 0) {
-  const item = carrito.find(p => p.id == prodId);
-  if (item) actualizarContadorProducto(prodId);
+  const totalCantidad = carrito
+  .filter(p => p.id == prodId)
+  .reduce((sum, p) => sum + p.cantidad, 0);
+
+if (totalCantidad > 0) actualizarContadorProducto(prodId);
+
 }
 
 });

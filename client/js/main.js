@@ -140,9 +140,7 @@ function renderizarCategorias() {
 function renderizarProductos(lista, favoritos) {
   carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 
-carrito.forEach(item => {
-  actualizarContadorProducto(item.id);
-});
+
 
   if (!contenedorProductos) return;
   contenedorProductos.innerHTML = "";
@@ -189,8 +187,16 @@ carrito.forEach(item => {
 
   contenedorProductos.appendChild(fragment);
 
+carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+carrito.forEach(item => {
+  actualizarContadorProducto(item.id);
+});
+
+
   if (tokenUsuario) configurarBotonesFavoritos();
   configurarBotonesCarrito();
+
+
 }
 
 // BUSCADOR
@@ -264,17 +270,25 @@ function configurarBotonesCarrito() {
 }
 
 function actualizarContadorProducto(idProducto) {
-  const item = carrito.find(p => p.id == idProducto);
+  // Cargar carrito actualizado
+  const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+
+  // Sumar todas las variantes del mismo producto
+  const totalCantidad = carrito
+    .filter(item => item.id == idProducto)
+    .reduce((sum, item) => sum + item.cantidad, 0);
+
   const contadorElemento = document.querySelector(`.contador-carrito-producto[data-id="${idProducto}"]`);
   if (contadorElemento) {
-    if (item && item.cantidad > 0) {
-      contadorElemento.textContent = item.cantidad;
+    if (totalCantidad > 0) {
+      contadorElemento.textContent = totalCantidad;
       contadorElemento.style.display = "inline-flex";
     } else {
       contadorElemento.style.display = "none";
     }
   }
 }
+
 
 
 
