@@ -22,6 +22,7 @@ const mensajeProducto = document.getElementById("mensaje-producto");
 let esFavorito = false;
 let variantesSeleccionadas = [];
 let precioBase = 0;
+let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 
 async function cargarProducto() {
   try {
@@ -155,6 +156,8 @@ function agregarAlCarrito(prod) {
 
 
   localStorage.setItem("carrito", JSON.stringify(carrito));
+  actualizarContadorProducto(prod.id);
+
   actualizarContadorCarrito();
 
   // Mostrar mensaje pegado a la tarjeta
@@ -279,7 +282,6 @@ document.addEventListener("DOMContentLoaded", () => {
   actualizarContadorCarrito();
   crearBotonCarritoFlotante();
   cargarProducto();
-  const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 const prodId = parseInt(id);
 if (carrito.length > 0) {
   const item = carrito.find(p => p.id == prodId);
