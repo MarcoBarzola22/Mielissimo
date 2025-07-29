@@ -48,9 +48,11 @@ async function cargarProducto() {
             <p><strong>Precio:</strong> <span id="precio-dinamico">AR$ ${precioBase.toFixed(2)}</span></p>
             <p><strong>Categoría:</strong> ${prod.categoria_nombre || "Sin categoría"}</p>
             <div class="botones-producto">
-              <button id="btn-agregar" class="btn">Agregar al carrito</button>
-              ${token ? `<button id="btn-favorito" class="btn-favorito">${esFavorito ? "❤️" : "🤍"}</button>` : ""}
-            </div>
+  <button id="btn-agregar" class="btn">Agregar al carrito</button>
+  <span class="contador-carrito-producto badge" data-id="${prod.id}" style="display:none">0</span>
+  ${token ? `<button id="btn-favorito" class="btn-favorito">${esFavorito ? "❤️" : "🤍"}</button>` : ""}
+</div>
+
           </div>
         </div>
       </div>
@@ -60,6 +62,7 @@ async function cargarProducto() {
     if (token) {
       document.getElementById("btn-favorito").addEventListener("click", toggleFavorito);
     }
+actualizarContadorProducto(prod.id);
 
     cargarVariantesVisuales();
   } catch (err) {
@@ -257,9 +260,30 @@ function cargarVariantesVisuales() {
     });
 }
 
+function actualizarContadorProducto(idProducto) {
+  const item = carrito.find(p => p.id == idProducto);
+  const contadorElemento = document.querySelector(`.contador-carrito-producto[data-id="${idProducto}"]`);
+  if (contadorElemento) {
+    if (item && item.cantidad > 0) {
+      contadorElemento.textContent = item.cantidad;
+      contadorElemento.style.display = "inline-flex";
+    } else {
+      contadorElemento.style.display = "none";
+    }
+  }
+}
+
+
 document.addEventListener("DOMContentLoaded", () => {
   mostrarUsuario();
   actualizarContadorCarrito();
   crearBotonCarritoFlotante();
   cargarProducto();
+  const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+const prodId = parseInt(id);
+if (carrito.length > 0) {
+  const item = carrito.find(p => p.id == prodId);
+  if (item) actualizarContadorProducto(prodId);
+}
+
 });
