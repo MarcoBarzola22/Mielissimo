@@ -159,20 +159,15 @@ function renderizarProductos(lista, favoritos) {
     const color = esFavorito ? "#ef5579" : "#999";
 
    div.innerHTML = `
-  <div class="producto-imagen">
-    <img src="${prod.imagen}" alt="${prod.nombre}">
-  </div>
-  <div class="producto-info">
-    <h3>${prod.nombre}</h3>
-    <p class="categoria-nombre">${prod.categoria_nombre || "Sin categoría"}</p>
-    <p>Precio: AR$ ${parseFloat(prod.precio).toFixed(2)}</p>
-  </div>
-  <div class="producto-botones">
-    <button class="btn-carrito" data-id="${prod.id}">Agregar al carrito</button>
-    ${tokenUsuario ? `<button class="btn-favorito" data-id="${prod.id}" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:${color};">${icono}</button>` : ""}
-    <span class="contador-carrito-producto badge" data-id="${prod.id}" style="display:none">0</span>
-  </div>
-`;
+      <img src="${prod.imagen}" alt="${prod.nombre}">
+      <h3>${prod.nombre}</h3>
+      <p class="categoria-nombre">${prod.categoria_nombre || "Sin categoría"}</p>
+      <p>Precio: AR$ ${parseFloat(prod.precio).toFixed(2)}</p>
+      <button class="btn-carrito" data-id="${prod.id}">Agregar al carrito</button>
+      ${tokenUsuario ? `<button class="btn-favorito" data-id="${prod.id}" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:${color};">${icono}</button>` : ""}
+      <span class="contador-carrito-producto badge" data-id="${prod.id}" style="display:none">0</span>
+
+    `;
 
 
     div.addEventListener("click", (e) => {
