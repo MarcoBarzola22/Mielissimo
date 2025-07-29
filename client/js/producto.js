@@ -48,11 +48,12 @@ async function cargarProducto() {
             <div id="seccion-variantes-dentro"></div>
             <p><strong>Precio:</strong> <span id="precio-dinamico">AR$ ${precioBase.toFixed(2)}</span></p>
             <p><strong>Categoría:</strong> ${prod.categoria_nombre || "Sin categoría"}</p>
-            <div class="botones-producto">
+           <div class="botones-producto">
   <button id="btn-agregar" class="btn">Agregar al carrito</button>
-  <span class="contador-carrito-producto badge" data-id="${prod.id}" style="display:none">0</span>
+  <span class="contador-carrito-producto badge-inline" data-id="${prod.id}" style="display:none; margin-left:8px;">0</span>
   ${token ? `<button id="btn-favorito" class="btn-favorito">${esFavorito ? "❤️" : "🤍"}</button>` : ""}
 </div>
+
 
           </div>
         </div>
