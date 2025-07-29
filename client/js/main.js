@@ -138,6 +138,10 @@ function renderizarCategorias() {
 
 // RENDERIZAR PRODUCTOS
 function renderizarProductos(lista, favoritos) {
+carrito.forEach(item => {
+  actualizarContadorProducto(item.id);
+});
+
   if (!contenedorProductos) return;
   contenedorProductos.innerHTML = "";
 
@@ -161,6 +165,7 @@ function renderizarProductos(lista, favoritos) {
       <p>Precio: AR$ ${parseFloat(prod.precio).toFixed(2)}</p>
       <button class="btn-carrito" data-id="${prod.id}">Agregar al carrito</button>
       ${tokenUsuario ? `<button class="btn-favorito" data-id="${prod.id}" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:${color};">${icono}</button>` : ""}
+      <span class="contador-carrito-producto" data-id="${prod.id}">0</span>
     `;
 
     div.addEventListener("click", (e) => {
@@ -255,6 +260,14 @@ function configurarBotonesCarrito() {
   });
 }
 
+function actualizarContadorProducto(idProducto) {
+  const item = carrito.find(p => p.id == idProducto);
+  const contadorElemento = document.querySelector(`.contador-carrito-producto[data-id="${idProducto}"]`);
+  if (contadorElemento) {
+    contadorElemento.textContent = item ? item.cantidad : 0;
+  }
+}
+
 
 function agregarAlCarrito(idProducto) {
   const producto = productosCache.find(p => p.id == idProducto);
@@ -268,7 +281,9 @@ function agregarAlCarrito(idProducto) {
 
   localStorage.setItem("carrito", JSON.stringify(carrito));
   actualizarContadorCarrito();
+  actualizarContadorProducto(idProducto);
 }
+
 
 function actualizarContadorCarrito() {
   const total = carrito.reduce((acc, item) => acc + item.cantidad, 0);

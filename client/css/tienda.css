@@ -1562,3 +1562,28 @@ main h1 {
   }
 }
 
+/* Scroll horizontal para productos */
+.scroll-productos {
+  display: flex;
+  overflow-x: auto;
+  gap: 1rem;
+  padding: 1rem;
+  scroll-behavior: smooth;
+}
+
+.scroll-productos::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scroll-productos::-webkit-scrollbar-thumb {
+  background-color: #ef5579;
+  border-radius: 4px;
+}
+
+.scroll-productos::-webkit-scrollbar-track {
+  background-color: #ffe6f0;
+}
+
+.scroll-productos .producto {
+  flex: 0 0 240px; /* ancho fijo para cada tarjeta */
+}
