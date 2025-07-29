@@ -422,7 +422,6 @@ app.post("/api/compras", (req, res) => {
   const fecha_compra = new Date().toISOString().slice(0, 19).replace("T", " ");
   const tipo = tipoEnvio || "retiro";
 
-  // Generar un ID de pedido usando el primer insertId
   let pedidoId = null;
   let insertados = 0;
 
@@ -443,7 +442,21 @@ app.post("/api/compras", (req, res) => {
           return res.status(500).json({ error: "Error al registrar la compra." });
         }
 
-        if (pedidoId === null) pedidoId = result.insertId;
+        if (pedidoId === null) {
+          pedidoId = result.insertId;
+
+          // Actualizamos el primer registro para que su pedido_id sea igual a su propio ID
+          db.query(
+            `UPDATE compras SET pedido_id = ? WHERE id = ?`,
+            [pedidoId, pedidoId]
+          );
+        }
+
+        // Para los siguientes productos del carrito, también asignamos pedido_id
+        db.query(
+          `UPDATE compras SET pedido_id = ? WHERE id = ?`,
+          [pedidoId, result.insertId]
+        );
 
         insertados++;
         if (insertados === carrito.length) {
@@ -453,6 +466,7 @@ app.post("/api/compras", (req, res) => {
     );
   });
 });
+
 
 
 
@@ -515,20 +529,35 @@ app.get("/api/compras/detalle/:id", verificarToken, (req, res) => {
   const { id } = req.params;
 
   const query = `
-    SELECT c.id, c.fecha_compra, c.cantidad, c.tipo_envio, c.variantes,
-           p.nombre AS nombre_producto, p.imagen
+    SELECT c.pedido_id, c.fecha_compra, c.tipo_envio, c.variantes,
+           p.nombre AS producto, c.cantidad, p.precio
     FROM compras c
     JOIN productos p ON c.id_producto = p.id
-    WHERE c.id = ?
+    WHERE c.pedido_id = ?
   `;
 
-  db.query(query, [id], (err, resultado) => {
+  db.query(query, [id], (err, resultados) => {
     if (err) return res.status(500).json({ error: "Error al obtener detalle de compra" });
-    if (resultado.length === 0) return res.status(404).json({ error: "Compra no encontrada" });
+    if (resultados.length === 0) return res.status(404).json({ error: "Compra no encontrada" });
 
-    res.json(resultado[0]);
+    // Calcular total
+    const total = resultados.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+
+    res.json({
+      pedido_id: id,
+      fecha_compra: resultados[0].fecha_compra,
+      tipo_envio: resultados[0].tipo_envio,
+      productos: resultados.map(item => ({
+        nombre: item.producto,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio,
+        variantes: item.variantes
+      })),
+      total
+    });
   });
 });
+
 
 
 // ==============================

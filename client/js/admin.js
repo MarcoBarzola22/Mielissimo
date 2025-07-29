@@ -466,15 +466,19 @@ document.getElementById("btn-buscar-compra").addEventListener("click", async () 
       return;
     }
 
-    resultadoDiv.innerHTML = `
+  resultadoDiv.innerHTML = `
   <div style="border: 1px solid #ccc; padding: 10px; border-radius: 8px; margin-top: 10px;">
-    <p><strong>Pedido #${data.id}</strong></p>
+    <p><strong>Pedido #${data.pedido_id}</strong></p>
     <p><strong>Fecha:</strong> ${new Date(data.fecha_compra).toLocaleString()}</p>
-    <p><strong>Producto:</strong> ${data.nombre_producto}</p>
-    <p><strong>Cantidad:</strong> ${data.cantidad}</p>
-    <p><strong>Variantes:</strong> ${data.variantes || 'Sin variantes'}</p>
     <p><strong>Tipo de envío:</strong> ${data.tipo_envio}</p>
-    <img src="${data.imagen}" alt="${data.nombre_producto}" style="width:80px; margin-top:10px;" />
+    <h4>Productos:</h4>
+    <ul>
+      ${data.productos.map(p => `
+        <li>${p.cantidad} x ${p.nombre} = $${(p.precio_unitario * p.cantidad).toFixed(2)}
+        ${p.variantes && p.variantes !== 'Sin variantes' ? `(${p.variantes})` : ''}</li>
+      `).join("")}
+    </ul>
+    <p><strong>Total:</strong> $${data.total.toFixed(2)}</p>
   </div>
 `;
 
