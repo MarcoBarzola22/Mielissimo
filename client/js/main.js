@@ -161,11 +161,11 @@ carrito.forEach(item => {
     div.innerHTML = `
       <img src="${prod.imagen}" alt="${prod.nombre}">
       <h3>${prod.nombre}</h3>
-      <p class="categoria-nombre">${prod.categoria_nombre || "Sin categoría"}</p>
       <p>Precio: AR$ ${parseFloat(prod.precio).toFixed(2)}</p>
       <button class="btn-carrito" data-id="${prod.id}">Agregar al carrito</button>
       ${tokenUsuario ? `<button class="btn-favorito" data-id="${prod.id}" style="background:none;border:none;font-size:1.5rem;cursor:pointer;color:${color};">${icono}</button>` : ""}
-      <span class="contador-carrito-producto" data-id="${prod.id}">0</span>
+      <span class="contador-carrito-producto badge" data-id="${prod.id}" style="display:none">0</span>
+
     `;
 
     div.addEventListener("click", (e) => {
@@ -264,9 +264,15 @@ function actualizarContadorProducto(idProducto) {
   const item = carrito.find(p => p.id == idProducto);
   const contadorElemento = document.querySelector(`.contador-carrito-producto[data-id="${idProducto}"]`);
   if (contadorElemento) {
-    contadorElemento.textContent = item ? item.cantidad : 0;
+    if (item && item.cantidad > 0) {
+      contadorElemento.textContent = item.cantidad;
+      contadorElemento.style.display = "inline-flex";
+    } else {
+      contadorElemento.style.display = "none";
+    }
   }
 }
+
 
 
 function agregarAlCarrito(idProducto) {

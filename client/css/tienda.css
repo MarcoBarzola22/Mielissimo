@@ -1587,3 +1587,24 @@ main h1 {
 .scroll-productos .producto {
   flex: 0 0 240px; /* ancho fijo para cada tarjeta */
 }
+
+.contador-carrito-producto.badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #ef5579;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: bold;
+  padding: 4px 8px;
+  border-radius: 50%;
+  display: none; /* Oculto por defecto, se muestra con JS */
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+}
+
+.producto {
+  position: relative;
+}
