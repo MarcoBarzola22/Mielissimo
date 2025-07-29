@@ -125,7 +125,7 @@ function actualizarPrecio() {
 }
 
 function agregarAlCarrito(prod) {
-  const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+  
 
   const igual = p =>
     p.id === prod.id &&

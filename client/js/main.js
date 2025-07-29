@@ -138,6 +138,8 @@ function renderizarCategorias() {
 
 // RENDERIZAR PRODUCTOS
 function renderizarProductos(lista, favoritos) {
+  carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+
 carrito.forEach(item => {
   actualizarContadorProducto(item.id);
 });
