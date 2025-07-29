@@ -1,5 +1,17 @@
 const API_URL = "https://api.mielissimo.com.ar/api";
 
+function manejarTokenExpiradoUsuario(res) {
+  if (res.status === 401) {
+    localStorage.removeItem("token_usuario");
+    localStorage.removeItem("nombre_usuario");
+    alert("Tu sesión ha expirado. Por favor, iniciá sesión nuevamente.");
+    window.location.href = "login.html";
+    return true;
+  }
+  return false;
+}
+
+
 const contenedorCategorias = document.getElementById("categorias-horizontal");
 const contenedorProductos = document.getElementById("productos");
 const contadorCarrito = document.getElementById("contador-carrito");
@@ -40,7 +52,9 @@ async function obtenerFavoritos() {
     const res = await fetch(`${API_URL}/favoritos`, {
       headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) return [];
+    if (manejarTokenExpiradoUsuario(res)) return [];
+if (!res.ok) return [];
+
     return await res.json();
   } catch {
     return [];

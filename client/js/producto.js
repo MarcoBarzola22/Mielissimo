@@ -1,5 +1,17 @@
 import { mostrarUsuario, actualizarContadorCarrito, crearBotonCarritoFlotante } from "./navbar.js";
 
+function manejarTokenExpiradoUsuario(res) {
+  if (res.status === 401) {
+    localStorage.removeItem("token_usuario");
+    localStorage.removeItem("nombre_usuario");
+    alert("Tu sesión ha expirado. Por favor, iniciá sesión nuevamente.");
+    window.location.href = "login.html";
+    return true;
+  }
+  return false;
+}
+
+
 const infoProducto = document.getElementById("info-producto");
 const variantesSection = document.getElementById("variantes-producto");
 const params = new URLSearchParams(window.location.search);
@@ -61,14 +73,8 @@ async function verificarFavorito() {
       headers: { Authorization: `Bearer ${token}` }
     });
 
-    // Si el token expiró
-    if (res.status === 403) {
-      localStorage.removeItem("token_usuario");
-      localStorage.removeItem("nombre_usuario");
-      alert("Tu sesión ha expirado. Vuelve a iniciar sesión.");
-      window.location.href = "login.html"; // o la ruta de login
-      return;
-    }
+   if (manejarTokenExpiradoUsuario(res)) return;
+
 
     const favoritos = await res.json();
     esFavorito = favoritos.some(f => f.producto_id == id);

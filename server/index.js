@@ -415,7 +415,6 @@ app.post("/api/usuarios/login", (req, res) => {
 app.post("/api/compras", (req, res) => {
   const { id_usuario, carrito, tipoEnvio } = req.body;
 
-  // Validar datos
   if (!Array.isArray(carrito) || carrito.length === 0) {
     return res.status(400).json({ error: "Datos inválidos para la compra." });
   }
@@ -423,31 +422,32 @@ app.post("/api/compras", (req, res) => {
   const fecha_compra = new Date().toISOString().slice(0, 19).replace("T", " ");
   const tipo = tipoEnvio || "retiro";
 
-  // Guardar cada producto en la tabla compras
+  // Generar un ID de pedido usando el primer insertId
+  let pedidoId = null;
   let insertados = 0;
-  carrito.forEach(item => {
-    // Si el producto no tiene variantes, guardamos "Sin variantes"
+
+  carrito.forEach((item, index) => {
     const variantesTexto = item.variantes && item.variantes.length > 0
       ? item.variantes.map(v => `${v.tipo}: ${v.nombre}`).join(", ")
       : "Sin variantes";
 
-    // Usar NULL si el usuario no está logueado
     const usuarioId = id_usuario && !isNaN(id_usuario) ? id_usuario : null;
 
     db.query(
       `INSERT INTO compras (id_usuario, id_producto, cantidad, fecha_compra, tipo_envio, variantes)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [usuarioId, item.id, item.cantidad, fecha_compra, tipo, variantesTexto],
-      (err) => {
+      (err, result) => {
         if (err) {
           console.error("Error al insertar producto:", err);
           return res.status(500).json({ error: "Error al registrar la compra." });
         }
 
+        if (pedidoId === null) pedidoId = result.insertId;
+
         insertados++;
         if (insertados === carrito.length) {
-          // Enviamos respuesta solo cuando se insertaron todos los productos
-          res.json({ mensaje: "Compra registrada correctamente." });
+          res.json({ mensaje: "Compra registrada correctamente", id: pedidoId });
         }
       }
     );
@@ -510,6 +510,25 @@ app.get("/api/historial", verificarToken, (req, res) => {
   });
 });
 
+// Buscar compra por ID individual (para panel admin)
+app.get("/api/compras/detalle/:id", verificarToken, (req, res) => {
+  const { id } = req.params;
+
+  const query = `
+    SELECT c.id, c.fecha_compra, c.cantidad, c.tipo_envio, c.variantes,
+           p.nombre AS nombre_producto, p.imagen
+    FROM compras c
+    JOIN productos p ON c.id_producto = p.id
+    WHERE c.id = ?
+  `;
+
+  db.query(query, [id], (err, resultado) => {
+    if (err) return res.status(500).json({ error: "Error al obtener detalle de compra" });
+    if (resultado.length === 0) return res.status(404).json({ error: "Compra no encontrada" });
+
+    res.json(resultado[0]);
+  });
+});
 
 
 // ==============================

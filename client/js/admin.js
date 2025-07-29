@@ -442,6 +442,43 @@ function cargarVariantes(idProducto) {
     });
 }
 
+
+document.getElementById("btn-buscar-compra").addEventListener("click", async () => {
+  const idCompra = document.getElementById("buscar-compra-id").value.trim();
+  const resultadoDiv = document.getElementById("resultado-busqueda-compra");
+
+  if (!idCompra) {
+    resultadoDiv.innerHTML = "<p style='color:red'>Ingrese un ID válido.</p>";
+    return;
+  }
+
+  try {
+    const res = await fetch(`https://api.mielissimo.com.ar/api/compras/${idCompra}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    if (manejarTokenExpirado(res)) return;
+
+    const data = await res.json();
+    if (!res.ok || data.error) {
+      resultadoDiv.innerHTML = `<p style='color:red'>Compra no encontrada</p>`;
+      return;
+    }
+
+    resultadoDiv.innerHTML = `
+      <p><strong>ID:</strong> ${data.id}</p>
+      <p><strong>Fecha:</strong> ${data.fecha_compra}</p>
+      <p><strong>Producto:</strong> ${data.nombre}</p>
+      <p><strong>Cantidad:</strong> ${data.cantidad}</p>
+      <p><strong>Variantes:</strong> ${data.variantes || 'Sin variantes'}</p>
+      <p><strong>Tipo de envío:</strong> ${data.tipo_envio}</p>
+    `;
+  } catch (err) {
+    resultadoDiv.innerHTML = "<p style='color:red'>Error al buscar compra.</p>";
+  }
+});
+
+
 formularioVariante.addEventListener("submit", async (e) => {
   e.preventDefault();
 

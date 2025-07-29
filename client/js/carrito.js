@@ -1,5 +1,17 @@
 import { mostrarUsuario, actualizarContadorCarrito } from "./navbar.js";
 
+function manejarTokenExpiradoUsuario(res) {
+  if (res.status === 401) {
+    localStorage.removeItem("token_usuario");
+    localStorage.removeItem("nombre_usuario");
+    alert("Tu sesión ha expirado. Por favor, iniciá sesión nuevamente.");
+    window.location.href = "login.html";
+    return true;
+  }
+  return false;
+}
+
+
 let carrito = JSON.parse(localStorage.getItem("carrito")) || [];
 
 function renderizarCarrito() {
@@ -101,17 +113,20 @@ async function confirmarCompra() {
   const total = parseFloat(totalTexto);
 
   // Guardar en DB si hay usuario logueado
-  if (id_usuario) {
-    try {
-      await fetch("https://api.mielissimo.com.ar/api/compras", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id_usuario, carrito: carritoCopia, tipoEnvio, total })
-      });
-    } catch (err) {
-      console.error("Error guardando en historial:", err);
-    }
-  }
+  try {
+  const res = await fetch("https://api.mielissimo.com.ar/api/compras", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id_usuario: id_usuario || null, carrito: carritoCopia, tipoEnvio, total })
+  });
+  if (id_usuario && manejarTokenExpiradoUsuario(res)) return;
+
+  const data = await res.json();
+  var pedidoId = data.id; // <- Guardamos ID para el mensaje
+} catch (err) {
+  console.error("Error guardando en historial:", err);
+}
+
 
   // Generar mensaje WhatsApp usando carritoCopia
   const tipo = tipoEnvio === "envio" ? "🚚 Envío a domicilio" : "🏠 Retiro en local";
@@ -125,16 +140,19 @@ async function confirmarCompra() {
   }).join("\n");
 
   const mensajeTexto = 
-`Hola, quiero hacer un pedido en Mielíssimo 🍬❤️
+`📌 *Pedido #${pedidoId}*
+
+Hola, quiero hacer un pedido en Mielíssimo 🍬❤️
 ✨ ¡Más golosinas, más contento! 😋
 
 Detalles del Pedido:
 ${detallesProductos}
 
-💲 Total: $${total.toFixed(2)}
+💲 *Total:* $${total.toFixed(2)}
 
-👤 Nombre: ${nombreUsuario}
+👤 *Nombre:* ${nombreUsuario}
 ${tipo}`;
+
 
   const textoCodificado = encodeURIComponent(mensajeTexto);
   const numeroWhatsapp = "2657603387";
@@ -156,10 +174,6 @@ ${tipo}`;
     renderizarCarrito();
   }, 500);
 }
-
-
-
-
 
 
 

@@ -1,3 +1,14 @@
+function manejarTokenExpiradoUsuario(res) {
+  if (res.status === 401) {
+    localStorage.removeItem("token_usuario");
+    localStorage.removeItem("nombre_usuario");
+    alert("Tu sesión ha expirado. Por favor, iniciá sesión nuevamente.");
+    window.location.href = "login.html";
+    return true;
+  }
+  return false;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   cargarHistorial();
 });
@@ -17,13 +28,7 @@ async function cargarHistorial() {
       }
     });
 
-    if (res.status === 403) {
-      // Token vencido o inválido
-      localStorage.removeItem("token_usuario");
-      alert("Tu sesión expiró. Inicia sesión nuevamente.");
-      window.location.href = "login.html";
-      return;
-    }
+   if (manejarTokenExpiradoUsuario(res)) return;
 
     if (!res.ok) {
       throw new Error("Error al obtener historial");
