@@ -75,7 +75,7 @@ function verificarToken(req, res, next) {
 
   const token = auth.split(" ")[1];
   jwt.verify(token, JWT_SECRET, (err, decoded) => {
-    if (err) return res.status(403).json({ error: "Token inválido" });
+    if (err) return res.status(401).json({ error: "Token inválido" });
     req.usuario = decoded.usuario;
     next();
   });

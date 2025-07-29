@@ -114,11 +114,13 @@ function cargarProductos(filtro = "") {
 }
 
 function cargarCategorias() {
-  fetch("https://api.mielissimo.com.ar/api/categorias")
-    .then(res => {
-  if (manejarTokenExpirado(res)) return [];
-  return res.json();
+  fetch("https://api.mielissimo.com.ar/api/categorias", {
+  headers: { Authorization: `Bearer ${token}` }
 })
+  .then(res => {
+    if (manejarTokenExpirado(res)) return [];
+    return res.json();
+  })
 
     .then(categorias => {
       selectCategoria.innerHTML = '<option value="">Seleccionar categoría</option>';
@@ -213,11 +215,15 @@ function editarProducto(id, nombre, precio, imagen, categoria_id) {
 }
 
 function desactivarProducto(id) {
-  fetch(`https://api.mielissimo.com.ar/api/productos/desactivar/${id}`, {
-    method: "PUT",
-    headers: { Authorization: `Bearer ${token}` }
+ fetch(`https://api.mielissimo.com.ar/api/productos/desactivar/${id}`, {
+  method: "PUT",
+  headers: { Authorization: `Bearer ${token}` }
+})
+  .then(res => {
+    if (manejarTokenExpirado(res)) return [];
+    return res.json();
   })
-    .then((res) => res.json())
+
     .then((data) => {
       mensaje.textContent = data.mensaje || "Producto desactivado";
       mensaje.style.color = "green";
@@ -231,11 +237,15 @@ function desactivarProducto(id) {
 
 
 function reactivarProducto(id) {
-  fetch(`https://api.mielissimo.com.ar/api/productos/activar/${id}`, {
-    method: "PUT",
-    headers: { Authorization: `Bearer ${token}` }
+ fetch(`https://api.mielissimo.com.ar/api/productos/activar/${id}`, {
+  method: "PUT",
+  headers: { Authorization: `Bearer ${token}` }
+})
+  .then(res => {
+    if (manejarTokenExpirado(res)) return [];
+    return res.json();
   })
-    .then((res) => res.json())
+
     .then((data) => {
       mensaje.textContent = data.mensaje || "Producto reactivado";
       mensaje.style.color = "green";
@@ -254,7 +264,7 @@ formularioCategoria.addEventListener("submit", async (e) => {
 
   const url = categoriaEnEdicion ? `https://api.mielissimo.com.ar/api/categorias/${categoriaEnEdicion}` : "https://api.mielissimo.com.ar/api/categorias";
   const metodo = categoriaEnEdicion ? "PUT" : "POST";
-
+const body = { nombre }; // Definir correctamente el objeto
 const res = await fetch(url, {
   method: metodo,
   headers: {
