@@ -1726,3 +1726,13 @@ main h1 {
   text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.25); /* Sombra suave */
   font-family: 'Poppins', sans-serif; /* O la fuente que ya uses */
 }
+
+.hero p {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 400;
+  font-style: italic;
+  font-family: 'Dancing Script', cursive;
+  margin: 0.8rem 0 1.5rem 0;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.25);
+}
