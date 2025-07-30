@@ -191,7 +191,7 @@
 /* === HERO === */
 .hero {
   position: relative;
-  background: url('../assets/ultima_pagina_completa.png') center/cover no-repeat;
+  background: url('../assets/NubesHero.png') center/cover no-repeat;
   padding: 4rem 2rem;
   text-align: center;
   border-radius: 16px;
