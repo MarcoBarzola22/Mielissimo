@@ -1718,22 +1718,11 @@ main h1 {
 }
 
 .hero p {
-  font-style: italic;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1.2rem;
-  margin-top: 0.5rem;
-  margin-bottom: 1.5rem;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-  animation: fadeInUp 1s ease-in-out;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  color: #fff; /* Blanco para contraste */
+  font-size: 1.4rem;
+  font-weight: 500;
+  letter-spacing: 1px;
+  margin: 0.8rem 0 1.5rem 0;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.25); /* Sombra suave */
+  font-family: 'Poppins', sans-serif; /* O la fuente que ya uses */
 }
