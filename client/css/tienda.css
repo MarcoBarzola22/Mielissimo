@@ -190,12 +190,33 @@
 
 /* === HERO === */
 .hero {
-  background: linear-gradient(to bottom right, #ffd6e1, #fff0f5);
+  position: relative;
+  background: url('../assets/NubesHero.png') center/cover no-repeat;
   padding: 4rem 2rem;
   text-align: center;
   border-radius: 16px;
   margin: 2rem;
 }
+
+.hero::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 192, 203, 0.5); /* overlay rosa */
+  border-radius: 16px;
+  z-index: 0;
+}
+
+.hero h1,
+.hero p,
+.btn-hero {
+  position: relative;
+  z-index: 1;
+}
+
 
 .hero h1 {
   font-size: 2.5rem;
@@ -1695,3 +1716,4 @@ main h1 {
   max-height: 3.6em;         /* 3 líneas * line-height (1.2) */
   margin: 8px 0;
 }
+
