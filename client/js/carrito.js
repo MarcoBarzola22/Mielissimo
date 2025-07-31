@@ -161,7 +161,7 @@ async function confirmarCompra() {
       ? ` (${item.variantes.map(v => v.nombre).join(", ")})`
       : "";
 
-    return `❤️ ${item.cantidad} x ${item.nombre}${variantesTexto} = $${(item.precio * item.cantidad).toFixed(2)}`;
+    return `💗 ${item.cantidad} x ${item.nombre}${variantesTexto} = $${(item.precio * item.cantidad).toFixed(2)}`;
   }).join("\n");
 
   const mensajeTexto = 
@@ -171,12 +171,12 @@ Hola, quiero hacer un pedido en Mielíssimo 🍬💗
 🎀 ¡Más golosinas, más contento! 😋
 
 Detalles del Pedido:
-💗 ${detallesProductos}
+ ${detallesProductos}
 
 💲 *Total:* $${total.toFixed(2)}
 
 👤 *Nombre:* ${nombreUsuario}
-🚚 *Tipo de entrega* : ${tipo}`;
+ ${tipo}`;
 
 
   const textoCodificado = encodeURIComponent(mensajeTexto);
