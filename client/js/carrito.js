@@ -167,16 +167,16 @@ async function confirmarCompra() {
   const mensajeTexto = 
 `📌 *Pedido #${pedidoId}*
 
-Hola, quiero hacer un pedido en Mielíssimo 🍬❤️
-✨ ¡Más golosinas, más contento! 😋
+Hola, quiero hacer un pedido en Mielíssimo 🍬💗  
+🎀 ¡Más golosinas, más contento! 😋
 
 Detalles del Pedido:
-${detallesProductos}
+💗 ${detallesProductos}
 
 💲 *Total:* $${total.toFixed(2)}
 
 👤 *Nombre:* ${nombreUsuario}
-${tipo}`;
+🚚 *Tipo de entrega* : ${tipo}`;
 
 
   const textoCodificado = encodeURIComponent(mensajeTexto);
