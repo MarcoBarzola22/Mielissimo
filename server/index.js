@@ -415,7 +415,6 @@ app.post("/api/usuarios/login", (req, res) => {
 app.post("/api/compras", (req, res) => {
   const { id_usuario, carrito, tipoEnvio, zona, total } = req.body;
 
-
   if (!Array.isArray(carrito) || carrito.length === 0) {
     return res.status(400).json({ error: "Datos inválidos para la compra." });
   }
@@ -427,7 +426,7 @@ app.post("/api/compras", (req, res) => {
   // Usamos el primer item para obtener pedido_id
   const primerItem = carrito[0];
 
-  // Calculamos precio final (producto + variante si es Tamaño)
+  // Función para calcular precio final (producto + variante Tamaño si aplica)
   const calcularPrecioFinal = (productoPrecio, variantes) => {
     if (!variantes || variantes.length === 0) return productoPrecio;
 
@@ -437,18 +436,18 @@ app.post("/api/compras", (req, res) => {
     return parseFloat(productoPrecio) + extra;
   };
 
-  // Guardar el primer producto
+  // Guardar variantes como texto legible
   const variantesTexto = primerItem.variantes && primerItem.variantes.length > 0
     ? primerItem.variantes.map(v => `${v.tipo}: ${v.nombre}`).join(", ")
     : "Sin variantes";
 
   const precioUnitarioPrimer = calcularPrecioFinal(primerItem.precio, primerItem.variantes);
 
+  // Insertar el primer producto
   db.query(
     `INSERT INTO compras (id_usuario, id_producto, cantidad, precio_unitario, fecha_compra, tipo_envio, zona, variantes)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     [usuarioId, primerItem.id, primerItem.cantidad, precioUnitarioPrimer, fecha_compra, tipo, zona, variantesTexto],
-
     (err, result) => {
       if (err) {
         console.error("Error al insertar producto:", err);
@@ -471,11 +470,10 @@ app.post("/api/compras", (req, res) => {
 
         const precioUnitario = calcularPrecioFinal(item.precio, item.variantes);
 
-       db.query(
-    `INSERT INTO compras (id_usuario, id_producto, cantidad, precio_unitario, fecha_compra, tipo_envio, zona, variantes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [usuarioId, primerItem.id, primerItem.cantidad, precioUnitarioPrimer, fecha_compra, tipo, zona, variantesTexto],
-
+        db.query(
+          `INSERT INTO compras (id_usuario, id_producto, cantidad, precio_unitario, fecha_compra, tipo_envio, zona, variantes, pedido_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [usuarioId, item.id, item.cantidad, precioUnitario, fecha_compra, tipo, zona, variantesTextoItem, pedidoId],
           (err2) => {
             if (err2) {
               console.error("Error al insertar producto:", err2);
@@ -490,12 +488,14 @@ app.post("/api/compras", (req, res) => {
         );
       }
 
+      // Si solo había un producto
       if (carrito.length === 1) {
         res.json({ mensaje: "Compra registrada correctamente", id: pedidoId });
       }
     }
   );
 });
+
 
 
 
@@ -565,37 +565,38 @@ app.get("/api/compras/detalle/:id", verificarToken, (req, res) => {
     WHERE c.pedido_id = ?
   `;
 
-
   db.query(query, [id], (err, resultados) => {
     if (err) return res.status(500).json({ error: "Error al obtener detalle de compra" });
     if (resultados.length === 0) return res.status(404).json({ error: "Compra no encontrada" });
 
-  let total = resultados.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
+    // Calcular total de los productos
+    let total = resultados.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
 
-if (resultados[0].tipo_envio === "envio" && resultados[0].zona) {
-  const preciosZonas = {
-    "Zona centro": 1500,
-    "Jds": 2000,
-    "Ribera": 2000,
-    "Barrio unión": 2500
-  };
-  total += preciosZonas[resultados[0].zona] || 0;
-}
+    // Sumar costo de zona si es envío
+    if (resultados[0].tipo_envio === "envio" && resultados[0].zona) {
+      const preciosZonas = {
+        "Zona centro": 1500,
+        "Jds": 2000,
+        "Ribera": 2000,
+        "Barrio unión": 2500
+      };
+      total += preciosZonas[resultados[0].zona] || 0;
+    }
 
-res.json({
-  pedido_id: id,
-  fecha_compra: resultados[0].fecha_compra,
-  tipo_envio: resultados[0].tipo_envio,
-  zona: resultados[0].zona,
-  productos: resultados.map(item => ({
-    nombre: item.producto,
-    cantidad: item.cantidad,
-    precio_unitario: item.precio_unitario,
-    variantes: item.variantes
-  })),
-  total
-});
-
+    // Responder con los datos completos
+    res.json({
+      pedido_id: id,
+      fecha_compra: resultados[0].fecha_compra,
+      tipo_envio: resultados[0].tipo_envio,
+      zona: resultados[0].zona,
+      productos: resultados.map(item => ({
+        nombre: item.producto,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+        variantes: item.variantes
+      })),
+      total
+    });
   });
 });
 

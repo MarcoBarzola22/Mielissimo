@@ -471,6 +471,7 @@ document.getElementById("btn-buscar-compra").addEventListener("click", async () 
     <p><strong>Pedido #${data.pedido_id}</strong></p>
     <p><strong>Fecha:</strong> ${new Date(data.fecha_compra).toLocaleString()}</p>
     <p><strong>Tipo de envío:</strong> ${data.tipo_envio}</p>
+    ${data.tipo_envio === "envio" && data.zona ? `<p><strong>Zona:</strong> ${data.zona}</p>` : ""}
     <h4>Productos:</h4>
     <ul>
       ${data.productos.map(p => `
@@ -481,6 +482,7 @@ document.getElementById("btn-buscar-compra").addEventListener("click", async () 
     <p><strong>Total:</strong> $${data.total.toFixed(2)}</p>
   </div>
 `;
+
 
   } catch (err) {
     resultadoDiv.innerHTML = "<p style='color:red'>Error al buscar compra.</p>";
