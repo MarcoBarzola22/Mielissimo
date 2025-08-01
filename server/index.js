@@ -423,16 +423,30 @@ app.post("/api/compras", (req, res) => {
   const tipo = tipoEnvio || "retiro";
   const usuarioId = id_usuario && !isNaN(id_usuario) ? id_usuario : null;
 
-  // 1. Insertar el primer producto y usar su ID como pedido_id
+  // Usamos el primer item para obtener pedido_id
   const primerItem = carrito[0];
+
+  // Calculamos precio final (producto + variante si es Tamaño)
+  const calcularPrecioFinal = (productoPrecio, variantes) => {
+    if (!variantes || variantes.length === 0) return productoPrecio;
+
+    const varianteTamaño = variantes.find(v => v.tipo === "Tamaño" && v.precio_extra);
+    const extra = varianteTamaño ? parseFloat(varianteTamaño.precio_extra) : 0;
+
+    return parseFloat(productoPrecio) + extra;
+  };
+
+  // Guardar el primer producto
   const variantesTexto = primerItem.variantes && primerItem.variantes.length > 0
     ? primerItem.variantes.map(v => `${v.tipo}: ${v.nombre}`).join(", ")
     : "Sin variantes";
 
+  const precioUnitarioPrimer = calcularPrecioFinal(primerItem.precio, primerItem.variantes);
+
   db.query(
-    `INSERT INTO compras (id_usuario, id_producto, cantidad, fecha_compra, tipo_envio, variantes)
-     VALUES (?, ?, ?, ?, ?, ?)`,
-    [usuarioId, primerItem.id, primerItem.cantidad, fecha_compra, tipo, variantesTexto],
+    `INSERT INTO compras (id_usuario, id_producto, cantidad, precio_unitario, fecha_compra, tipo_envio, variantes)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [usuarioId, primerItem.id, primerItem.cantidad, precioUnitarioPrimer, fecha_compra, tipo, variantesTexto],
     (err, result) => {
       if (err) {
         console.error("Error al insertar producto:", err);
@@ -441,21 +455,24 @@ app.post("/api/compras", (req, res) => {
 
       const pedidoId = result.insertId;
 
-      // Actualizar el primer producto para que tenga pedido_id igual a su id
+      // Actualizamos pedido_id para el primer registro
       db.query(`UPDATE compras SET pedido_id = ? WHERE id = ?`, [pedidoId, pedidoId]);
 
-      // 2. Insertar los demás productos usando el mismo pedido_id
+      // Insertar los demás productos
       let insertados = 1;
       for (let i = 1; i < carrito.length; i++) {
         const item = carrito[i];
+
         const variantesTextoItem = item.variantes && item.variantes.length > 0
           ? item.variantes.map(v => `${v.tipo}: ${v.nombre}`).join(", ")
           : "Sin variantes";
 
+        const precioUnitario = calcularPrecioFinal(item.precio, item.variantes);
+
         db.query(
-          `INSERT INTO compras (id_usuario, id_producto, cantidad, fecha_compra, tipo_envio, variantes, pedido_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [usuarioId, item.id, item.cantidad, fecha_compra, tipo, variantesTextoItem, pedidoId],
+          `INSERT INTO compras (id_usuario, id_producto, cantidad, precio_unitario, fecha_compra, tipo_envio, variantes, pedido_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [usuarioId, item.id, item.cantidad, precioUnitario, fecha_compra, tipo, variantesTextoItem, pedidoId],
           (err2) => {
             if (err2) {
               console.error("Error al insertar producto:", err2);
@@ -464,21 +481,18 @@ app.post("/api/compras", (req, res) => {
 
             insertados++;
             if (insertados === carrito.length) {
-              // Responder solo una vez
               res.json({ mensaje: "Compra registrada correctamente", id: pedidoId });
             }
           }
         );
       }
 
-      // Si solo había 1 producto en el carrito
       if (carrito.length === 1) {
         res.json({ mensaje: "Compra registrada correctamente", id: pedidoId });
       }
     }
   );
 });
-
 
 
 
@@ -542,7 +556,7 @@ app.get("/api/compras/detalle/:id", verificarToken, (req, res) => {
 
   const query = `
     SELECT c.pedido_id, c.fecha_compra, c.tipo_envio, c.variantes,
-           p.nombre AS producto, c.cantidad, p.precio
+           p.nombre AS producto, c.cantidad, c.precio_unitario
     FROM compras c
     JOIN productos p ON c.id_producto = p.id
     WHERE c.pedido_id = ?
@@ -552,8 +566,7 @@ app.get("/api/compras/detalle/:id", verificarToken, (req, res) => {
     if (err) return res.status(500).json({ error: "Error al obtener detalle de compra" });
     if (resultados.length === 0) return res.status(404).json({ error: "Compra no encontrada" });
 
-    // Calcular total
-    const total = resultados.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+    const total = resultados.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
 
     res.json({
       pedido_id: id,
@@ -562,13 +575,14 @@ app.get("/api/compras/detalle/:id", verificarToken, (req, res) => {
       productos: resultados.map(item => ({
         nombre: item.producto,
         cantidad: item.cantidad,
-        precio_unitario: item.precio,
+        precio_unitario: item.precio_unitario,
         variantes: item.variantes
       })),
       total
     });
   });
 });
+
 
 
 
