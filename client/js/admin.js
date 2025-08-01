@@ -573,4 +573,3 @@ checkboxInactivos.addEventListener("change", () => cargarProductos());
 cargarProductos();
 cargarCategorias();
 
-
