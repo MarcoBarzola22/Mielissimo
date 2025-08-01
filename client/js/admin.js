@@ -471,7 +471,17 @@ document.getElementById("btn-buscar-compra").addEventListener("click", async () 
     <p><strong>Pedido #${data.pedido_id}</strong></p>
     <p><strong>Fecha:</strong> ${new Date(data.fecha_compra).toLocaleString()}</p>
     <p><strong>Tipo de envío:</strong> ${data.tipo_envio}</p>
-    ${data.tipo_envio === "envio" && data.zona ? `<p><strong>Zona:</strong> ${data.zona}</p>` : ""}
+    ${data.tipo_envio === "envio" && data.zona ? (() => {
+  const preciosZonas = {
+    "Zona centro": 1500,
+    "Jds": 2000,
+    "Ribera": 2000,
+    "Barrio unión": 2500
+  };
+  const precioZona = preciosZonas[data.zona] || 0;
+  return `<p><strong>Zona:</strong> ${data.zona} - $${precioZona}</p>`;
+})() : ""}
+
     <h4>Productos:</h4>
     <ul>
       ${data.productos.map(p => `

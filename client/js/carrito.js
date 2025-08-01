@@ -184,7 +184,18 @@ async function confirmarCompra() {
   }
 
   // Mensaje WhatsApp
-  const tipo = tipoEnvio === "envio" ? `🚚 Envío a domicilio (${zona})` : "🏠 Retiro en local";
+  let tipo = "🏠 Retiro en local";
+if (tipoEnvio === "envio" && zona) {
+  const preciosZonas = {
+    "Zona centro": 1500,
+    "Jds": 2000,
+    "Ribera": 2000,
+    "Barrio unión": 2500
+  };
+  const precioZona = preciosZonas[zona] || 0;
+  tipo = `🚚 Envío a domicilio (${zona} - $${precioZona})`;
+}
+
 
   const detallesProductos = carritoCopia.map(item => {
     const variantesTexto = item.variantes?.length
