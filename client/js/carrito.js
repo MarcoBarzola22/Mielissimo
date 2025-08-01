@@ -237,3 +237,4 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.calcularTotal = calcularTotal;
+window.toggleZonaEnvio = toggleZonaEnvio;
