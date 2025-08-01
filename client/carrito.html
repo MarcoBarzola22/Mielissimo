@@ -48,17 +48,27 @@
       <!-- Aquí se mostrarán los productos -->
     </section>
 
-    <div id="opciones-envio" style="margin: 1rem 0;">
+   <div id="opciones-envio" style="margin: 1rem 0; text-align:center;">
   <h3>¿Cómo querés recibir tu pedido?</h3>
   <label>
-    <input type="radio" name="tipo-envio" value="retiro" checked onchange="calcularTotal()">
-    Retiro en local
+    <input type="radio" name="tipo-envio" value="retiro" checked onchange="toggleZonaEnvio()"> Retiro en local
   </label>
   <br>
   <label>
-    <input type="radio" name="tipo-envio" value="envio" onchange="calcularTotal()">
-    Envío a domicilio (+ ARS $1800)
+    <input type="radio" name="tipo-envio" value="envio" onchange="toggleZonaEnvio()"> Envío a domicilio
   </label>
+
+  <!-- Selector de zonas -->
+  <div id="zona-envio-container" style="margin-top: 1rem; display:none;">
+    <label for="zona-envio"><strong>Seleccioná tu zona:</strong></label>
+    <select id="zona-envio" onchange="calcularTotal()" style="margin-top:0.5rem; padding:0.5rem;">
+      <option value="" disabled selected>Elegí una zona</option>
+      <option value="Zona centro" data-precio="1500">Zona centro - $1500</option>
+      <option value="Jds" data-precio="2000">Jds - $2000</option>
+      <option value="Ribera" data-precio="2000">Ribera - $2000</option>
+      <option value="Barrio unión" data-precio="2500">Barrio unión - $2500</option>
+    </select>
+  </div>
 </div>
 
 

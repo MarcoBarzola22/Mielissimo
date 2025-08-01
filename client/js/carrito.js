@@ -98,20 +98,38 @@ function renderizarCarrito() {
   calcularTotal();
 }
 
+function toggleZonaEnvio() {
+  const tipoEnvio = document.querySelector('input[name="tipo-envio"]:checked')?.value;
+  const zonaContainer = document.getElementById("zona-envio-container");
+
+  if (tipoEnvio === "envio") {
+    zonaContainer.style.display = "block";
+  } else {
+    zonaContainer.style.display = "none";
+    document.getElementById("zona-envio").value = ""; // Resetea selección
+  }
+
+  calcularTotal();
+}
+
 function calcularTotal() {
   const tipoEnvio = document.querySelector('input[name="tipo-envio"]:checked')?.value;
   let total = carrito.reduce((sum, item) => sum + item.precio * item.cantidad, 0);
 
   if (tipoEnvio === "envio") {
-  total += 1800; // Nuevo costo de envío
-}
-
+    const zonaSelect = document.getElementById("zona-envio");
+    const precioZona = parseFloat(zonaSelect?.selectedOptions[0]?.dataset.precio || 0);
+    total += precioZona;
+  }
 
   const totalSpan = document.getElementById("total-compra");
   if (totalSpan) {
     totalSpan.textContent = `ARS $${total.toFixed(2)}`;
   }
 }
+
+
+
 
 async function confirmarCompra() {
   const mensaje = document.getElementById("mensaje-compra");
@@ -125,42 +143,53 @@ async function confirmarCompra() {
     return;
   }
 
-  // COPIAR CARRITO ANTES DE VACIARLO
-  const carritoCopia = [...carrito];
-
-  // Mostrar mensaje instantáneo
-  mensaje.innerHTML = "✅ <strong>¡Compra confirmada! Redirigiendo a WhatsApp...</strong>";
-  mensaje.style.color = "green";
-  mensaje.style.display = "block";
-
   const tipoEnvio = document.querySelector('input[name="tipo-envio"]:checked')?.value || "retiro";
+  let zona = null;
+
+  if (tipoEnvio === "envio") {
+    const zonaSelect = document.getElementById("zona-envio");
+    zona = zonaSelect.value;
+    if (!zona) {
+      mensaje.textContent = "⚠️ Elegí una zona para el envío.";
+      mensaje.style.color = "red";
+      mensaje.style.display = "block";
+      return;
+    }
+  }
+
   const totalTexto = document.getElementById("total-compra").textContent.replace(/[^\d.-]/g, "").trim();
   const total = parseFloat(totalTexto);
 
-  // Guardar en DB si hay usuario logueado
+  // Copia carrito antes de vaciarlo
+  const carritoCopia = [...carrito];
+
+  // Guardar en DB
   try {
-  const res = await fetch("https://api.mielissimo.com.ar/api/compras", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ id_usuario: id_usuario || null, carrito: carritoCopia, tipoEnvio, total })
-  });
-  if (id_usuario && manejarTokenExpiradoUsuario(res)) return;
+    const res = await fetch("https://api.mielissimo.com.ar/api/compras", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id_usuario: id_usuario || null,
+        carrito: carritoCopia,
+        tipoEnvio,
+        zona,
+        total
+      })
+    });
+    if (id_usuario && manejarTokenExpiradoUsuario(res)) return;
+    const data = await res.json();
+    var pedidoId = data.id;
+  } catch (err) {
+    console.error("Error guardando en historial:", err);
+  }
 
-  const data = await res.json();
-  var pedidoId = data.id; // <- Guardamos ID para el mensaje
-} catch (err) {
-  console.error("Error guardando en historial:", err);
-}
-
-
-  // Generar mensaje WhatsApp usando carritoCopia
-  const tipo = tipoEnvio === "envio" ? "🚚 Envío a domicilio" : "🏠 Retiro en local";
+  // Mensaje WhatsApp
+  const tipo = tipoEnvio === "envio" ? `🚚 Envío a domicilio (${zona})` : "🏠 Retiro en local";
 
   const detallesProductos = carritoCopia.map(item => {
     const variantesTexto = item.variantes?.length
       ? ` (${item.variantes.map(v => v.nombre).join(", ")})`
       : "";
-
     return `💗 ${item.cantidad} x ${item.nombre}${variantesTexto} = $${(item.precio * item.cantidad).toFixed(2)}`;
   }).join("\n");
 
@@ -178,27 +207,19 @@ Detalles del Pedido:
 👤 *Nombre:* ${nombreUsuario}
  ${tipo}`;
 
-
   const textoCodificado = encodeURIComponent(mensajeTexto);
-   const numeroWhatsapp = "2657603387";
+  const numeroWhatsapp = "2657603387";
   const linkWhatsapp = `https://wa.me/549${numeroWhatsapp}?text=${textoCodificado}`;
-  // Redirigir a WhatsApp y luego vaciar carrito
+
   setTimeout(() => {
-    gtag('event', 'compra_confirmada', {
-  event_category: 'Carrito',
-  event_label: `Total: $${total.toFixed(2)}`,
-  value: total
-});
-
     window.location.href = linkWhatsapp;
-
-    // Vaciar carrito después
     carrito = [];
     localStorage.setItem("carrito", JSON.stringify([]));
     actualizarContadorCarrito();
     renderizarCarrito();
-  }, 500);
+  }, 100);
 }
+
 
 
 

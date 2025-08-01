@@ -413,7 +413,8 @@ app.post("/api/usuarios/login", (req, res) => {
 // 🧾 COMPRAS (con y sin sesión)
 // ==============================
 app.post("/api/compras", (req, res) => {
-  const { id_usuario, carrito, tipoEnvio, total } = req.body;
+  const { id_usuario, carrito, tipoEnvio, zona, total } = req.body;
+
 
   if (!Array.isArray(carrito) || carrito.length === 0) {
     return res.status(400).json({ error: "Datos inválidos para la compra." });
@@ -444,9 +445,10 @@ app.post("/api/compras", (req, res) => {
   const precioUnitarioPrimer = calcularPrecioFinal(primerItem.precio, primerItem.variantes);
 
   db.query(
-    `INSERT INTO compras (id_usuario, id_producto, cantidad, precio_unitario, fecha_compra, tipo_envio, variantes)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [usuarioId, primerItem.id, primerItem.cantidad, precioUnitarioPrimer, fecha_compra, tipo, variantesTexto],
+    `INSERT INTO compras (id_usuario, id_producto, cantidad, precio_unitario, fecha_compra, tipo_envio, zona, variantes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [usuarioId, primerItem.id, primerItem.cantidad, precioUnitarioPrimer, fecha_compra, tipo, zona, variantesTexto],
+
     (err, result) => {
       if (err) {
         console.error("Error al insertar producto:", err);
@@ -469,10 +471,11 @@ app.post("/api/compras", (req, res) => {
 
         const precioUnitario = calcularPrecioFinal(item.precio, item.variantes);
 
-        db.query(
-          `INSERT INTO compras (id_usuario, id_producto, cantidad, precio_unitario, fecha_compra, tipo_envio, variantes, pedido_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [usuarioId, item.id, item.cantidad, precioUnitario, fecha_compra, tipo, variantesTextoItem, pedidoId],
+       db.query(
+    `INSERT INTO compras (id_usuario, id_producto, cantidad, precio_unitario, fecha_compra, tipo_envio, zona, variantes)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [usuarioId, primerItem.id, primerItem.cantidad, precioUnitarioPrimer, fecha_compra, tipo, zona, variantesTexto],
+
           (err2) => {
             if (err2) {
               console.error("Error al insertar producto:", err2);
@@ -555,31 +558,44 @@ app.get("/api/compras/detalle/:id", verificarToken, (req, res) => {
   const { id } = req.params;
 
   const query = `
-    SELECT c.pedido_id, c.fecha_compra, c.tipo_envio, c.variantes,
+    SELECT c.pedido_id, c.fecha_compra, c.tipo_envio, c.zona, c.variantes,
            p.nombre AS producto, c.cantidad, c.precio_unitario
     FROM compras c
     JOIN productos p ON c.id_producto = p.id
     WHERE c.pedido_id = ?
   `;
 
+
   db.query(query, [id], (err, resultados) => {
     if (err) return res.status(500).json({ error: "Error al obtener detalle de compra" });
     if (resultados.length === 0) return res.status(404).json({ error: "Compra no encontrada" });
 
-    const total = resultados.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
+  let total = resultados.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
 
-    res.json({
-      pedido_id: id,
-      fecha_compra: resultados[0].fecha_compra,
-      tipo_envio: resultados[0].tipo_envio,
-      productos: resultados.map(item => ({
-        nombre: item.producto,
-        cantidad: item.cantidad,
-        precio_unitario: item.precio_unitario,
-        variantes: item.variantes
-      })),
-      total
-    });
+if (resultados[0].tipo_envio === "envio" && resultados[0].zona) {
+  const preciosZonas = {
+    "Zona centro": 1500,
+    "Jds": 2000,
+    "Ribera": 2000,
+    "Barrio unión": 2500
+  };
+  total += preciosZonas[resultados[0].zona] || 0;
+}
+
+res.json({
+  pedido_id: id,
+  fecha_compra: resultados[0].fecha_compra,
+  tipo_envio: resultados[0].tipo_envio,
+  zona: resultados[0].zona,
+  productos: resultados.map(item => ({
+    nombre: item.producto,
+    cantidad: item.cantidad,
+    precio_unitario: item.precio_unitario,
+    variantes: item.variantes
+  })),
+  total
+});
+
   });
 });
 
