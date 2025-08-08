@@ -306,66 +306,6 @@ main h2::after,
   color: white;
 }
 
-/* === PRODUCTOS === */
-.productos {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
-  padding: 2rem;
-}
-
-.producto {
-  background-color: #fff0f5;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 1.2rem;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
-  transition: transform 0.3s, box-shadow 0.3s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  height: 100%;
-}
-
-.producto:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-
-
-.producto h3 {
-  font-size: 1.2rem;
-  color: #333;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 60px; /* ajustá según la altura del contenedor */
-  text-align: center;
-}
-
-.producto p {
-  font-size: 1rem;
-  color: #666;
-  margin-bottom: 0.5rem;
-}
-
-.producto button {
-  background-color: #ef5579;
-  color: white;
-  padding: 0.6rem 1.2rem;
-  border: none;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  margin-top: auto;
-}
-
-.producto button:hover {
-  background-color: #d44870;
-}
 
 /* === NEWSLETTER === */
 .newsletter.centrado {
@@ -1753,6 +1693,67 @@ main h1 {
   height: auto;
   object-fit: cover;
   border-radius: 10px;
+}
+
+/* === PRODUCTOS === */
+.productos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+}
+
+.producto {
+  background-color: #fff0f5;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 1.2rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  transition: transform 0.3s, box-shadow 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  height: 100%;
+}
+
+.producto:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+
+
+.producto h3 {
+  font-size: 1.2rem;
+  color: #333;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60px; /* ajustá según la altura del contenedor */
+  text-align: center;
+}
+
+.producto p {
+  font-size: 1rem;
+  color: #666;
+  margin-bottom: 0.5rem;
+}
+
+.producto button {
+  background-color: #ef5579;
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: auto;
+}
+
+.producto button:hover {
+  background-color: #d44870;
 }
 
 .producto img {
