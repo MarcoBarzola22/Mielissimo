@@ -1583,17 +1583,19 @@ main h1 {
   }
 }
 
-/* Scroll horizontal para productos */
 .scroll-productos {
   display: flex;
-  overflow-x: auto;
+  flex-direction: column; /* apila productos uno debajo del otro */
+  overflow-y: auto; /* scroll vertical */
+  overflow-x: hidden; /* sin scroll horizontal */
   gap: 1rem;
   padding: 1rem;
   scroll-behavior: smooth;
+  max-height: 500px; /* o el alto que quieras visible */
 }
 
 .scroll-productos::-webkit-scrollbar {
-  height: 8px;
+  width: 8px; /* ahora el scroll es vertical, cambia de height a width */
 }
 
 .scroll-productos::-webkit-scrollbar-thumb {
@@ -1606,7 +1608,7 @@ main h1 {
 }
 
 .scroll-productos .producto {
-  flex: 0 0 240px; /* ancho fijo para cada tarjeta */
+  flex: 0 0 auto; /* deja que el alto se ajuste al contenido */
 }
 
 .contador-carrito-producto.badge {
