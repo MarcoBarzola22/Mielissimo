@@ -1761,3 +1761,15 @@ main h1 {
   border-radius: 10px;
 }
 
+/* 🔹 Evitar que las imágenes de productos se deformen */
+.producto img {
+    width: 100%;
+    height: 250px; /* ajustá si querés más alto o bajo */
+    object-fit: cover; /* recorta sin deformar */
+    border-radius: 8px;
+}
+
+.producto img {
+    object-fit: cover !important;
+    height: 250px !important;
+}
