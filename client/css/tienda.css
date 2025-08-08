@@ -1730,3 +1730,55 @@ main h1 {
 .btn-hero {
   margin-top: 0.5rem; /* Más cerca del texto */
 }
+
+/* ===== Ajustes de detalle de producto ===== */
+.tarjeta-producto-detalle {
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* centra verticalmente el contenido */
+  align-items: center;     /* centra horizontalmente el contenido */
+  gap: 15px;               /* espacio entre elementos */
+  padding: 20px;
+}
+
+.nombre-producto {
+  margin: 0;
+  text-align: center;
+}
+
+.contenido-producto {
+  display: flex;
+  gap: 20px;
+  align-items: center; /* alinea verticalmente imagen y texto */
+}
+
+.producto-imagen img.img-estandarizada {
+  max-width: 300px;
+  height: auto;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+/* ✅ Scroll horizontal para productos */
+.productos-scroll {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-primario) #f0f0f0;
+}
+
+.productos-scroll::-webkit-scrollbar {
+    height: 8px;
+}
+
+.productos-scroll::-webkit-scrollbar-thumb {
+    background-color: var(--color-primario);
+    border-radius: 10px;
+}
+
+.productos-scroll::-webkit-scrollbar-track {
+    background-color: #f0f0f0;
+    border-radius: 10px;
+}
