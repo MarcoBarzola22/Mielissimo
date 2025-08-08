@@ -11,11 +11,8 @@ function manejarTokenExpiradoUsuario(res) {
   return false;
 }
 
-
 const contenedor = document.getElementById("productos");
 const token = localStorage.getItem("token_usuario");
-
-
 
 async function cargarFavoritos() {
   const token = localStorage.getItem("token_usuario");
@@ -32,8 +29,7 @@ async function cargarFavoritos() {
       }
     });
 
-   if (manejarTokenExpiradoUsuario(res)) return;
-
+    if (manejarTokenExpiradoUsuario(res)) return;
 
     if (!res.ok) {
       throw new Error("Error al obtener favoritos");
@@ -45,12 +41,11 @@ async function cargarFavoritos() {
       throw new Error("Formato inesperado de favoritos");
     }
 
-    renderizarFavoritos(data); // tu función de renderizado existente
+    renderizarFavoritos(data);
   } catch (err) {
     console.error("Error al cargar favoritos:", err);
   }
 }
-
 
 function renderizarFavoritos(productos) {
   contenedor.innerHTML = "";
@@ -60,20 +55,19 @@ function renderizarFavoritos(productos) {
     div.classList.add("producto");
 
     div.innerHTML = `
-  <img src="${producto.imagen}" alt="${producto.nombre}">
-  <h3>${producto.nombre}</h3>
-  <p class="categoria-nombre">${producto.categoria_nombre || "Sin categoría"}</p>
-  <p class="precio">AR$ ${parseFloat(producto.precio).toFixed(2)}</p>
-  <div class="acciones-producto">
-    <button class="btn-carrito" data-id="${producto.id}">Agregar al carrito</button>
-    <button class="btn-favorito favorito-activo" data-id="${producto.id}" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #ef5579;">❤️</button>
-  </div>
-`;
-
+      <img src="${producto.imagen}" alt="${producto.nombre}">
+      <h3>${producto.nombre}</h3>
+      <p class="categoria-nombre">${producto.categoria_nombre || "Sin categoría"}</p>
+      <p class="precio">AR$ ${parseFloat(producto.precio).toFixed(2)}</p>
+      <div class="acciones-producto">
+        <button class="btn-carrito" data-id="${producto.producto_id}">Agregar al carrito</button>
+        <button class="btn-favorito favorito-activo" data-id="${producto.producto_id}" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #ef5579;">❤️</button>
+      </div>
+    `;
 
     div.addEventListener("click", (e) => {
       if (!e.target.classList.contains("btn-carrito") && !e.target.classList.contains("btn-favorito")) {
-        window.location.href = `producto.html?id=${producto.id}`;
+        window.location.href = `producto.html?id=${producto.producto_id}`;
       }
     });
 
@@ -102,7 +96,7 @@ function renderizarFavoritos(productos) {
         });
 
         if (res.ok) {
-          btn.closest(".producto").remove(); // Elimina la tarjeta del DOM
+          btn.closest(".producto").remove();
         }
       } catch (err) {
         console.error("Error al quitar favorito:", err);
@@ -142,9 +136,8 @@ function agregarAlCarrito(id) {
 
 // 🚀 Inicio
 document.addEventListener("DOMContentLoaded", () => {
-mostrarUsuario();
+  mostrarUsuario();
   actualizarContadorCarrito();
   crearBotonCarritoFlotante();
   cargarFavoritos();
-  
 });
