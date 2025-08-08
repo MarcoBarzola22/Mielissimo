@@ -1759,26 +1759,3 @@ main h1 {
   border-radius: 10px;
 }
 
-/* ✅ Scroll horizontal para productos */
-.productos-scroll {
-    display: flex;
-    gap: 16px;
-    overflow-x: auto;
-    padding-bottom: 10px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-primario) #f0f0f0;
-}
-
-.productos-scroll::-webkit-scrollbar {
-    height: 8px;
-}
-
-.productos-scroll::-webkit-scrollbar-thumb {
-    background-color: var(--color-primario);
-    border-radius: 10px;
-}
-
-.productos-scroll::-webkit-scrollbar-track {
-    background-color: #f0f0f0;
-    border-radius: 10px;
-}
