@@ -1763,3 +1763,12 @@ main h1 {
   border-radius: 8px 8px 0 0;
   background-color: white; /* opcional para que el fondo sea uniforme */
 }
+
+@media (max-width: 768px) {
+  #productos, 
+  .productos {
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: visible !important;
+  }
+}
