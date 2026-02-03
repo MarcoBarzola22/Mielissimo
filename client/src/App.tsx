@@ -4,17 +4,19 @@ import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-// Páginas de la Tienda (Lovable)
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+// --- CORRECCIÓN AQUÍ: Agregamos "/shop" a la ruta ---
+import Index from "./pages/shop/Index";
+import NotFound from "./pages/shop/NotFound";
+// ----------------------------------------------------
 
-// Páginas del Admin (Tuyas migradas)
+// Página del Admin (Tuya)
 import LoginAdmin from "./pages/admin/LoginAdmin";
-// import Dashboard from "./pages/admin/Dashboard"; // <-- Lo crearemos en el siguiente paso
+// import Dashboard from "./pages/admin/Dashboard"; 
 
 const queryClient = new QueryClient();
 
-// Componente simple para proteger rutas (Si no hay token, manda al login)
+// Componente para proteger rutas (Por ahora no se usa, por eso sale en gris)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const RutaProtegida = ({ children }: { children: JSX.Element }) => {
   const token = localStorage.getItem("tokenAdmin");
   if (!token) {
@@ -37,7 +39,8 @@ const App = () => (
           <Route path="/admin" element={<LoginAdmin />} />
           <Route path="/admin/login" element={<LoginAdmin />} />
           
-          {/* <Route 
+          {/* Dashboard (Comentado hasta que lo creemos)
+          <Route 
             path="/admin/dashboard" 
             element={
               <RutaProtegida>
