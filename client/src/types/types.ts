@@ -8,7 +8,7 @@ export interface Producto {
   id: number;
   nombre: string;
   descripcion: string;
-  precio: number;        // Importante: Numérico
+  precio: number;        
   precio_oferta: number | null;
   oferta: boolean;
   imagen: string;
@@ -19,5 +19,5 @@ export interface Producto {
 
 export interface CartItem extends Producto {
   cantidad: number;
-  varianteSeleccionada?: Variante | null; // Guardamos qué variante eligió
+  varianteSeleccionada?: Variante | null; 
 }

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Producto, Variante } from "../types";
+import { Producto, Variante } from "../types/types";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
 
@@ -22,21 +22,16 @@ export const ProductModal = ({ producto, isOpen, onClose }: ProductModalProps) =
   const precioFinal = varianteSeleccionada ? precioBase + Number(varianteSeleccionada.precio_extra) : precioBase;
 
   const handleAddToCart = () => {
-    // Si tiene variantes y no eligió ninguna, error
     if (producto.variantes.length > 0 && !varianteSeleccionada) {
-      toast.error("Por favor selecciona una variante (ej: Sabor/Tamaño)");
+      toast.error("Selecciona una variante");
       return;
     }
-
-    addToCart({ 
-        ...producto, 
-        precio: precioFinal, // Guardamos con el precio calculado
-        varianteSeleccionada 
-    });
+    // Llama a addToCart(producto, variante)
+    addToCart(producto, varianteSeleccionada); 
     
-    toast.success("Agregado al carrito 🛒");
-    onClose(); // Cerramos modal pero NO abrimos carrito
-  };
+    toast.success("Agregado al carrito");
+    onClose();
+};
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
