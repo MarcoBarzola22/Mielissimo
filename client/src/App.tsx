@@ -3,19 +3,15 @@ import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { CartProvider } from "./context/CartContext"; // <--- 1. AGREGAR ESTO
 
-// --- CORRECCIÓN AQUÍ: Agregamos "/shop" a la ruta ---
 import Index from "./pages/shop/Index";
 import NotFound from "./pages/shop/NotFound";
-// ----------------------------------------------------
-
-// Página del Admin (Tuya)
 import LoginAdmin from "./pages/admin/LoginAdmin";
-// import Dashboard from "./pages/admin/Dashboard"; 
+import Dashboard from "./pages/admin/Dashboard";
 
 const queryClient = new QueryClient();
 
-// Componente para proteger rutas (Por ahora no se usa, por eso sale en gris)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 const RutaProtegida = ({ children }: { children: JSX.Element }) => {
   const token = localStorage.getItem("tokenAdmin");
@@ -27,33 +23,26 @@ const RutaProtegida = ({ children }: { children: JSX.Element }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          {/* --- RUTAS PÚBLICAS (TIENDA) --- */}
-          <Route path="/" element={<Index />} />
-          
-          {/* --- RUTAS ADMIN --- */}
-          <Route path="/admin" element={<LoginAdmin />} />
-          <Route path="/admin/login" element={<LoginAdmin />} />
-          
-          {/* Dashboard (Comentado hasta que lo creemos)
-          <Route 
-            path="/admin/dashboard" 
-            element={
-              <RutaProtegida>
-                <Dashboard /> 
-              </RutaProtegida>
-            } 
-          /> */}
+    <CartProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            
+            {/* Rutas Admin */}
+            <Route path="/admin" element={<LoginAdmin />} />
+            <Route path="/admin/login" element={<LoginAdmin />} />
+            
+            {/* 2. AGREGAR ESTA RUTA NUEVA: */}
+            <Route path="/admin/dashboard" element={<Dashboard />} /> 
 
-          {/* Error 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </CartProvider>
   </QueryClientProvider>
 );
 

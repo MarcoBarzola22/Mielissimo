@@ -1,171 +1,147 @@
 const express = require("express");
+const app = express();
 const mysql = require("mysql2");
 const cors = require("cors");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const dotenv = require("dotenv");
+require("dotenv").config();
 
-// Configuración de entorno
-dotenv.config();
-
-const app = express();
-app.use(express.json());
+// Configuración básica
 app.use(cors());
+app.use(express.json());
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Configuración de subida de imágenes (Multer)
-// Las guarda temporalmente en 'uploads/' antes de subirlas a Cloudinary
+// Multer para imágenes
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, "uploads");
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath);
-    }
-    cb(null, uploadPath);
+    if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
+    cb(null, "uploads/");
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + "-" + file.originalname);
   },
 });
-const upload = multer({ storage });
+const upload = multer({ storage: storage });
 
-// Importar Cloudinary
-const cloudinary = require("./config/cloudinary");
-
-// Conexión a Base de Datos
+// Base de Datos
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT,
 });
 
-db.connect((err) => {
-  if (err) {
-    console.error("❌ Error conectando a MySQL:", err);
-    return;
-  }
-  console.log("✅ Conectado a la base de datos MySQL:", process.env.DB_NAME);
-});
+// Rutas Importadas
+app.use("/api/admin", require("./routes/login")); 
 
-// --- RUTAS PÚBLICAS ---
+// --- RUTAS DE PRODUCTOS (Backend Nuevo) ---
 
-// 1. OBTENER PRODUCTOS (GET)
-// Ahora trae las múltiples categorías y variantes
+// 1. OBTENER PRODUCTOS (Con Categorías y Variantes)
 app.get("/api/productos", (req, res) => {
-  const { categoria_id } = req.query; 
-
-  let sql = `
-    SELECT 
-      p.*, 
-      GROUP_CONCAT(DISTINCT c.nombre SEPARATOR ', ') AS categorias_nombres,
-      GROUP_CONCAT(DISTINCT c.id SEPARATOR ',') AS categorias_ids,
-      (
-        SELECT JSON_ARRAYAGG(JSON_OBJECT('id', v.id, 'nombre', v.nombre, 'precio_extra', v.precio_extra))
-        FROM variantes v 
-        WHERE v.id_producto = p.id
-      ) as variantes_json
+  // Esta consulta es compleja: trae el producto y junta sus categorías en un string
+  const sql = `
+    SELECT p.*, 
+           GROUP_CONCAT(DISTINCT c.nombre) as categorias_nombres,
+           GROUP_CONCAT(DISTINCT c.id) as categorias_ids,
+           (SELECT JSON_ARRAYAGG(JSON_OBJECT('id', v.id, 'tipo', v.tipo, 'valor', v.valor, 'precio_extra', v.precio_extra)) 
+            FROM variantes v WHERE v.producto_id = p.id) as variantes_json
     FROM productos p
     LEFT JOIN producto_categorias pc ON p.id = pc.producto_id
     LEFT JOIN categorias c ON pc.categoria_id = c.id
-    WHERE p.activo = 1
+    GROUP BY p.id
+    ORDER BY p.created_at DESC
   `;
-  
-  const valores = [];
 
-  if (categoria_id) {
-    // Nota: Para filtrar correctamente en N:M se requeriría un JOIN específico,
-    // pero para mantenerlo simple filtramos sobre la unión general
-    sql += " AND pc.categoria_id = ?";
-    valores.push(categoria_id);
-  }
-
-  sql += " GROUP BY p.id ORDER BY p.created_at DESC";
-
-  db.query(sql, valores, (err, resultados) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ error: "Error al obtener productos" });
-    }
-    
-    // Formatear los resultados para el Frontend
-    const productosFormateados = resultados.map(prod => ({
-        ...prod,
-        // Convertir strings de IDs a arrays reales
-        categorias_ids: prod.categorias_ids ? prod.categorias_ids.split(',').map(Number) : [],
-        categorias_nombres: prod.categorias_nombres ? prod.categorias_nombres.split(', ') : [],
-        // Parsear el JSON de variantes (MySQL devuelve string a veces)
-        variantes: prod.variantes_json ? (typeof prod.variantes_json === 'string' ? JSON.parse(prod.variantes_json) : prod.variantes_json) : [],
-        // Lógica de "Nuevo": Si tiene menos de 7 días
-        nuevo: (new Date() - new Date(prod.created_at)) < (7 * 24 * 60 * 60 * 1000)
-    }));
-    
-    res.json(productosFormateados);
-  });
-});
-
-// 2. OBTENER CATEGORÍAS
-app.get("/api/categorias", (req, res) => {
-  db.query("SELECT * FROM categorias", (err, result) => {
+  db.query(sql, (err, result) => {
     if (err) return res.status(500).json(err);
-    res.json(result);
+    
+    // Convertir el JSON stringificado de variantes a objeto real
+    const productos = result.map(prod => ({
+        ...prod,
+        variantes: prod.variantes_json ? JSON.parse(prod.variantes_json) : [],
+        categorias_nombres: prod.categorias_nombres ? prod.categorias_nombres.split(',') : [],
+        categorias_ids: prod.categorias_ids ? prod.categorias_ids.split(',').map(Number) : [],
+        oferta: !!prod.oferta, // Convertir a boolean
+        activo: !!prod.activo  // Convertir a boolean
+    }));
+    res.json(productos);
   });
 });
 
-// --- RUTAS ADMIN (PROTEGIDAS - Aquí iría tu middleware de auth) ---
+// 2. CREAR PRODUCTO (Con Categorías y Variantes)
+app.post("/api/productos", upload.single("imagen"), (req, res) => {
+  const { nombre, descripcion, precio, stock, oferta, categorias, variantes } = req.body;
+  const imagen = req.file ? req.file.filename : null;
 
-// 3. CREAR PRODUCTO (POST)
-app.post("/api/productos", upload.single("imagen"), async (req, res) => {
-  try {
-    const { nombre, precio, descripcion, categorias, variantes } = req.body; // 'categorias' llega como string JSON
+  // Insertar Producto Base
+  const sqlProd = "INSERT INTO productos (nombre, descripcion, precio, stock, imagen, oferta, activo) VALUES (?, ?, ?, ?, ?, ?, 1)";
+  
+  db.query(sqlProd, [nombre, descripcion, precio, stock, imagen, oferta === 'true' || oferta === '1'], (err, result) => {
+    if (err) return res.status(500).json({ error: err.message });
     
-    // Subir imagen a Cloudinary (si existe)
-    let imagenUrl = null;
-    if (req.file) {
-      const resultado = await cloudinary.uploader.upload(req.file.path, {
-        folder: "productos_mielissimo_v2",
-      });
-      imagenUrl = resultado.secure_url;
-      // Borrar archivo temporal
-      fs.unlinkSync(req.file.path);
+    const productoId = result.insertId;
+
+    // A) Insertar Categorías (Si hay)
+    if (categorias) {
+        const catIds = JSON.parse(categorias); // Vienen como string "[1, 2]"
+        if (catIds.length > 0) {
+            const values = catIds.map(cId => [productoId, cId]);
+            db.query("INSERT INTO producto_categorias (producto_id, categoria_id) VALUES ?", [values]);
+        }
     }
 
-    // Insertar producto
-    const sqlProd = "INSERT INTO productos (nombre, precio, descripcion, imagen) VALUES (?, ?, ?, ?)";
-    db.query(sqlProd, [nombre, precio, descripcion, imagenUrl], (err, result) => {
-      if (err) return res.status(500).json({ error: err.message });
-      
-      const productoId = result.insertId;
-
-      // Procesar Categorías
-      if (categorias) {
-        const catsArray = JSON.parse(categorias); // El frontend envía "[1, 3]"
-        if (Array.isArray(catsArray) && catsArray.length > 0) {
-           const valoresCats = catsArray.map(cId => [productoId, cId]);
-           db.query("INSERT INTO producto_categorias (producto_id, categoria_id) VALUES ?", [valoresCats]);
+    // B) Insertar Variantes (Si hay)
+    if (variantes) {
+        const vars = JSON.parse(variantes); // Vienen como string '[{"tipo":"Sabor","valor":"Frutilla"}]'
+        if (vars.length > 0) {
+            const values = vars.map(v => [productoId, v.tipo, v.valor, v.precio_extra || 0]);
+            db.query("INSERT INTO variantes (producto_id, tipo, valor, precio_extra) VALUES ?", [values]);
         }
-      }
+    }
 
-      // Procesar Variantes
-      if (variantes) {
-        const varsArray = JSON.parse(variantes); // El frontend envía '[{"nombre":"100g","precio_extra":500}, ...]'
-        if (Array.isArray(varsArray) && varsArray.length > 0) {
-           const valoresVars = varsArray.map(v => [productoId, v.nombre, v.precio_extra || 0]);
-           db.query("INSERT INTO variantes (id_producto, nombre, precio_extra) VALUES ?", [valoresVars]);
-        }
-      }
+    res.json({ message: "Producto creado con éxito", id: productoId });
+  });
+});
 
-      res.status(201).json({ message: "Producto creado con éxito", id: productoId });
+// 3. ELIMINAR PRODUCTO (Cascada borrará variantes y relaciones)
+app.delete("/api/productos/:id", (req, res) => {
+    db.query("DELETE FROM productos WHERE id = ?", [req.params.id], (err, result) => {
+        if (err) return res.status(500).json(err);
+        res.json({ message: "Eliminado" });
     });
+});
 
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error interno" });
-  }
+// 4. OBTENER CATEGORÍAS
+app.get("/api/categorias", (req, res) => {
+    db.query("SELECT * FROM categorias", (err, result) => {
+        if (err) return res.status(500).json(err);
+        res.json(result);
+    });
+});
+
+// --- RUTAS EXTRA PARA CATEGORÍAS (Agrégalas al final de server/index.js) ---
+
+// 5. CREAR CATEGORÍA
+app.post("/api/categorias", (req, res) => {
+    const { nombre } = req.body;
+    if (!nombre) return res.status(400).json({ error: "Nombre requerido" });
+    
+    db.query("INSERT INTO categorias (nombre) VALUES (?)", [nombre], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ id: result.insertId, nombre });
+    });
+});
+
+// 6. BORRAR CATEGORÍA
+app.delete("/api/categorias/:id", (req, res) => {
+    db.query("DELETE FROM categorias WHERE id = ?", [req.params.id], (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ message: "Categoría eliminada" });
+    });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+  console.log(`Servidor corriendo en puerto ${PORT}`);
 });

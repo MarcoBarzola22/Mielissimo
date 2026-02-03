@@ -2,46 +2,51 @@ require('dotenv').config();
 const mysql = require('mysql2');
 const bcrypt = require('bcrypt');
 
-// Conexión a Railway usando variables de entorno
+// Conexión a la Base de Datos
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT
 });
 
-// Cambiá el usuario y contraseña si querés
 const usuario = 'admin';
-const clavePlano = '123456';
+const clave = 'mielissimo2026'; // Esta será tu contraseña nueva
 
-// Verificar si el usuario ya existe
-const verificarSQL = 'SELECT * FROM admins WHERE usuario = ?';
-
-db.query(verificarSQL, [usuario], (err, resultados) => {
+// 1. Generamos el Hash de la contraseña
+bcrypt.hash(clave, 10, (err, hash) => {
   if (err) {
-    console.error('Error al verificar usuario:', err);
-    return db.end();
+    console.error("Error encriptando:", err);
+    process.exit(1);
   }
 
-  if (resultados.length > 0) {
-    console.log('El usuario ya existe. No se realizó ninguna acción.');
-    return db.end();
-  }
-
-  // Hashear la clave y crear el usuario
-  bcrypt.hash(clavePlano, 10, (err, hash) => {
-    if (err) {
-      console.error('Error al hashear la clave:', err);
-      return db.end();
+  // 2. Verificamos si la tabla se llama 'administradores' o 'admins'
+  // Intentamos primero con 'administradores' que es lo más probable
+  const checkTable = "SHOW TABLES LIKE 'administradores'";
+  
+  db.query(checkTable, (err, results) => {
+    let tableName = 'administradores';
+    if (results.length === 0) {
+       // Si no existe, probamos 'usuarios' por si acaso
+       tableName = 'usuarios'; 
+       console.log("⚠️ No encontré la tabla 'administradores', intentaré con 'usuarios'...");
     }
 
-    const insertSQL = 'INSERT INTO admins (usuario, clave) VALUES (?, ?)';
-    db.query(insertSQL, [usuario, hash], (err) => {
+    console.log(`Usando tabla: ${tableName}`);
+
+    // 3. Insertamos o Actualizamos el usuario
+    const sql = `INSERT INTO ${tableName} (usuario, password) VALUES (?, ?) ON DUPLICATE KEY UPDATE password = ?`;
+    
+    // NOTA: Si tu columna de contraseña se llama 'clave' en vez de 'password', cambia la línea de arriba.
+    
+    db.query(sql, [usuario, hash, hash], (err, result) => {
       if (err) {
-        console.error('Error al insertar admin:', err);
+        console.error(`❌ Error en la base de datos (${tableName}):`, err.message);
+        console.log("POSIBLE SOLUCIÓN: Verifica si la columna de contraseña se llama 'password' o 'clave' en tu base de datos.");
       } else {
-        console.log('Admin creado con éxito');
+        console.log("✅ ¡Éxito! Usuario Admin creado/actualizado.");
+        console.log(`👤 Usuario: ${usuario}`);
+        console.log(`🔑 Clave: ${clave}`);
       }
       db.end();
     });
