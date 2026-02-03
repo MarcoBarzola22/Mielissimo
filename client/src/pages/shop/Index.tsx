@@ -1,82 +1,85 @@
-import { useState, useMemo } from 'react';
-import { Navbar } from '@/components/Navbar';
-import { CartDrawer } from '@/components/CartDrawer';
-import { HeroCarousel } from '@/components/HeroCarousel';
-import { CategoryScroll } from '@/components/CategoryScroll';
-import { ProductGrid } from '@/components/ProductGrid';
-import { products } from '@/data/products';
+import { useState, useEffect } from "react";
+import { Navbar } from "@/components/Navbar";
+import { CartDrawer } from "@/components/CartDrawer";
+import { HeroCarousel } from "@/components/HeroCarousel";
+import { ProductCard } from "@/components/ProductCard";
+import { ProductModal } from "@/components/ProductModal";
+import { Producto } from "@/types";
 
-export default function Index() {
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
+const Index = () => {
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Estado para el Modal
+  const [productoSeleccionado, setProductoSeleccionado] = useState<Producto | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  const filteredProducts = useMemo(() => {
-    let filtered = products;
+  // Cargar Productos Reales
+  useEffect(() => {
+    fetch("http://localhost:3000/api/productos")
+      .then(res => res.json())
+      .then(data => {
+        if(Array.isArray(data)) setProductos(data);
+      })
+      .catch(err => console.error(err))
+      .finally(() => setLoading(false));
+  }, []);
 
-    // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter((product) => product.category === selectedCategory);
-    }
+  // Filtrar Ofertas para el Carrusel
+  const productosOferta = productos.filter(p => p.oferta);
 
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (product) =>
-          product.name.toLowerCase().includes(query) ||
-          product.description.toLowerCase().includes(query)
-      );
-    }
-
-    return filtered;
-  }, [selectedCategory, searchQuery]);
+  // Manejar clic en producto
+  const handleProductClick = (producto: Producto) => {
+    setProductoSeleccionado(producto);
+    setModalOpen(true);
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar onSearch={setSearchQuery} />
-      <CartDrawer />
+    <div className="min-h-screen bg-gray-50 pb-20">
+      <Navbar />
       
-      <main>
-        <HeroCarousel />
-        
-        <div className="py-4">
-          <h2 className="text-lg font-semibold text-foreground px-4 mb-2">
-            Categorías
-          </h2>
-          <CategoryScroll
-            selectedCategory={selectedCategory}
-            onSelectCategory={setSelectedCategory}
-          />
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between px-4 mb-4">
-            <h2 className="text-lg font-semibold text-foreground">
-              {selectedCategory === 'all' ? 'Todos los productos' : 'Productos'}
-            </h2>
-            <span className="text-sm text-muted-foreground">
-              {filteredProducts.length} productos
-            </span>
+      {/* Carrusel Inteligente: Solo muestra ofertas si las hay */}
+      {productosOferta.length > 0 ? (
+          <HeroCarousel products={productosOferta} />
+      ) : (
+          /* Banner por defecto si no hay ofertas */
+          <div className="w-full h-64 bg-pink-200 flex items-center justify-center">
+              <h1 className="text-4xl text-white font-bold drop-shadow-md">¡Bienvenido a Mielissimo! 🍬</h1>
           </div>
-          <ProductGrid products={filteredProducts} />
-        </div>
+      )}
+
+      {/* Aquí iría el CategoryScroll (Próximo paso) */}
+      
+      <main className="container mx-auto px-4 py-8">
+        <h2 className="text-2xl font-bold text-gray-800 mb-6 border-l-4 border-mielissimo-pink pl-3">
+          Todos los Productos
+        </h2>
+
+        {loading ? (
+          <p className="text-center py-10">Cargando dulzura...</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {productos.map((prod) => (
+              <ProductCard 
+                key={prod.id} 
+                product={prod} 
+                onClick={handleProductClick} 
+              />
+            ))}
+          </div>
+        )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-card border-t border-border py-8 px-4 mt-8">
-        <div className="container mx-auto text-center">
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <span className="text-2xl">🍯</span>
-            <span className="text-xl font-bold text-primary">Mielissimo</span>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Las mejores golosinas con el sabor más dulce
-          </p>
-          <p className="text-xs text-muted-foreground mt-4">
-            © 2024 Mielissimo. Todos los derechos reservados.
-          </p>
-        </div>
-      </footer>
+      <CartDrawer />
+      
+      {/* El Modal que creamos */}
+      <ProductModal 
+        producto={productoSeleccionado}
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+      />
     </div>
   );
-}
+};
+
+export default Index;

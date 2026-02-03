@@ -7,24 +7,19 @@ const path = require("path");
 const fs = require("fs");
 require("dotenv").config();
 
-// Configuración básica
 app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Multer para imágenes
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
     cb(null, "uploads/");
   },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
-  },
+  filename: (req, file, cb) => { cb(null, Date.now() + "-" + file.originalname); },
 });
 const upload = multer({ storage: storage });
 
-// Base de Datos
 const db = mysql.createConnection({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -32,18 +27,16 @@ const db = mysql.createConnection({
   database: process.env.DB_NAME,
 });
 
-// Rutas Importadas
-app.use("/api/admin", require("./routes/login")); 
+app.use("/api/admin", require("./routes/login"));
 
-// --- RUTAS DE PRODUCTOS (Backend Nuevo) ---
+// --- PRODUCTOS ---
 
-// 1. OBTENER PRODUCTOS (Con Categorías y Variantes)
+// GET TODOS
 app.get("/api/productos", (req, res) => {
-  // Esta consulta es compleja: trae el producto y junta sus categorías en un string
   const sql = `
     SELECT p.*, 
-           GROUP_CONCAT(DISTINCT c.nombre) as categorias_nombres,
            GROUP_CONCAT(DISTINCT c.id) as categorias_ids,
+           GROUP_CONCAT(DISTINCT c.nombre) as categorias_nombres,
            (SELECT JSON_ARRAYAGG(JSON_OBJECT('id', v.id, 'tipo', v.tipo, 'valor', v.valor, 'precio_extra', v.precio_extra)) 
             FROM variantes v WHERE v.producto_id = p.id) as variantes_json
     FROM productos p
@@ -52,92 +45,143 @@ app.get("/api/productos", (req, res) => {
     GROUP BY p.id
     ORDER BY p.created_at DESC
   `;
-
   db.query(sql, (err, result) => {
-    if (err) return res.status(500).json(err);
-    
-    // Convertir el JSON stringificado de variantes a objeto real
+    if (err) return res.status(500).json({ error: err.message });
     const productos = result.map(prod => ({
         ...prod,
         variantes: prod.variantes_json ? JSON.parse(prod.variantes_json) : [],
-        categorias_nombres: prod.categorias_nombres ? prod.categorias_nombres.split(',') : [],
         categorias_ids: prod.categorias_ids ? prod.categorias_ids.split(',').map(Number) : [],
-        oferta: !!prod.oferta, // Convertir a boolean
-        activo: !!prod.activo  // Convertir a boolean
+        categorias_nombres: prod.categorias_nombres ? prod.categorias_nombres.split(',') : [],
+        oferta: !!prod.oferta,
+        activo: !!prod.activo
     }));
     res.json(productos);
   });
 });
 
-// 2. CREAR PRODUCTO (Con Categorías y Variantes)
+// CREAR
 app.post("/api/productos", upload.single("imagen"), (req, res) => {
-  const { nombre, descripcion, precio, stock, oferta, categorias, variantes } = req.body;
+  const { nombre, descripcion, precio, precio_oferta, oferta, categorias, variantes } = req.body;
   const imagen = req.file ? req.file.filename : null;
+  const esOferta = oferta === 'true' || oferta === '1';
 
-  // Insertar Producto Base
-  const sqlProd = "INSERT INTO productos (nombre, descripcion, precio, stock, imagen, oferta, activo) VALUES (?, ?, ?, ?, ?, ?, 1)";
-  
-  db.query(sqlProd, [nombre, descripcion, precio, stock, imagen, oferta === 'true' || oferta === '1'], (err, result) => {
+  const sql = "INSERT INTO productos (nombre, descripcion, precio, precio_oferta, oferta, imagen, activo) VALUES (?, ?, ?, ?, ?, ?, 1)";
+  db.query(sql, [nombre, descripcion, precio, esOferta ? precio_oferta : null, esOferta, imagen], (err, result) => {
     if (err) return res.status(500).json({ error: err.message });
+    const prodId = result.insertId;
     
-    const productoId = result.insertId;
-
-    // A) Insertar Categorías (Si hay)
+    // Insertar Categorías
     if (categorias) {
-        const catIds = JSON.parse(categorias); // Vienen como string "[1, 2]"
+        const catIds = JSON.parse(categorias);
         if (catIds.length > 0) {
-            const values = catIds.map(cId => [productoId, cId]);
+            const values = catIds.map(cId => [prodId, cId]);
             db.query("INSERT INTO producto_categorias (producto_id, categoria_id) VALUES ?", [values]);
         }
     }
-
-    // B) Insertar Variantes (Si hay)
+    // Insertar Variantes
     if (variantes) {
-        const vars = JSON.parse(variantes); // Vienen como string '[{"tipo":"Sabor","valor":"Frutilla"}]'
+        const vars = JSON.parse(variantes);
         if (vars.length > 0) {
-            const values = vars.map(v => [productoId, v.tipo, v.valor, v.precio_extra || 0]);
+            const values = vars.map(v => [prodId, v.tipo, v.valor, v.precio_extra || 0]);
             db.query("INSERT INTO variantes (producto_id, tipo, valor, precio_extra) VALUES ?", [values]);
         }
     }
-
-    res.json({ message: "Producto creado con éxito", id: productoId });
+    res.json({ message: "Producto creado", id: prodId });
   });
 });
 
-// 3. ELIMINAR PRODUCTO (Cascada borrará variantes y relaciones)
+// EDITAR (PUT)
+app.put("/api/productos/:id", upload.single("imagen"), (req, res) => {
+    const id = req.params.id;
+    const { nombre, descripcion, precio, precio_oferta, oferta, categorias, variantes } = req.body;
+    const imagen = req.file ? req.file.filename : undefined; // Undefined si no se sube nueva imagen
+    const esOferta = oferta === 'true' || oferta === '1';
+
+    // 1. Actualizar Datos Básicos
+    let sql = "UPDATE productos SET nombre=?, descripcion=?, precio=?, precio_oferta=?, oferta=? WHERE id=?";
+    let params = [nombre, descripcion, precio, esOferta ? precio_oferta : null, esOferta, id];
+    
+    if (imagen) {
+        sql = "UPDATE productos SET nombre=?, descripcion=?, precio=?, precio_oferta=?, oferta=?, imagen=? WHERE id=?";
+        params = [nombre, descripcion, precio, esOferta ? precio_oferta : null, esOferta, imagen, id];
+    }
+
+    db.query(sql, params, (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        // 2. Actualizar Categorías (Borrar y re-insertar es lo más fácil)
+        db.query("DELETE FROM producto_categorias WHERE producto_id = ?", [id], () => {
+            if (categorias) {
+                const catIds = JSON.parse(categorias);
+                if (catIds.length > 0) {
+                    const values = catIds.map(cId => [id, cId]);
+                    db.query("INSERT INTO producto_categorias (producto_id, categoria_id) VALUES ?", [values]);
+                }
+            }
+        });
+
+        // 3. Actualizar Variantes (Borrar y re-insertar)
+        db.query("DELETE FROM variantes WHERE producto_id = ?", [id], () => {
+            if (variantes) {
+                const vars = JSON.parse(variantes);
+                if (vars.length > 0) {
+                    const values = vars.map(v => [id, v.tipo, v.valor, v.precio_extra || 0]);
+                    db.query("INSERT INTO variantes (producto_id, tipo, valor, precio_extra) VALUES ?", [values]);
+                }
+            }
+            res.json({ message: "Producto actualizado" });
+        });
+    });
+});
+
+// ELIMINAR
 app.delete("/api/productos/:id", (req, res) => {
-    db.query("DELETE FROM productos WHERE id = ?", [req.params.id], (err, result) => {
-        if (err) return res.status(500).json(err);
+    db.query("DELETE FROM productos WHERE id = ?", [req.params.id], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
         res.json({ message: "Eliminado" });
     });
 });
 
-// 4. OBTENER CATEGORÍAS
+// --- CATEGORÍAS ---
+
 app.get("/api/categorias", (req, res) => {
-    db.query("SELECT * FROM categorias", (err, result) => {
-        if (err) return res.status(500).json(err);
+    // Traemos también el conteo de productos para saber si se pueden borrar
+    const sql = `
+        SELECT c.*, COUNT(pc.producto_id) as cantidad_productos 
+        FROM categorias c 
+        LEFT JOIN producto_categorias pc ON c.id = pc.categoria_id 
+        GROUP BY c.id
+    `;
+    db.query(sql, (err, result) => {
+        if (err) return res.status(500).json({ error: err.message });
         res.json(result);
     });
 });
 
-// --- RUTAS EXTRA PARA CATEGORÍAS (Agrégalas al final de server/index.js) ---
-
-// 5. CREAR CATEGORÍA
 app.post("/api/categorias", (req, res) => {
-    const { nombre } = req.body;
-    if (!nombre) return res.status(400).json({ error: "Nombre requerido" });
-    
-    db.query("INSERT INTO categorias (nombre) VALUES (?)", [nombre], (err, result) => {
+    db.query("INSERT INTO categorias (nombre) VALUES (?)", [req.body.nombre], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ id: result.insertId, nombre });
+        res.json({ id: result.insertId });
     });
 });
 
-// 6. BORRAR CATEGORÍA
-app.delete("/api/categorias/:id", (req, res) => {
-    db.query("DELETE FROM categorias WHERE id = ?", [req.params.id], (err, result) => {
+app.put("/api/categorias/:id", (req, res) => {
+    db.query("UPDATE categorias SET nombre = ? WHERE id = ?", [req.body.nombre, req.params.id], (err) => {
         if (err) return res.status(500).json({ error: err.message });
-        res.json({ message: "Categoría eliminada" });
+        res.json({ message: "Actualizada" });
+    });
+});
+
+app.delete("/api/categorias/:id", (req, res) => {
+    // Primero verificamos si tiene productos
+    db.query("SELECT COUNT(*) as count FROM producto_categorias WHERE categoria_id = ?", [req.params.id], (err, result) => {
+        if (result[0].count > 0) {
+            return res.status(400).json({ error: "No se puede eliminar: Esta categoría tiene productos." });
+        }
+        db.query("DELETE FROM categorias WHERE id = ?", [req.params.id], (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ message: "Eliminada" });
+        });
     });
 });
 
