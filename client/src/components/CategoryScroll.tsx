@@ -1,31 +1,53 @@
-import { categories } from '@/data/products';
+import { useEffect, useState } from "react";
+import { Button } from "./ui/button";
+import { ScrollArea, ScrollBar } from "./ui/scroll-area";
+import axios from "axios";
 
-interface CategoryScrollProps {
-  selectedCategory: string;
-  onSelectCategory: (categoryId: string) => void;
-}
+export const CategoryScroll = ({ onSelectCategory }: { onSelectCategory: (id: string | null) => void }) => {
+  const [categories, setCategories] = useState<{ id: number; nombre: string }[]>([]);
+  const [activeTab, setActiveTab] = useState<string | null>(null);
 
-export function CategoryScroll({ selectedCategory, onSelectCategory }: CategoryScrollProps) {
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get("http://localhost:3000/api/categorias");
+        setCategories(response.data);
+      } catch (error) {
+        console.error("Error al cargar categorías:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const handleSelect = (id: string | null) => {
+    setActiveTab(id);
+    onSelectCategory(id);
+  };
+
   return (
-    <section className="py-4">
-      <div className="overflow-x-auto scrollbar-hide">
-        <div className="flex gap-2 px-4 pb-2">
+    <div className="w-full bg-white/80 backdrop-blur-md sticky top-16 z-30 border-b">
+      <ScrollArea className="w-full whitespace-nowrap">
+        <div className="flex w-max space-x-4 p-4">
+          <Button
+            variant={activeTab === null ? "default" : "ghost"}
+            className="rounded-full"
+            onClick={() => handleSelect(null)}
+          >
+            Todos
+          </Button>
           {categories.map((category) => (
-            <button
+            <Button
               key={category.id}
-              onClick={() => onSelectCategory(category.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-full whitespace-nowrap text-sm font-medium transition-all shrink-0 ${
-                selectedCategory === category.id
-                  ? 'bg-primary text-primary-foreground shadow-soft'
-                  : 'bg-card text-foreground hover:bg-secondary shadow-card'
-              }`}
+              variant={activeTab === category.id.toString() ? "default" : "ghost"}
+              className="rounded-full"
+              onClick={() => handleSelect(category.id.toString())}
             >
-              <span className="text-base">{category.emoji}</span>
-              <span>{category.name}</span>
-            </button>
+              {category.nombre}
+            </Button>
           ))}
         </div>
-      </div>
-    </section>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
+    </div>
   );
-}
+};
