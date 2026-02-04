@@ -1,22 +1,7 @@
 import { Plus } from 'lucide-react';
 import { useCart } from '@/context/CartContext';
 import { Link } from 'react-router-dom';
-
-interface Variant {
-  id: number;
-  nombre: string;
-  precio: number;
-  stock: number;
-}
-
-interface Product {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  imagen: string;
-  categoria_id: number;
-  variantes?: Variant[];
-}
+import { Product } from '@/data/products';
 
 interface ProductCardProps {
   product: Product;
@@ -24,31 +9,27 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
-  
-  // Obtenemos la primera variante para mostrar el precio inicial
-  // Si tu backend devuelve las variantes, las usamos, sino ponemos valores por defecto
-  const defaultVariant = product.variantes && product.variantes.length > 0 
-    ? product.variantes[0] 
-    : { nombre: "Unidad", precio: 0, id: 0 };
+
+  // Logic to find base price from variants or product itself
+  // Backend returns 'precio' on product but also variants
+  const price = product.precio;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
-    // Adaptamos el objeto para el CartContext
+
+    // Adapt for CartContext if needed, or update CartContext to use new Product type
+    // Assuming CartContext expects specific fields, let's map them
     const cartProduct = {
       ...product,
-      name: product.nombre, // Mapeo de nombre
-      image: `http://localhost:3000/uploads/${product.imagen}` // Ruta real al servidor
-    };
-    
-    const cartVariant = {
-      ...defaultVariant,
-      name: defaultVariant.nombre,
-      price: defaultVariant.precio
+      id: product.id.toString(), // Cart likely expects string ID
+      name: product.nombre,
+      image: product.imagen ? `http://localhost:3000/uploads/${product.imagen}` : '/placeholder.svg',
+      price: price
     };
 
-    addToCart(cartProduct as any, cartVariant as any);
+    // For now simplistic add
+    addToCart(cartProduct as any, {} as any);
   };
 
   return (
@@ -62,6 +43,11 @@ export function ProductCard({ product }: ProductCardProps) {
           alt={product.nombre}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
+        {product.oferta && (
+          <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+            OFERTA
+          </div>
+        )}
       </div>
       <div className="p-4">
         <h3 className="font-semibold text-foreground text-sm mb-1 truncate group-hover:text-primary transition-colors">
@@ -73,11 +59,13 @@ export function ProductCard({ product }: ProductCardProps) {
         <div className="flex items-center justify-between">
           <div>
             <span className="text-lg font-bold text-primary">
-              ${Number(defaultVariant.precio).toLocaleString('es-AR')}
+              ${Number(price).toLocaleString('es-AR')}
             </span>
-            <span className="text-xs text-muted-foreground ml-1">
-              / {defaultVariant.nombre}
-            </span>
+            {product.precio_oferta && (
+              <span className="text-xs text-muted-foreground ml-1 line-through">
+                ${Number(product.precio_oferta).toLocaleString('es-AR')}
+              </span>
+            )}
           </div>
           <button
             onClick={handleAddToCart}

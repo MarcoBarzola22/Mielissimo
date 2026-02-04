@@ -13,7 +13,7 @@ import Dashboard from "./pages/admin/Dashboard";
 const queryClient = new QueryClient();
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-const RutaProtegida = ({ children }: { children: JSX.Element }) => {
+const RutaProtegida = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem("tokenAdmin");
   if (!token) {
     return <Navigate to="/admin" replace />;
@@ -30,13 +30,19 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            
+
             {/* Rutas Admin */}
             <Route path="/admin" element={<LoginAdmin />} />
             <Route path="/admin/login" element={<LoginAdmin />} />
-            
-            {/* 2. AGREGAR ESTA RUTA NUEVA: */}
-            <Route path="/admin/dashboard" element={<Dashboard />} /> 
+
+            <Route
+              path="/admin/dashboard"
+              element={
+                <RutaProtegida>
+                  <Dashboard />
+                </RutaProtegida>
+              }
+            />
 
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -20,10 +20,10 @@ const LoginAdmin = () => {
 
     try {
       // NOTA: Usamos localhost:3000 porque estamos en desarrollo local
-      const res = await fetch("http://localhost:3000/api/admin/login", {
+      const res = await fetch("http://localhost:3000/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ usuario, clave }),
+        body: JSON.stringify({ username: usuario, password: clave }),
       });
 
       const resultado = await res.json();
@@ -31,7 +31,7 @@ const LoginAdmin = () => {
       if (res.ok) {
         // Guardamos el token y redirigimos
         localStorage.setItem("tokenAdmin", resultado.token);
-        navigate("/admin/dashboard"); // Aún no creamos esta página, pero ya apuntamos ahí
+        navigate("/admin/dashboard");
       } else {
         setMensaje(resultado.error || "Credenciales incorrectas");
       }
@@ -47,23 +47,23 @@ const LoginAdmin = () => {
   const handleRecuperar = async (e: React.MouseEvent) => {
     e.preventDefault();
     setMensajeRecuperacion("Procesando solicitud...");
-    
+
     try {
-      const res = await fetch("http://localhost:3000/api/admin/recuperar", {
+      const res = await fetch("http://localhost:3000/api/recover", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}), // El backend ya sabe a qué correo enviar
       });
 
       const data = await res.json();
-      setMensajeRecuperacion(data.mensaje || data.error);
+      setMensajeRecuperacion(data.mensaje || data.error || "Revisa tu correo");
     } catch (error) {
       setMensajeRecuperacion("Error al intentar recuperar contraseña");
     }
   };
 
   return (
-    <div className="admin-login-body"> 
+    <div className="admin-login-body">
       {/* Encabezado */}
       <header className="header-login-admin">
         <div className="logo">
@@ -104,7 +104,7 @@ const LoginAdmin = () => {
               ¿Olvidaste tu contraseña?
             </a>
           </p>
-          
+
           {mensajeRecuperacion && (
             <p
               id="mensaje-recuperacion"

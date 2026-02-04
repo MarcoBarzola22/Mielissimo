@@ -1,401 +1,376 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import "../../styles/admin.css";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogTrigger, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import api from "@/services/api";
+import { Plus, Trash2, Edit, Search } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface Variante {
-  tipo: string;
-  valor: string;
-  precio_extra: number;
-}
+// --- COMPONENTS SECTIONS ---
 
-interface Categoria {
-  id: number;
-  nombre: string;
-  cantidad_productos?: number;
-}
+// 1. CATEGORIES MANAGER
+const CategoriesManager = () => {
+  const [categories, setCategories] = useState<any[]>([]);
+  const [newCat, setNewCat] = useState({ nombre: "", emoji: "" });
 
-interface Producto {
-  id: number;
-  nombre: string;
-  descripcion: string;
-  precio: string;
-  precio_oferta?: string; // Nuevo
-  stock: number;
-  imagen: string;
-  activo: boolean;
-  oferta: boolean;
-  categorias_ids?: number[]; // Para saber cuáles marcar
-  categorias_nombres?: string[];
-  variantes?: Variante[];
-}
-
-const Dashboard = () => {
-  const navigate = useNavigate();
-  const token = localStorage.getItem("tokenAdmin");
-  
-  // --- ESTADOS DE NAVEGACIÓN ---
-  const [seccionActiva, setSeccionActiva] = useState<"productos" | "categorias" | "pedidos">("productos");
-  const [mensaje, setMensaje] = useState<{ tipo: 'exito' | 'error', texto: string } | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  // --- DATOS ---
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
-
-  // --- ESTADOS FORMULARIO PRODUCTO ---
-  const [modoEdicion, setModoEdicion] = useState(false);
-  const [productoIdEditar, setProductoIdEditar] = useState<number | null>(null);
-
-  const [nombre, setNombre] = useState("");
-  const [descripcion, setDescripcion] = useState("");
-  const [precio, setPrecio] = useState("");
-  const [precioOferta, setPrecioOferta] = useState(""); // Nuevo
-  const [oferta, setOferta] = useState(false);
-  const [imagen, setImagen] = useState<File | null>(null);
-  const [catsSeleccionadas, setCatsSeleccionadas] = useState<number[]>([]);
-  const [variantes, setVariantes] = useState<Variante[]>([]);
-  
-  // Buscador de Categorías (UX)
-  const [filtroCategoria, setFiltroCategoria] = useState("");
-
-  // --- ESTADOS CATEGORÍAS ---
-  const [nuevaCategoria, setNuevaCategoria] = useState("");
-  const [catIdEditar, setCatIdEditar] = useState<number | null>(null); // ID de cat que se está editando
-
-  // --- INICIO ---
-  useEffect(() => {
-    if (!token) { navigate("/admin/login"); return; }
-    cargarTodo();
-  }, [navigate, token]);
-
-  const cargarTodo = async () => {
-    setLoading(true);
-    await Promise.all([cargarProductos(), cargarCategorias()]);
-    setLoading(false);
+  const fetchCats = async () => {
+    const { data } = await api.get("/categorias");
+    setCategories(data);
   };
 
-  const cargarProductos = async () => {
+  useEffect(() => { fetchCats(); }, []);
+
+  const handleCreate = async () => {
     try {
-      const res = await fetch("http://localhost:3000/api/productos");
-      const data = await res.json();
-      if(Array.isArray(data)) setProductos(data);
-    } catch (error) { console.error(error); }
+      await api.post("/categorias", newCat);
+      toast.success("Categoría creada");
+      setNewCat({ nombre: "", emoji: "" });
+      fetchCats();
+    } catch (e) { toast.error("Error al crear"); }
   };
 
-  const cargarCategorias = async () => {
+  const handleDelete = async (id: number) => {
     try {
-      const res = await fetch("http://localhost:3000/api/categorias");
-      const data = await res.json();
-      if(Array.isArray(data)) setCategorias(data);
-    } catch (error) { console.error(error); }
-  };
-
-  // --- FUNCIONES FORMULARIO PRODUCTO ---
-  
-  const iniciarEdicion = (prod: Producto) => {
-    setModoEdicion(true);
-    setProductoIdEditar(prod.id);
-    setNombre(prod.nombre);
-    setDescripcion(prod.descripcion || "");
-    setPrecio(prod.precio);
-    setPrecioOferta(prod.precio_oferta || "");
-    setOferta(prod.oferta);
-    setCatsSeleccionadas(prod.categorias_ids || []);
-    setVariantes(prod.variantes || []);
-    setImagen(null); // Reset input file
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // Subir para ver formulario
-  };
-
-  const cancelarEdicion = () => {
-    limpiarFormulario();
-    setModoEdicion(false);
-    setProductoIdEditar(null);
-  };
-
-  const limpiarFormulario = () => {
-    setNombre(""); setDescripcion(""); setPrecio(""); setPrecioOferta(""); 
-    setOferta(false); setImagen(null); setCatsSeleccionadas([]); setVariantes([]);
-  };
-
-  const handleGuardarProducto = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMensaje(null);
-
-    const formData = new FormData();
-    formData.append("nombre", nombre);
-    formData.append("descripcion", descripcion);
-    formData.append("precio", precio);
-    // Solo enviamos precio oferta si está marcado como oferta
-    if(oferta) formData.append("precio_oferta", precioOferta);
-    formData.append("oferta", oferta ? "true" : "false");
-    
-    if (imagen) formData.append("imagen", imagen);
-    formData.append("categorias", JSON.stringify(catsSeleccionadas));
-    formData.append("variantes", JSON.stringify(variantes));
-
-    const url = modoEdicion 
-        ? `http://localhost:3000/api/productos/${productoIdEditar}`
-        : "http://localhost:3000/api/productos";
-    
-    const method = modoEdicion ? "PUT" : "POST";
-
-    try {
-      const res = await fetch(url, {
-        method: method,
-        headers: { "Authorization": `Bearer ${token}` },
-        body: formData,
-      });
-
-      if (res.ok) {
-        setMensaje({ tipo: 'exito', texto: modoEdicion ? "✅ Producto Actualizado" : "✅ Producto Creado" });
-        cancelarEdicion(); // Limpia y sale del modo edición
-        cargarProductos();
+      await api.delete(`/categorias/${id}`);
+      toast.success("Categoría eliminada");
+      fetchCats();
+    } catch (e: any) {
+      if (e.response?.data?.products) {
+        toast.error(`No se puede borrar. Productos asociados: ${e.response.data.products.join(", ")}`);
       } else {
-        const err = await res.json();
-        setMensaje({ tipo: 'error', texto: "❌ Error: " + err.error });
+        toast.error("Error al eliminar");
       }
-    } catch (error) {
-      setMensaje({ tipo: 'error', texto: "❌ Error de conexión" });
     }
   };
 
-  // --- VARIANTES ---
-  const agregarFilaVariante = () => setVariantes([...variantes, { tipo: "Sabor", valor: "", precio_extra: 0 }]);
-  const quitarFilaVariante = (index: number) => {
-    const n = [...variantes]; n.splice(index, 1); setVariantes(n);
+  return (
+    <Card>
+      <CardHeader><CardTitle>Categorías</CardTitle></CardHeader>
+      <CardContent>
+        <div className="flex gap-2 mb-4">
+          <Input
+            placeholder="Nombre"
+            value={newCat.nombre}
+            onChange={e => setNewCat({ ...newCat, nombre: e.target.value })}
+          />
+          <Input
+            placeholder="Emoji"
+            className="w-20"
+            value={newCat.emoji}
+            onChange={e => setNewCat({ ...newCat, emoji: e.target.value })}
+          />
+          <Button onClick={handleCreate}><Plus className="w-4 h-4" /></Button>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow><TableHead>Nombre</TableHead><TableHead>Emoji</TableHead><TableHead>Acciones</TableHead></TableRow>
+          </TableHeader>
+          <TableBody>
+            {categories.map(c => (
+              <TableRow key={c.id}>
+                <TableCell>{c.nombre}</TableCell>
+                <TableCell>{c.emoji}</TableCell>
+                <TableCell>
+                  <Button variant="destructive" size="sm" onClick={() => handleDelete(c.id)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+};
+
+// 2. PRODUCTS MANAGER
+const ProductsManager = () => {
+  const [products, setProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  // Form State
+  const [formData, setFormData] = useState<any>({
+    name: "",
+    description: "",
+    old_price: "", // for offer
+    is_offer: false,
+    categories: [], // array of IDs
+    variants: [], // array of {name, price}
+    image: null // file
+  });
+  const [variantInput, setVariantInput] = useState({ name: "", price: "" });
+
+  const fetchProducts = async () => {
+    const { data } = await api.get("/products");
+    setProducts(data);
   };
-  const updateVariante = (index: number, field: keyof Variante, val: any) => {
-    const n = [...variantes]; 
-    // @ts-ignore
-    n[index][field] = val; 
-    setVariantes(n);
+  const fetchCats = async () => {
+    const { data } = await api.get("/categorias");
+    setCategories(data);
   };
 
-  // --- CATEGORÍAS (CRUD) ---
-  const handleGuardarCategoria = async (e: React.FormEvent) => {
+  useEffect(() => { fetchProducts(); fetchCats(); }, []);
+
+  const handleChange = (field: string, value: any) => {
+    setFormData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const addVariant = () => {
+    if (!variantInput.name || !variantInput.price) return;
+    setFormData((prev: any) => ({
+      ...prev,
+      variants: [...prev.variants, { name: variantInput.name, price: Number(variantInput.price) }]
+    }));
+    setVariantInput({ name: "", price: "" });
+  };
+
+  const removeVariant = (idx: number) => {
+    setFormData((prev: any) => ({
+      ...prev,
+      variants: prev.variants.filter((_: any, i: number) => i !== idx)
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if(!nuevaCategoria) return;
-
-    // Si hay un ID en edición, hacemos UPDATE, si no, CREATE
-    const url = catIdEditar 
-        ? `http://localhost:3000/api/categorias/${catIdEditar}`
-        : "http://localhost:3000/api/categorias";
-    const method = catIdEditar ? "PUT" : "POST";
+    const data = new FormData();
+    data.append("name", formData.name);
+    data.append("description", formData.description);
+    data.append("old_price", formData.old_price);
+    data.append("is_offer", formData.is_offer ? "true" : "false");
+    data.append("categories", JSON.stringify(formData.categories));
+    data.append("variants", JSON.stringify(formData.variants));
+    if (formData.image) data.append("image", formData.image);
 
     try {
-        await fetch(url, {
-            method,
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
-            body: JSON.stringify({ nombre: nuevaCategoria })
-        });
-        setNuevaCategoria("");
-        setCatIdEditar(null);
-        cargarCategorias();
-    } catch (error) { console.error(error); }
+      await api.post("/products", data, { headers: { "Content-Type": "multipart/form-data" } });
+      toast.success("Producto creado");
+      setIsDialogOpen(false);
+      fetchProducts();
+    } catch (e) { toast.error("Error al guardar producto"); }
   };
 
-  const iniciarEdicionCategoria = (cat: Categoria) => {
-      setNuevaCategoria(cat.nombre);
-      setCatIdEditar(cat.id);
+  const handleDelete = async (id: number) => {
+    if (!confirm("¿Seguro?")) return;
+    try {
+      await api.delete(`/products/${id}`);
+      toast.success("Eliminado");
+      fetchProducts();
+    } catch (e) { toast.error("Error al eliminar"); }
   };
-
-  const cancelarEdicionCategoria = () => {
-      setNuevaCategoria("");
-      setCatIdEditar(null);
-  };
-
-  const handleBorrarCategoria = async (id: number) => {
-      if(!confirm("¿Borrar categoría?")) return;
-      const res = await fetch(`http://localhost:3000/api/categorias/${id}`, { method: "DELETE" });
-      if(!res.ok) {
-          const err = await res.json();
-          alert(err.error); // Muestra mensaje si tiene productos
-      } else {
-          cargarCategorias();
-      }
-  };
-
-  // --- BORRAR PRODUCTO ---
-  const handleBorrarProducto = async (id: number) => {
-    if (!confirm("¿Eliminar producto definitivamente?")) return;
-    await fetch(`http://localhost:3000/api/productos/${id}`, { method: "DELETE" });
-    cargarProductos();
-  };
-
-  const handleLogout = () => { localStorage.removeItem("tokenAdmin"); navigate("/admin/login"); };
 
   return (
-    <div className="admin-body">
-      <header className="header-admin">
-        <h1>Panel Mielissimo 🐝</h1>
-        <button onClick={handleLogout} className="btn-logout">Salir</button>
-      </header>
-
-      <div className="admin-container">
-        <aside className="admin-sidebar">
-          <button className={`sidebar-btn ${seccionActiva === 'productos' ? 'active' : ''}`} onClick={() => setSeccionActiva('productos')}>📦 Productos</button>
-          <button className={`sidebar-btn ${seccionActiva === 'categorias' ? 'active' : ''}`} onClick={() => setSeccionActiva('categorias')}>🏷️ Categorías</button>
-          <button className={`sidebar-btn ${seccionActiva === 'pedidos' ? 'active' : ''}`} onClick={() => setSeccionActiva('pedidos')}>🛒 Pedidos</button>
-        </aside>
-
-        <main className="admin-content">
-          {mensaje && <div className={mensaje.tipo === 'exito' ? 'mensaje-exito' : 'mensaje-error'}>{mensaje.texto}</div>}
-
-          {/* --- VISTA PRODUCTOS --- */}
-          {seccionActiva === "productos" && (
-            <section className="admin-section">
-              <h2>{modoEdicion ? "✏️ Editando Producto" : "➕ Nuevo Producto"}</h2>
-              
-              <form onSubmit={handleGuardarProducto} className="form-admin">
-                <div className="form-group">
-                    <label>Nombre:</label>
-                    <input className="form-input" value={nombre} onChange={e=>setNombre(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                    <label>Descripción (Opcional):</label>
-                    <textarea className="form-textarea" value={descripcion} onChange={e=>setDescripcion(e.target.value)} />
-                </div>
-                
-                <div style={{display:'flex', gap:'1rem'}}>
-                    <div className="form-group" style={{flex:1}}>
-                        <label>Precio Normal ($):</label>
-                        <input type="number" className="form-input" value={precio} onChange={e=>setPrecio(e.target.value)} required />
-                    </div>
-                    {/* INPUT PRECIO OFERTA (Solo si es oferta) */}
-                    {oferta && (
-                        <div className="form-group" style={{flex:1}}>
-                            <label style={{color:'#ef5579'}}>🔥 Precio Oferta ($):</label>
-                            <input type="number" className="form-input" value={precioOferta} onChange={e=>setPrecioOferta(e.target.value)} required={oferta} />
-                        </div>
-                    )}
-                </div>
-
-                {/* SELECTOR CATEGORÍAS MEJORADO (Scroll + Buscador) */}
-                <div className="form-group" style={{background:'#f9f9f9', padding:'1rem', borderRadius:'5px'}}>
-                    <label>Categorías:</label>
-                    <input 
-                        placeholder="Buscar categoría..." 
-                        className="form-input" 
-                        style={{marginBottom:'0.5rem', fontSize:'0.9rem', padding:'0.4rem'}}
-                        value={filtroCategoria}
-                        onChange={e => setFiltroCategoria(e.target.value.toLowerCase())}
-                    />
-                    <div style={{maxHeight:'150px', overflowY:'auto', display:'flex', flexWrap:'wrap', gap:'10px', border:'1px solid #ddd', padding:'10px', background:'white'}}>
-                        {categorias
-                            .filter(c => c.nombre.toLowerCase().includes(filtroCategoria))
-                            .map(cat => (
-                            <label key={cat.id} style={{display:'flex', alignItems:'center', gap:'5px', cursor:'pointer', background:'#eee', padding:'2px 8px', borderRadius:'15px', fontSize:'0.9rem'}}>
-                                <input 
-                                    type="checkbox" 
-                                    checked={catsSeleccionadas.includes(cat.id)} 
-                                    onChange={() => {
-                                        if(catsSeleccionadas.includes(cat.id)) setCatsSeleccionadas(catsSeleccionadas.filter(id => id !== cat.id));
-                                        else setCatsSeleccionadas([...catsSeleccionadas, cat.id]);
-                                    }}
-                                />
-                                {cat.nombre}
-                            </label>
-                        ))}
-                    </div>
-                </div>
-
-                {/* VARIANTES */}
-                <div className="form-group" style={{border: '1px dashed #ef5579', padding:'1rem', borderRadius:'5px'}}>
-                    <label>Variantes (Opcional):</label>
-                    <small style={{display:'block', marginBottom:'0.5rem'}}>Ej: Sabor - Frutilla / Tamaño - Grande</small>
-                    {variantes.map((v, i) => (
-                        <div key={i} style={{display:'flex', gap:'0.5rem', marginBottom:'0.5rem'}}>
-                            <input placeholder="Tipo" value={v.tipo} onChange={e => updateVariante(i, 'tipo', e.target.value)} className="form-input" style={{width:'30%'}} />
-                            <input placeholder="Valor" value={v.valor} onChange={e => updateVariante(i, 'valor', e.target.value)} className="form-input" style={{width:'30%'}} />
-                            <input type="number" placeholder="$ Extra" value={v.precio_extra} onChange={e => updateVariante(i, 'precio_extra', e.target.value)} className="form-input" style={{width:'20%'}} />
-                            <button type="button" onClick={() => quitarFilaVariante(i)} className="btn-delete">❌</button>
-                        </div>
-                    ))}
-                    <button type="button" onClick={agregarFilaVariante} style={{marginTop:'0.5rem', cursor:'pointer', color:'#ef5579', background:'none', border:'none', fontWeight:'bold'}}>+ Agregar Variante</button>
-                </div>
-
-                <div className="form-group checkbox-group">
-                    <input type="checkbox" checked={oferta} onChange={e=>setOferta(e.target.checked)} id="oferta" />
-                    <label htmlFor="oferta" style={{margin:0, cursor:'pointer'}}>⭐ ¿Es una Oferta?</label>
-                </div>
-
-                <div className="form-group">
-                    <label>Imagen:</label>
-                    <input type="file" onChange={e=>setImagen(e.target.files ? e.target.files[0] : null)} />
-                </div>
-
-                <div style={{display:'flex', gap:'10px'}}>
-                    <button type="submit" className="btn-save">{modoEdicion ? "Actualizar Producto" : "Guardar Producto"}</button>
-                    {modoEdicion && <button type="button" onClick={cancelarEdicion} style={{padding:'1rem', background:'#666', color:'white', border:'none', borderRadius:'5px', cursor:'pointer'}}>Cancelar</button>}
-                </div>
-              </form>
-
-              <h3>Inventario</h3>
-              <div className="tabla-responsive">
-                <table className="tabla-admin">
-                  <thead><tr><th>Img</th><th>Producto</th><th>$ Real</th><th>Cat</th><th>Acciones</th></tr></thead>
-                  <tbody>
-                    {productos.map(p => (
-                      <tr key={p.id}>
-                        <td><img src={`http://localhost:3000/uploads/${p.imagen}`} width="50" onError={(e)=>(e.currentTarget.src='https://placehold.co/50')} /></td>
-                        <td>
-                            {p.nombre} {p.oferta && <span className="badge-oferta">OFERTA</span>}
-                            <br/><small style={{color:'#888'}}>{p.variantes?.length ? `${p.variantes.length} variantes` : ''}</small>
-                        </td>
-                        <td>
-                            {p.oferta ? (
-                                <>
-                                    <span style={{textDecoration:'line-through', color:'#999'}}>${p.precio}</span> 
-                                    <br/> 
-                                    <strong style={{color:'#ef5579'}}>${p.precio_oferta}</strong>
-                                </>
-                            ) : `$${p.precio}`}
-                        </td>
-                        <td><small>{p.categorias_nombres?.join(", ")}</small></td>
-                        <td>
-                            <div className="acciones-btn">
-                                <button className="btn-edit" onClick={() => iniciarEdicion(p)}>✏️</button>
-                                <button className="btn-delete" onClick={() => handleBorrarProducto(p.id)}>🗑️</button>
-                            </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Productos</CardTitle>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" /> Nuevo Producto</Button></DialogTrigger>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader><DialogTitle>Nuevo Producto</DialogTitle></DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label>Nombre</Label>
+                <Input value={formData.name} onChange={e => handleChange("name", e.target.value)} required />
               </div>
-            </section>
-          )}
+              <div>
+                <Label>Descripción</Label>
+                <Textarea value={formData.description} onChange={e => handleChange("description", e.target.value)} />
+              </div>
+              <div>
+                <Label>Imagen</Label>
+                <Input type="file" onChange={e => handleChange("image", e.target.files?.[0])} accept="image/*" />
+              </div>
 
-          {/* --- VISTA CATEGORÍAS --- */}
-          {seccionActiva === "categorias" && (
-            <section className="admin-section">
-              <h2>Gestión de Categorías</h2>
-              <form onSubmit={handleGuardarCategoria} style={{display:'flex', gap:'1rem', marginBottom:'2rem', maxWidth:'500px'}}>
-                  <input className="form-input" placeholder="Nombre categoría..." value={nuevaCategoria} onChange={e => setNuevaCategoria(e.target.value)} required />
-                  <button type="submit" className="btn-save" style={{width:'auto'}}>{catIdEditar ? "Actualizar" : "Crear"}</button>
-                  {catIdEditar && <button type="button" onClick={cancelarEdicionCategoria} style={{background:'#666', color:'white', border:'none', borderRadius:'5px', padding:'0 1rem', cursor:'pointer'}}>X</button>}
-              </form>
+              <div className="flex items-center space-x-2">
+                <Switch checked={formData.is_offer} onCheckedChange={c => handleChange("is_offer", c)} />
+                <Label>Es Oferta</Label>
+              </div>
 
-              <div style={{display:'flex', gap:'1rem', flexWrap:'wrap'}}>
-                  {categorias.map(cat => (
-                      <div key={cat.id} style={{background:'white', padding:'10px 20px', borderRadius:'8px', boxShadow:'0 2px 5px rgba(0,0,0,0.1)', display:'flex', alignItems:'center', gap:'15px'}}>
-                          <div>
-                              <strong>{cat.nombre}</strong>
-                              <br/><small style={{color:'#888'}}>{cat.cantidad_productos} prods</small>
-                          </div>
-                          <div>
-                              <button onClick={() => iniciarEdicionCategoria(cat)} style={{color:'#333', marginRight:'10px', background:'none', border:'none', cursor:'pointer'}}>✏️</button>
-                              <button onClick={() => handleBorrarCategoria(cat.id)} style={{color:'red', background:'none', border:'none', cursor:'pointer'}}>🗑️</button>
-                          </div>
-                      </div>
+              {formData.is_offer && (
+                <div>
+                  <Label>Precio Anterior (Tachado)</Label>
+                  <Input type="number" value={formData.old_price} onChange={e => handleChange("old_price", e.target.value)} />
+                </div>
+              )}
+
+              <div>
+                <Label>Categorías</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {categories.map(c => (
+                    <div
+                      key={c.id}
+                      onClick={() => {
+                        const current = formData.categories.includes(c.id);
+                        const newCats = current
+                          ? formData.categories.filter((id: number) => id !== c.id)
+                          : [...formData.categories, c.id];
+                        handleChange("categories", newCats);
+                      }}
+                      className={`cursor-pointer px-3 py-1 rounded-full border ${formData.categories.includes(c.id) ? "bg-primary text-white" : "bg-secondary"}`}
+                    >
+                      {c.emoji} {c.nombre}
+                    </div>
                   ))}
+                </div>
               </div>
-            </section>
-          )}
 
-          {seccionActiva === "pedidos" && <section className="admin-section"><h2>Pedidos (Próximamente)</h2></section>}
-        </main>
+              <div className="border p-4 rounded bg-secondary/20">
+                <Label>Variantes (Precio Real)</Label>
+                <div className="flex gap-2 my-2">
+                  <Input placeholder="Ej: 100g / Unidad" value={variantInput.name} onChange={e => setVariantInput({ ...variantInput, name: e.target.value })} />
+                  <Input type="number" placeholder="Precio ($)" value={variantInput.price} onChange={e => setVariantInput({ ...variantInput, price: e.target.value })} />
+                  <Button type="button" onClick={addVariant} variant="outline">Agregar</Button>
+                </div>
+                <ul className="space-y-1">
+                  {formData.variants.map((v: any, idx: number) => (
+                    <li key={idx} className="flex justify-between items-center text-sm bg-white p-2 rounded">
+                      <span>{v.name} - ${v.price}</span>
+                      <Button type="button" variant="ghost" size="sm text-red-500" onClick={() => removeVariant(idx)}>X</Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <Button type="submit" className="w-full">Guardar Producto</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader><TableRow><TableHead>Imagen</TableHead><TableHead>Nombre</TableHead><TableHead>Variantes</TableHead><TableHead>Acciones</TableHead></TableRow></TableHeader>
+          <TableBody>
+            {products.map(p => (
+              <TableRow key={p.id}>
+                <TableCell>
+                  <img src={`http://localhost:3000${p.image}`} className="w-10 h-10 object-cover rounded" />
+                </TableCell>
+                <TableCell>
+                  <div>{p.name}</div>
+                  {p.is_offer && <span className="text-xs bg-red-100 text-red-600 px-1 rounded">OFERTA</span>}
+                </TableCell>
+                <TableCell>{p.variants?.length} vars</TableCell>
+                <TableCell>
+                  <Button variant="destructive" size="icon" onClick={() => handleDelete(p.id)}><Trash2 className="w-4 h-4" /></Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+};
+
+// 3. ORDERS SEARCH
+const OrdersSearch = () => {
+  const [searchId, setSearchId] = useState("");
+  const [order, setOrder] = useState<any>(null);
+
+  const handleSearch = async () => {
+    try {
+      const { data } = await api.get(`/orders/${searchId}`);
+      setOrder(data);
+    } catch (e) {
+      toast.error("Pedido no encontrado");
+      setOrder(null);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>Buscador de Pedidos</CardTitle></CardHeader>
+      <CardContent>
+        <div className="flex gap-2 max-w-sm mb-6">
+          <Input placeholder="ID de Pedido (ej: PED-12345)" value={searchId} onChange={e => setSearchId(e.target.value)} />
+          <Button onClick={handleSearch}><Search className="w-4 h-4" /></Button>
+        </div>
+
+        {order && (
+          <div className="border p-4 rounded-lg bg-secondary/10">
+            <div className="flex justify-between mb-4">
+              <h3 className="font-bold text-lg">Orden {order.id}</h3>
+              <span className="text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</span>
+            </div>
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <p className="text-xs text-muted-foreground">Cliente</p>
+                <p className="font-medium">{order.customer_name}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Método</p>
+                <p className="font-medium">
+                  {order.delivery_method === 'delivery' ? `Envío (${order.delivery_zone})` : 'Retiro en Local'}
+                </p>
+              </div>
+            </div>
+            <Separator />
+            <div className="py-2 space-y-2">
+              {order.items.map((item: any, i: number) => (
+                <div key={i} className="flex justify-between text-sm">
+                  <span>{item.cantidad}x {item.nombre} {item.varianteSeleccionada && `(${item.varianteSeleccionada.tipo}: ${item.varianteSeleccionada.valor})`}</span>
+                  <span>${(item.cantidad * item.finalPrice).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+            <Separator className="my-2" />
+            <div className="flex justify-between font-bold text-xl">
+              <span>Total</span>
+              <span>${order.total.toLocaleString()}</span>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function Separator({ className }: { className?: string }) {
+  return <div className={`h-[1px] w-full bg-border ${className}`} />
+}
+
+// MAIN DASHBOARD
+const Dashboard = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!localStorage.getItem("tokenAdmin")) {
+      navigate("/admin/login");
+    }
+  }, [navigate]);
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Panel de Administración</h1>
+        <Button variant="outline" onClick={() => {
+          localStorage.removeItem("tokenAdmin");
+          navigate("/admin/login");
+        }}>Cerrar Sesión</Button>
       </div>
+
+      <Tabs defaultValue="products" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+          <TabsTrigger value="products">Productos</TabsTrigger>
+          <TabsTrigger value="categories">Categorías</TabsTrigger>
+          <TabsTrigger value="orders">Pedidos</TabsTrigger>
+        </TabsList>
+        <div className="mt-6">
+          <TabsContent value="products"><ProductsManager /></TabsContent>
+          <TabsContent value="categories"><CategoriesManager /></TabsContent>
+          <TabsContent value="orders"><OrdersSearch /></TabsContent>
+        </div>
+      </Tabs>
     </div>
   );
 };
