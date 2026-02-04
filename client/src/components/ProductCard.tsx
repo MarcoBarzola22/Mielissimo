@@ -1,8 +1,9 @@
 import { Producto } from "../types/types";
+import { Plus } from "lucide-react";
 
 interface ProductCardProps {
   product: Producto;
-  onClick: (p: Producto) => void; // Recibimos la función para abrir modal
+  onClick: (p: Producto) => void;
 }
 
 export const ProductCard = ({ product, onClick }: ProductCardProps) => {
@@ -12,47 +13,55 @@ export const ProductCard = ({ product, onClick }: ProductCardProps) => {
 
   return (
     <div 
-        className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-pink-100 cursor-pointer flex flex-col h-full"
+        className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden border border-pink-100/50 cursor-pointer flex flex-col h-full transform hover:-translate-y-1"
         onClick={() => onClick(product)}
     >
-      {/* Imagen + Badge Oferta */}
-      <div className="relative aspect-square overflow-hidden bg-gray-50">
+      {/* Imagen + Badge */}
+      <div className="relative aspect-square overflow-hidden bg-gradient-to-b from-pink-50 to-white">
         {product.oferta && (
-          <span className="absolute top-2 left-2 bg-mielissimo-pink text-white text-xs font-bold px-2 py-1 rounded-full z-10 shadow-sm animate-pulse">
-            OFERTA
+          <span className="absolute top-3 left-3 bg-red-400 text-white text-xs font-bold px-3 py-1 rounded-full z-10 shadow-md backdrop-blur-sm bg-opacity-90">
+            ¡OFERTA!
           </span>
         )}
         <img
           src={`http://localhost:3000/uploads/${product.imagen}`}
           alt={product.nombre}
-          className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
-          onError={(e) => (e.currentTarget.src = "https://placehold.co/300x300?text=Mielissimo")}
+          className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-500 ease-in-out"
+          onError={(e) => (e.currentTarget.src = "https://placehold.co/300x300/fce7f3/db2777?text=Mielissimo")}
         />
         
-        {/* Overlay "Ver más" */}
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-            <span className="opacity-0 group-hover:opacity-100 bg-white text-pink-600 px-4 py-2 rounded-full font-bold shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all">
-                Ver Opciones
-            </span>
+        {/* Botón flotante "Ver" */}
+        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-4 group-hover:translate-y-0">
+            <div className="bg-white text-mielissimo-pink p-2 rounded-full shadow-lg border border-pink-100 hover:bg-mielissimo-pink hover:text-white transition-colors">
+                <Plus className="h-6 w-6" />
+            </div>
         </div>
       </div>
 
-      {/* Info */}
-      <div className="p-4 flex flex-col flex-grow">
-        <h3 className="font-medium text-gray-800 line-clamp-2 mb-1">{product.nombre}</h3>
+      {/* Info del Producto */}
+      <div className="p-5 flex flex-col flex-grow">
+        <div className="mb-2">
+            <span className="text-[10px] uppercase tracking-wider text-pink-400 font-semibold bg-pink-50 px-2 py-1 rounded-md">
+                {product.categorias_nombres?.[0] || "Dulces"}
+            </span>
+        </div>
         
-        {/* Categorías pequeñas */}
-        <p className="text-xs text-gray-400 mb-2">{product.categorias_nombres?.join(", ")}</p>
-
-        <div className="mt-auto pt-2 flex items-baseline gap-2">
-            {product.oferta ? (
-                <>
-                    <span className="text-lg font-bold text-mielissimo-pink">${Number(precioMostrar).toLocaleString()}</span>
-                    <span className="text-sm text-gray-400 line-through decoration-red-400">${Number(product.precio).toLocaleString()}</span>
-                </>
-            ) : (
-                <span className="text-lg font-bold text-gray-900">${Number(product.precio).toLocaleString()}</span>
-            )}
+        <h3 className="font-bold text-gray-800 text-lg leading-tight mb-2 group-hover:text-mielissimo-pink transition-colors">
+            {product.nombre}
+        </h3>
+        
+        <div className="mt-auto flex items-center justify-between pt-2 border-t border-gray-50">
+            <div className="flex flex-col">
+                {product.oferta ? (
+                    <>
+                        <span className="text-xs text-gray-400 line-through">${Number(product.precio).toLocaleString()}</span>
+                        <span className="text-xl font-extrabold text-mielissimo-pink">${Number(precioMostrar).toLocaleString()}</span>
+                    </>
+                ) : (
+                    <span className="text-xl font-bold text-gray-900">${Number(product.precio).toLocaleString()}</span>
+                )}
+            </div>
+            <span className="text-xs text-gray-400 font-medium">Ver opciones</span>
         </div>
       </div>
     </div>
