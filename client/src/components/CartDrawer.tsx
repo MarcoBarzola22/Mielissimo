@@ -1,90 +1,141 @@
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { useCart } from "@/context/CartContext";
-import { Button } from "./ui/button";
-import { ScrollArea } from "./ui/scroll-area";
-import { Trash2, Plus, Minus } from "lucide-react";
+import { X, Minus, Plus, Trash2, MessageCircle } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 
-export const CartDrawer = () => {
-  const { items, removeFromCart, updateQuantity, total, isCartOpen, setIsCartOpen } = useCart();
+export function CartDrawer() {
+  const {
+    items,
+    isCartOpen,
+    setIsCartOpen,
+    updateQuantity,
+    removeFromCart,
+    totalPrice,
+    totalItems,
+  } = useCart();
 
-  // Función para armar mensaje de WhatsApp
-  const handleCheckout = () => {
-    const pedidoId = Date.now().toString().slice(-6); // ID corto seguro
-    let mensaje = `Hola Mielissimo! 🐝\nQuiero realizar el pedido #${pedidoId}\n\n`;
+  const handleWhatsAppOrder = () => {
+    const message = items
+      .map(
+        (item) =>
+          `• ${item.product.name} (${item.variant.name}) x${item.quantity} - $${(item.variant.price * item.quantity).toFixed(2)}`
+      )
+      .join('%0A');
+
+    const fullMessage = `¡Hola! 🍬 Quiero hacer un pedido:%0A%0A${message}%0A%0A*Total: $${totalPrice.toFixed(2)}*`;
     
-    items.forEach(item => {
-      mensaje += `• ${item.nombre} x${item.cantidad}`;
-      if(item.varianteSeleccionada) mensaje += ` (${item.varianteSeleccionada.tipo}: ${item.varianteSeleccionada.valor})`;
-      mensaje += ` - $${(item.precio * item.cantidad).toLocaleString()}\n`;
-    });
-    
-    mensaje += `\n💰 Total: $${total.toLocaleString()}`;
-    // (Aquí luego agregaremos lógica de envío)
-    
-    const url = `https://wa.me/549XXXXXX?text=${encodeURIComponent(mensaje)}`;
-    window.open(url, '_blank');
+    window.open(`https://wa.me/1234567890?text=${fullMessage}`, '_blank');
   };
 
   return (
     <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
-      <SheetContent className="w-full sm:max-w-md flex flex-col bg-white">
-        <SheetHeader className="border-b pb-4">
-          <SheetTitle className="flex items-center justify-between">
-            <span>Tu Carrito 🛒</span>
-            <span className="text-mielissimo-pink text-lg">${total.toLocaleString()}</span>
+      <SheetContent className="w-full sm:max-w-md flex flex-col bg-card">
+        <SheetHeader className="border-b border-border pb-4">
+          <SheetTitle className="flex items-center gap-2 text-foreground">
+            <span className="text-2xl">🛒</span>
+            Tu Carrito
+            {totalItems > 0 && (
+              <span className="ml-auto bg-primary text-primary-foreground text-sm px-2.5 py-0.5 rounded-full">
+                {totalItems} {totalItems === 1 ? 'item' : 'items'}
+              </span>
+            )}
           </SheetTitle>
         </SheetHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6 py-4">
-          {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-4 mt-10">
-              <span className="text-4xl">😢</span>
-              <p>El carrito está vacío</p>
-              <Button variant="outline" onClick={() => setIsCartOpen(false)}>Ver productos</Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
+        {items.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+            <span className="text-6xl mb-4">🍬</span>
+            <h3 className="text-lg font-semibold text-foreground mb-2">
+              Tu carrito está vacío
+            </h3>
+            <p className="text-muted-foreground text-sm">
+              ¡Agrega algunas golosinas deliciosas!
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto py-4 space-y-4">
               {items.map((item) => (
-                <div key={`${item.id}-${item.varianteSeleccionada?.valor}`} className="flex gap-4 border-b pb-4 last:border-0">
-                  <div className="h-20 w-20 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
-                    <img 
-                        src={`http://localhost:3000/uploads/${item.imagen}`} 
-                        alt={item.nombre} 
-                        className="h-full w-full object-cover"
-                        onError={(e) => (e.currentTarget.src = '/placeholder.png')}
-                    />
-                  </div>
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div>
-                      <h4 className="font-medium line-clamp-1">{item.nombre}</h4>
-                      {item.varianteSeleccionada && (
-                          <p className="text-xs text-gray-500">{item.varianteSeleccionada.tipo}: {item.varianteSeleccionada.valor}</p>
-                      )}
-                      <p className="text-sm font-bold text-mielissimo-pink">${item.precio}</p>
+                <div
+                  key={`${item.product.id}-${item.variant.id}`}
+                  className="flex gap-3 p-3 bg-secondary/30 rounded-xl"
+                >
+                  <img
+                    src={item.product.image}
+                    alt={item.product.name}
+                    className="w-20 h-20 object-cover rounded-lg"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-foreground text-sm truncate">
+                      {item.product.name}
+                    </h4>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {item.variant.name}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 bg-card rounded-lg shadow-sm">
+                        <button
+                          onClick={() =>
+                            updateQuantity(
+                              item.product.id,
+                              item.variant.id,
+                              item.quantity - 1
+                            )
+                          }
+                          className="p-1.5 hover:bg-secondary rounded-lg transition-colors"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="w-8 text-center text-sm font-medium">
+                          {item.quantity}
+                        </span>
+                        <button
+                          onClick={() =>
+                            updateQuantity(
+                              item.product.id,
+                              item.variant.id,
+                              item.quantity + 1
+                            )
+                          }
+                          className="p-1.5 hover:bg-secondary rounded-lg transition-colors"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                      <span className="font-semibold text-primary text-sm">
+                        ${(item.variant.price * item.quantity).toFixed(2)}
+                      </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.id, item.cantidad - 1, item.varianteSeleccionada)}><Minus className="h-3 w-3" /></Button>
-                      <span className="text-sm w-4 text-center">{item.cantidad}</span>
-                      <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => updateQuantity(item.id, item.cantidad + 1, item.varianteSeleccionada)}><Plus className="h-3 w-3" /></Button>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-red-400 ml-auto" onClick={() => removeFromCart(item.id, item.varianteSeleccionada)}><Trash2 className="h-3 w-3" /></Button>
-                    </div>
                   </div>
+                  <button
+                    onClick={() => removeFromCart(item.product.id, item.variant.id)}
+                    className="self-start p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               ))}
             </div>
-          )}
-        </ScrollArea>
 
-        <div className="border-t pt-4 space-y-4">
-          <div className="flex justify-between text-lg font-bold">
-            <span>Total</span>
-            <span>${total.toLocaleString()}</span>
-          </div>
-          <Button className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-6 text-lg" disabled={items.length === 0} onClick={handleCheckout}>
-            Completar Pedido por WhatsApp 📲
-          </Button>
-        </div>
+            <div className="border-t border-border pt-4 space-y-4">
+              <div className="flex items-center justify-between text-lg">
+                <span className="font-medium text-foreground">Total:</span>
+                <span className="font-bold text-primary text-xl">
+                  ${totalPrice.toFixed(2)}
+                </span>
+              </div>
+
+              <Button
+                onClick={handleWhatsAppOrder}
+                className="w-full h-12 text-base font-semibold rounded-xl gradient-candy hover:opacity-90 transition-opacity"
+              >
+                <MessageCircle className="w-5 h-5 mr-2" />
+                Pedir por WhatsApp
+              </Button>
+            </div>
+          </>
+        )}
       </SheetContent>
     </Sheet>
   );
-};
+}

@@ -1,71 +1,62 @@
-import { ShoppingCart, User, Search, Menu } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useCart } from "@/context/CartContext";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Search, ShoppingBag } from 'lucide-react';
+import { useCart } from '@/context/CartContext';
+import { useState } from 'react';
 
-export const Navbar = () => {
-  const { cartCount, setIsCartOpen } = useCart();
+interface NavbarProps {
+  onSearch?: (query: string) => void;
+}
+
+export function Navbar({ onSearch }: NavbarProps) {
+  const { totalItems, setIsCartOpen } = useCart();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    onSearch?.(query);
+  };
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-pink-100 shadow-sm transition-all duration-300">
-      <div className="container mx-auto px-4 h-20 flex items-center justify-between">
-        
-        {/* IZQUIERDA: Menú Mobile y Logo */}
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="md:hidden text-gray-600">
-            <Menu className="h-6 w-6" />
-          </Button>
-          
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="relative">
-                <div className="absolute -inset-1 bg-pink-200 rounded-full opacity-0 group-hover:opacity-50 blur transition duration-200"></div>
-                <img 
-                    src="/assets/logoCanva.png" 
-                    alt="Mielissimo" 
-                    className="h-12 w-auto relative transform transition duration-200 group-hover:scale-110" 
-                    onError={(e) => e.currentTarget.style.display = 'none'} 
-                />
-            </div>
-            <span className="text-2xl font-bold text-mielissimo-pink tracking-tight hidden sm:block font-serif">
+    <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex items-center justify-between gap-4">
+          {/* Logo */}
+          <a href="/" className="flex items-center gap-2 shrink-0">
+            <span className="text-2xl">🍯</span>
+            <span className="text-xl font-bold text-primary hidden sm:block">
               Mielissimo
             </span>
-          </Link>
-        </div>
+          </a>
 
-        {/* CENTRO: Buscador (Estilo Lovable) */}
-        <div className="hidden md:flex items-center relative max-w-md w-full mx-8">
-          <Input 
-            type="text" 
-            placeholder="¿Qué antojo tienes hoy?" 
-            className="w-full pl-10 pr-4 py-2 rounded-full border-pink-200 focus:border-mielissimo-pink focus:ring-pink-200 bg-pink-50/50"
-          />
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-pink-400" />
-        </div>
+          {/* Search Bar */}
+          <div className="flex-1 max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Buscar golosinas..."
+                value={searchQuery}
+                onChange={handleSearch}
+                className="w-full pl-10 pr-4 py-2.5 bg-secondary/50 border-0 rounded-full text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+              />
+            </div>
+          </div>
 
-        {/* DERECHA: Acciones */}
-        <div className="flex items-center gap-2 sm:gap-4">
-          <Link to="/admin">
-            <Button variant="ghost" size="icon" className="text-gray-600 hover:text-mielissimo-pink hover:bg-pink-50 rounded-full transition-colors">
-              <User className="h-6 w-6" />
-            </Button>
-          </Link>
-
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="relative text-gray-600 hover:text-mielissimo-pink hover:bg-pink-50 rounded-full transition-colors p-2"
+          {/* Cart Button */}
+          <button
             onClick={() => setIsCartOpen(true)}
+            className="relative p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors shadow-soft"
+            aria-label="Abrir carrito"
           >
-            <ShoppingCart className="h-6 w-6" />
-            {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-mielissimo-pink text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[1.25rem] h-5 flex items-center justify-center border-2 border-white shadow-sm animate-in zoom-in">
-                {cartCount}
+            <ShoppingBag className="w-5 h-5" />
+            {totalItems > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-foreground text-background text-xs font-bold rounded-full flex items-center justify-center animate-bounce-soft">
+                {totalItems}
               </span>
             )}
-          </Button>
+          </button>
         </div>
       </div>
     </nav>
   );
-};
+}
