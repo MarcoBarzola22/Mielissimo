@@ -130,30 +130,49 @@ router.get('/products/:id', (req, res) => {
     });
 });
 
+// Helper for safe parsing
+const safeParse = (str) => {
+    try {
+        return str ? JSON.parse(str) : [];
+    } catch (e) {
+        return [];
+    }
+};
+
 router.post('/products', authenticateToken, upload.single('image'), (req, res) => {
-    const { name, description, categories, variants, featured, old_price, is_offer } = req.body;
+    const { name, description, categories, variants, featured, old_price, is_offer, price } = req.body;
     const image = req.file ? `/uploads/${req.file.filename}` : '';
 
-    db.run('INSERT INTO products (name, description, image, featured, is_offer, old_price) VALUES (?, ?, ?, ?, ?, ?)',
-        [name, description, image, featured ? 1 : 0, is_offer ? 1 : 0, old_price],
+    // If no explicit price provided, maybe default to 0?
+    const finalPrice = price || 0;
+
+    db.run('INSERT INTO products (name, description, image, featured, is_offer, old_price, price) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [name, description, image, featured ? 1 : 0, is_offer ? 1 : 0, old_price || null, finalPrice],
         function (err) {
-            if (err) return res.status(500).json({ error: err.message });
+            if (err) {
+                console.error("DB Insert Error:", err);
+                return res.status(500).json({ error: err.message });
+            }
             const productId = this.lastID;
 
             // Handle Categories
             if (categories) {
-                const catIds = JSON.parse(categories); // Expecting JSON array string
-                const stmt = db.prepare('INSERT INTO product_categories (product_id, category_id) VALUES (?, ?)');
-                catIds.forEach(catId => stmt.run(productId, catId));
-                stmt.finalize();
+                const catIds = safeParse(categories);
+                if (Array.isArray(catIds) && catIds.length > 0) {
+                    const stmt = db.prepare('INSERT INTO product_categories (product_id, category_id) VALUES (?, ?)');
+                    catIds.forEach(catId => stmt.run(productId, catId));
+                    stmt.finalize();
+                }
             }
 
             // Handle Variants
             if (variants) {
-                const parsedVariants = JSON.parse(variants);
-                const stmt = db.prepare('INSERT INTO variants (product_id, name, price) VALUES (?, ?, ?)');
-                parsedVariants.forEach(v => stmt.run(productId, v.name, v.price));
-                stmt.finalize();
+                const parsedVariants = safeParse(variants);
+                if (Array.isArray(parsedVariants) && parsedVariants.length > 0) {
+                    const stmt = db.prepare('INSERT INTO variants (product_id, name, price) VALUES (?, ?, ?)');
+                    parsedVariants.forEach(v => stmt.run(productId, v.name, v.price));
+                    stmt.finalize();
+                }
             }
 
             res.json({ id: productId, message: 'Producto creado' });
@@ -163,35 +182,28 @@ router.post('/products', authenticateToken, upload.single('image'), (req, res) =
 
 router.put('/products/:id', authenticateToken, upload.single('image'), (req, res) => {
     const productId = req.params.id;
-    const { name, description, categories, variants, featured, old_price, is_offer } = req.body;
-    let imageUpdate = '';
-    const params = [name, description, featured ? 1 : 0, is_offer ? 1 : 0, old_price, productId]; // Initial params
+    const { name, description, categories, variants, featured, old_price, is_offer, price } = req.body;
 
-    if (req.file) {
-        imageUpdate = ', image = ?';
-        params.splice(2, 0, `/uploads/${req.file.filename}`); // Insert image param
-    }
+    let sql = `UPDATE products SET name = ?, description = ?, featured = ?, is_offer = ?, old_price = ?, price = ? ${req.file ? ', image = ?' : ''} WHERE id = ?`;
 
-    // Need dynamic SQL for image update or handle it properly.
-    // Simplest: if (req.file) UPDATE ... SET image=?, ... else UPDATE ...
-
-    let sql = `UPDATE products SET name = ?, description = ?, featured = ?, is_offer = ?, old_price = ? ${req.file ? ', image = ?' : ''} WHERE id = ?`;
-    // Rebuild params based on sql
-    const finalParams = [name, description, featured ? 1 : 0, is_offer ? 1 : 0, old_price];
+    // Params
+    const finalParams = [name, description, featured ? 1 : 0, is_offer ? 1 : 0, old_price || null, price || 0];
     if (req.file) finalParams.push(`/uploads/${req.file.filename}`);
     finalParams.push(productId);
 
     db.run(sql, finalParams, function (err) {
         if (err) return res.status(500).json({ error: err.message });
 
-        // Update Categories (wipe and recreate for simplicity)
+        // Update Categories (wipe and recreate)
         if (categories) {
             db.run('DELETE FROM product_categories WHERE product_id = ?', [productId], (err) => {
                 if (!err) {
-                    const catIds = JSON.parse(categories);
-                    const stmt = db.prepare('INSERT INTO product_categories (product_id, category_id) VALUES (?, ?)');
-                    catIds.forEach(catId => stmt.run(productId, catId));
-                    stmt.finalize();
+                    const catIds = safeParse(categories);
+                    if (Array.isArray(catIds) && catIds.length > 0) {
+                        const stmt = db.prepare('INSERT INTO product_categories (product_id, category_id) VALUES (?, ?)');
+                        catIds.forEach(catId => stmt.run(productId, catId));
+                        stmt.finalize();
+                    }
                 }
             });
         }
@@ -200,10 +212,12 @@ router.put('/products/:id', authenticateToken, upload.single('image'), (req, res
         if (variants) {
             db.run('DELETE FROM variants WHERE product_id = ?', [productId], (err) => {
                 if (!err) {
-                    const parsedVariants = JSON.parse(variants);
-                    const stmt = db.prepare('INSERT INTO variants (product_id, name, price) VALUES (?, ?, ?)');
-                    parsedVariants.forEach(v => stmt.run(productId, v.name, v.price));
-                    stmt.finalize();
+                    const parsedVariants = safeParse(variants);
+                    if (Array.isArray(parsedVariants) && parsedVariants.length > 0) {
+                        const stmt = db.prepare('INSERT INTO variants (product_id, name, price) VALUES (?, ?, ?)');
+                        parsedVariants.forEach(v => stmt.run(productId, v.name, v.price));
+                        stmt.finalize();
+                    }
                 }
             });
         }

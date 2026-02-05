@@ -20,10 +20,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 const CategoriesManager = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [newCat, setNewCat] = useState({ nombre: "", emoji: "" });
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editCat, setEditCat] = useState<any>(null);
 
   const fetchCats = async () => {
-    const { data } = await api.get("/categorias");
-    setCategories(data);
+    try {
+      const { data } = await api.get("/categorias");
+      setCategories(data);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   useEffect(() => { fetchCats(); }, []);
@@ -35,6 +41,17 @@ const CategoriesManager = () => {
       setNewCat({ nombre: "", emoji: "" });
       fetchCats();
     } catch (e) { toast.error("Error al crear"); }
+  };
+
+  const handleUpdate = async () => {
+    if (!editCat) return;
+    try {
+      await api.put(`/categorias/${editCat.id}`, editCat);
+      toast.success("Categoría actualizada");
+      setIsEditOpen(false);
+      setEditCat(null);
+      fetchCats();
+    } catch (e) { toast.error("Error al actualizar"); }
   };
 
   const handleDelete = async (id: number) => {
@@ -78,7 +95,33 @@ const CategoriesManager = () => {
               <TableRow key={c.id}>
                 <TableCell>{c.nombre}</TableCell>
                 <TableCell>{c.emoji}</TableCell>
-                <TableCell>
+                <TableCell className="flex gap-2">
+                  <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" onClick={() => setEditCat(c)}>
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Editar Categoría</DialogTitle>
+                        <DialogDescription>Modifica el nombre y emoji de la categoría.</DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <Input
+                          value={editCat?.nombre || ''}
+                          onChange={e => setEditCat({ ...editCat, nombre: e.target.value })}
+                          placeholder="Nombre"
+                        />
+                        <Input
+                          value={editCat?.emoji || ''}
+                          onChange={e => setEditCat({ ...editCat, emoji: e.target.value })}
+                          placeholder="Emoji"
+                        />
+                        <Button onClick={handleUpdate} className="w-full">Guardar Cambios</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                   <Button variant="destructive" size="sm" onClick={() => handleDelete(c.id)}>
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -102,21 +145,26 @@ const ProductsManager = () => {
   const [formData, setFormData] = useState<any>({
     name: "",
     description: "",
-    old_price: "", // for offer
+    base_price: "",    // Input for regular price
+    offer_price: "",   // Input for offer price
     is_offer: false,
-    categories: [], // array of IDs
-    variants: [], // array of {name, price}
-    image: null // file
+    categories: [],
+    variants: [],
+    image: null
   });
   const [variantInput, setVariantInput] = useState({ name: "", price: "" });
 
   const fetchProducts = async () => {
-    const { data } = await api.get("/products");
-    setProducts(data);
+    try {
+      const { data } = await api.get("/products");
+      setProducts(data);
+    } catch (e) { console.error(e) }
   };
   const fetchCats = async () => {
-    const { data } = await api.get("/categorias");
-    setCategories(data);
+    try {
+      const { data } = await api.get("/categorias");
+      setCategories(data);
+    } catch (e) { console.error(e) }
   };
 
   useEffect(() => { fetchProducts(); fetchCats(); }, []);
@@ -146,18 +194,39 @@ const ProductsManager = () => {
     const data = new FormData();
     data.append("name", formData.name);
     data.append("description", formData.description);
-    data.append("old_price", formData.old_price);
     data.append("is_offer", formData.is_offer ? "true" : "false");
     data.append("categories", JSON.stringify(formData.categories));
     data.append("variants", JSON.stringify(formData.variants));
+
+    // --- Pricing Logic ---
+    // If Offer is ON: Final Price = offer_price, Old Price = base_price
+    // If Offer is OFF: Final Price = base_price, Old Price = null (or 0)
+    let finalPrice = formData.base_price;
+    let oldPrice = "";
+
+    if (formData.is_offer) {
+      finalPrice = formData.offer_price;
+      oldPrice = formData.base_price;
+    }
+
+    data.append("price", finalPrice);
+    data.append("old_price", oldPrice);
+
     if (formData.image) data.append("image", formData.image);
 
     try {
-      await api.post("/products", data, { headers: { "Content-Type": "multipart/form-data" } });
+      await api.post("/products", data);
       toast.success("Producto creado");
       setIsDialogOpen(false);
+      setFormData({
+        name: "", description: "", base_price: "", offer_price: "",
+        is_offer: false, categories: [], variants: [], image: null
+      });
       fetchProducts();
-    } catch (e) { toast.error("Error al guardar producto"); }
+    } catch (e) {
+      console.error(e);
+      toast.error("Error al guardar producto");
+    }
   };
 
   const handleDelete = async (id: number) => {
@@ -176,7 +245,10 @@ const ProductsManager = () => {
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild><Button><Plus className="mr-2 h-4 w-4" /> Nuevo Producto</Button></DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>Nuevo Producto</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>Nuevo Producto</DialogTitle>
+              <DialogDescription>Completa la información del producto.</DialogDescription>
+            </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label>Nombre</Label>
@@ -191,17 +263,40 @@ const ProductsManager = () => {
                 <Input type="file" onChange={e => handleChange("image", e.target.files?.[0])} accept="image/*" />
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Switch checked={formData.is_offer} onCheckedChange={c => handleChange("is_offer", c)} />
-                <Label>Es Oferta</Label>
-              </div>
-
-              {formData.is_offer && (
+              {/* Pricing Section */}
+              <div className="grid grid-cols-2 gap-4 border p-4 rounded bg-gray-50">
                 <div>
-                  <Label>Precio Anterior (Tachado)</Label>
-                  <Input type="number" value={formData.old_price} onChange={e => handleChange("old_price", e.target.value)} />
+                  <Label>Precio Original (Base)</Label>
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={formData.base_price}
+                    onChange={e => handleChange("base_price", e.target.value)}
+                    required
+                  />
                 </div>
-              )}
+                <div className="flex flex-col justify-end">
+                  <div className="flex items-center space-x-2 my-auto">
+                    <Switch checked={formData.is_offer} onCheckedChange={c => handleChange("is_offer", c)} />
+                    <Label>¿Es Oferta?</Label>
+                  </div>
+                </div>
+
+                {formData.is_offer && (
+                  <div className="col-span-2">
+                    <Label className="text-red-600 font-bold">Precio de Oferta</Label>
+                    <Input
+                      type="number"
+                      className="border-red-200 bg-red-50"
+                      placeholder="0.00"
+                      value={formData.offer_price}
+                      onChange={e => handleChange("offer_price", e.target.value)}
+                      required={formData.is_offer}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">El precio original aparecerá tachado.</p>
+                  </div>
+                )}
+              </div>
 
               <div>
                 <Label>Categorías</Label>
@@ -225,7 +320,7 @@ const ProductsManager = () => {
               </div>
 
               <div className="border p-4 rounded bg-secondary/20">
-                <Label>Variantes (Precio Real)</Label>
+                <Label>Variantes (Opcional)</Label>
                 <div className="flex gap-2 my-2">
                   <Input placeholder="Ej: 100g / Unidad" value={variantInput.name} onChange={e => setVariantInput({ ...variantInput, name: e.target.value })} />
                   <Input type="number" placeholder="Precio ($)" value={variantInput.price} onChange={e => setVariantInput({ ...variantInput, price: e.target.value })} />
@@ -235,7 +330,7 @@ const ProductsManager = () => {
                   {formData.variants.map((v: any, idx: number) => (
                     <li key={idx} className="flex justify-between items-center text-sm bg-white p-2 rounded">
                       <span>{v.name} - ${v.price}</span>
-                      <Button type="button" variant="ghost" size="sm text-red-500" onClick={() => removeVariant(idx)}>X</Button>
+                      <Button type="button" variant="ghost" size="sm" className="text-red-500" onClick={() => removeVariant(idx)}>X</Button>
                     </li>
                   ))}
                 </ul>
@@ -248,18 +343,21 @@ const ProductsManager = () => {
       </CardHeader>
       <CardContent>
         <Table>
-          <TableHeader><TableRow><TableHead>Imagen</TableHead><TableHead>Nombre</TableHead><TableHead>Variantes</TableHead><TableHead>Acciones</TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>Imagen</TableHead><TableHead>Nombre</TableHead><TableHead>Precio</TableHead><TableHead>Acciones</TableHead></TableRow></TableHeader>
           <TableBody>
             {products.map(p => (
               <TableRow key={p.id}>
                 <TableCell>
-                  <img src={`http://localhost:3000${p.image}`} className="w-10 h-10 object-cover rounded" />
+                  <img src={`http://localhost:3000${p.image}`} className="w-10 h-10 object-cover rounded" onError={(e) => (e.currentTarget.src = '/placeholder.png')} />
                 </TableCell>
                 <TableCell>
-                  <div>{p.name}</div>
-                  {p.is_offer && <span className="text-xs bg-red-100 text-red-600 px-1 rounded">OFERTA</span>}
+                  <div className="font-medium">{p.name}</div>
+                  <div className="text-xs text-muted-foreground">{p.variants?.length > 0 ? `${p.variants.length} variantes` : 'Sin variantes'}</div>
                 </TableCell>
-                <TableCell>{p.variants?.length} vars</TableCell>
+                <TableCell>
+                  <div>${p.price?.toLocaleString()}</div>
+                  {p.is_offer && <span className="text-xs text-red-500 line-through">${p.old_price?.toLocaleString()}</span>}
+                </TableCell>
                 <TableCell>
                   <Button variant="destructive" size="icon" onClick={() => handleDelete(p.id)}><Trash2 className="w-4 h-4" /></Button>
                 </TableCell>

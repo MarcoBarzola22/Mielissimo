@@ -13,35 +13,34 @@ const LoginAdmin = () => {
   const [cargando, setCargando] = useState(false);
 
   // Lógica de Login (Reemplaza a login-admin.js)
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setCargando(true);
-    setMensaje("");
+ const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setCargando(true);
+  setMensaje("");
 
-    try {
-      // NOTA: Usamos localhost:3000 porque estamos en desarrollo local
-      const res = await fetch("http://localhost:3000/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: usuario, password: clave }),
-      });
+  try {
+    const res = await fetch("http://localhost:3000/api/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: usuario, password: clave }),
+    });
 
-      const resultado = await res.json();
+    const resultado = await res.json();
 
-      if (res.ok) {
-        // Guardamos el token y redirigimos
-        localStorage.setItem("tokenAdmin", resultado.token);
-        navigate("/admin/dashboard");
-      } else {
-        setMensaje(resultado.error || "Credenciales incorrectas");
-      }
-    } catch (err) {
-      console.error("Error en login:", err);
-      setMensaje("Error de conexión con el servidor");
-    } finally {
-      setCargando(false);
+    if (res.ok) {
+      // AQUÍ SE GUARDA EL TOKEN:
+      localStorage.setItem("tokenAdmin", resultado.token);
+      navigate("/admin/dashboard");
+    } else {
+      setMensaje(resultado.error || "Credenciales incorrectas");
     }
-  };
+  } catch (err) {
+    console.error("Error en login:", err);
+    setMensaje("Error de conexión con el servidor");
+  } finally {
+    setCargando(false);
+  }
+};
 
   // Lógica de Recuperar Contraseña (Inline script del html original)
   const handleRecuperar = async (e: React.MouseEvent) => {
