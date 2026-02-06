@@ -21,7 +21,7 @@ const mailchimp = require("@mailchimp/mailchimp_marketing");
 mailchimp.setConfig({
   apiKey: process.env.MAILCHIMP_API_KEY,
   server: process.env.MAILCHIMP_SERVER_PREFIX
-}); 
+});
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -82,6 +82,74 @@ function verificarToken(req, res, next) {
 }
 
 // ==============================
+// ⚙️ CONFIGURACIÓN GLOBAL
+// ==============================
+app.get("/api/configuracion", (req, res) => {
+  db.query("SELECT * FROM configuracion", (err, resultados) => {
+    if (err) return res.status(500).json({ error: "Error al obtener configuración" });
+
+    // Transform to object { clave: valor }
+    const config = {};
+    resultados.forEach(row => {
+      config[row.clave] = row.valor;
+    });
+    res.json(config);
+  });
+});
+
+app.post("/api/configuracion", verificarToken, (req, res) => {
+  const { clave, valor } = req.body;
+  if (!clave || !valor) return res.status(400).json({ error: "Clave y Valor requeridos" });
+
+  const sql = "INSERT INTO configuracion (clave, valor) VALUES (?, ?) ON DUPLICATE KEY UPDATE valor = ?";
+  db.query(sql, [clave, valor, valor], (err) => {
+    if (err) return res.status(500).json({ error: "Error al guardar configuración" });
+    res.json({ mensaje: "Configuración actualizada" });
+  });
+});
+
+// ==============================
+// 🖼️ BANNER CAROUSEL
+// ==============================
+app.get("/api/banners", (req, res) => {
+  db.query("SELECT * FROM banners WHERE activo = TRUE ORDER BY id DESC", (err, resultados) => {
+    if (err) return res.status(500).json({ error: "Error al obtener banners" });
+    res.json(resultados);
+  });
+});
+
+app.post("/api/banners", verificarToken, upload.single("imagen"), async (req, res) => {
+  const { titulo } = req.body;
+
+  if (!req.file) return res.status(400).json({ error: "Imagen requerida" });
+
+  try {
+    const resultado = await cloudinary.uploader.upload(req.file.path, {
+      folder: "banners_mielissimo",
+      quality: "auto",
+      fetch_format: "auto"
+    });
+    const imagenUrl = resultado.secure_url;
+
+    db.query("INSERT INTO banners (imagen_url, titulo) VALUES (?, ?)", [imagenUrl, titulo], (err, result) => {
+      if (err) return res.status(500).json({ error: "Error al guardar banner" });
+      res.status(201).json({ mensaje: "Banner creado", id: result.insertId, imagen_url: imagenUrl });
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al subir imagen" });
+  }
+});
+
+app.delete("/api/banners/:id", verificarToken, (req, res) => {
+  const { id } = req.params;
+  db.query("DELETE FROM banners WHERE id = ?", [id], (err) => {
+    if (err) return res.status(500).json({ error: "Error eliminando banner" });
+    res.json({ mensaje: "Banner eliminado" });
+  });
+});
+
+// ==============================
 // 📂 RUTAS CATEGORÍAS
 // ==============================
 app.get("/api/categorias", (req, res) => {
@@ -133,7 +201,7 @@ app.delete("/api/categorias/:id", verificarToken, (req, res) => {
     });
   });
 });
- 
+
 // ==============================
 // 📂 RUTAS PRODUCTOS
 // ==============================
@@ -141,55 +209,108 @@ app.get("/api/productos", (req, res) => {
   const { categoria, id, mostrarInactivos } = req.query;
 
   let sql = `
-    SELECT productos.*, categorias.nombre AS categoria_nombre
-    FROM productos
-    LEFT JOIN categorias ON productos.categoria_id = categorias.id
+    SELECT p.*, 
+           GROUP_CONCAT(c.id) as categorias_ids,
+           GROUP_CONCAT(c.nombre) as categorias_nombres
+    FROM productos p
+    LEFT JOIN producto_categorias pc ON p.id = pc.producto_id
+    LEFT JOIN categorias c ON pc.categoria_id = c.id
     WHERE 1
   `;
   const valores = [];
 
   if (id) {
-    sql += " AND productos.id = ?";
+    sql += " AND p.id = ?";
     valores.push(id);
   } else if (categoria) {
-    sql += " AND productos.categoria_id = ?";
+    // Filter by category needs a subquery or join condition modification because of the GROUP BY
+    // simplified: check if category_id exists in the junction table for this product
+    sql += " AND p.id IN (SELECT producto_id FROM producto_categorias WHERE categoria_id = ?)";
     valores.push(categoria);
   }
 
   if (mostrarInactivos !== "true") {
-    sql += " AND productos.activo = TRUE";
+    sql += " AND p.activo = TRUE";
   }
+
+  sql += " GROUP BY p.id";
 
   db.query(sql, valores, (err, resultados) => {
     if (err) return res.status(500).json({ error: "Error al obtener productos" });
-    res.json(resultados);
+
+    // Process results to format categories as arrays
+    const productos = resultados.map(prod => {
+      const catIds = prod.categorias_ids ? prod.categorias_ids.toString().split(',').map(Number) : [];
+      const catNombres = prod.categorias_nombres ? prod.categorias_nombres.toString().split(',') : [];
+
+      const categorias = catIds.map((id, index) => ({
+        id: id,
+        nombre: catNombres[index]
+      }));
+
+      return {
+        ...prod,
+        categorias, // Array of { id, nombre }
+        categoria_id: catIds[0] || null, // Keep for backward compatibility if needed
+        categoria_nombre: catNombres[0] || null // Keep for backward compatibility
+      };
+    });
+
+    res.json(productos);
   });
 });
 
 app.post("/api/productos", verificarToken, upload.single("imagen"), async (req, res) => {
-  const { nombre, precio, categoria_id } = req.body;
+  const { nombre, precio, categoria_id, precio_oferta, es_oferta, categorias } = req.body; // categorias can be JSON string or array
 
   if (!req.file) {
     return res.status(400).json({ error: "Imagen requerida" });
   }
 
   try {
-    // Subir a Cloudinary
     const resultado = await cloudinary.uploader.upload(req.file.path, {
-  folder: "productos_mielissimo",
-  quality: "auto",
-  fetch_format: "auto"
-});
-
+      folder: "productos_mielissimo",
+      quality: "auto",
+      fetch_format: "auto"
+    });
 
     const imagenUrl = resultado.secure_url;
 
+    // Handle 'es_oferta' boolean specifically
+    const esOfertaVal = es_oferta === 'true' || es_oferta === true || es_oferta === 1 ? 1 : 0;
+    const precioOfertaVal = precio_oferta ? parseFloat(precio_oferta) : null;
+
     db.query(
-      "INSERT INTO productos (nombre, precio, imagen, categoria_id, activo) VALUES (?, ?, ?, ?, 1)",
-      [nombre, precio, imagenUrl, categoria_id],
+      "INSERT INTO productos (nombre, precio, imagen, categoria_id, activo, precio_oferta, es_oferta) VALUES (?, ?, ?, ?, 1, ?, ?)",
+      [nombre, precio, imagenUrl, categoria_id || null, precioOfertaVal, esOfertaVal],
       (err, resultadoDb) => {
         if (err) return res.status(500).json({ error: "Error al insertar producto" });
-        res.status(201).json({ mensaje: "Producto agregado", id: resultadoDb.insertId });
+
+        const productoId = resultadoDb.insertId;
+
+        // Handle Multiple Categories
+        let categoriasArray = [];
+        if (categorias) {
+          try {
+            categoriasArray = typeof categorias === 'string' ? JSON.parse(categorias) : categorias;
+          } catch (e) { /* ignore */ }
+        }
+
+        // If legacy categoria_id is present and not in array, add it
+        if (categoria_id && !categoriasArray.includes(Number(categoria_id))) {
+          categoriasArray.push(Number(categoria_id));
+        }
+
+        if (categoriasArray.length > 0) {
+          const values = categoriasArray.map(cid => [productoId, cid]);
+          db.query("INSERT INTO producto_categorias (producto_id, categoria_id) VALUES ?", [values], (errCat) => {
+            if (errCat) console.error("Error linking categories", errCat);
+            // Respond anyway
+            res.status(201).json({ mensaje: "Producto agregado", id: productoId });
+          });
+        } else {
+          res.status(201).json({ mensaje: "Producto agregado", id: productoId });
+        }
       }
     );
   } catch (error) {
@@ -202,36 +323,64 @@ app.post("/api/productos", verificarToken, upload.single("imagen"), async (req, 
 
 app.put("/api/productos/:id", verificarToken, upload.single("imagen"), async (req, res) => {
   const { id } = req.params;
-  const { nombre, precio, categoria_id } = req.body;
+  const { nombre, precio, categoria_id, precio_oferta, es_oferta, categorias } = req.body;
 
-  if (!nombre || !precio || !categoria_id) {
+  if (!nombre || !precio) {
     return res.status(400).json({ error: "Faltan datos" });
   }
 
   try {
     let nuevaImagenUrl = null;
-
     if (req.file) {
       const resultado = await cloudinary.uploader.upload(req.file.path, {
-  folder: "productos_mielissimo",
-  quality: "auto",
-  fetch_format: "auto"
-});
-
+        folder: "productos_mielissimo",
+        quality: "auto",
+        fetch_format: "auto"
+      });
       nuevaImagenUrl = resultado.secure_url;
     }
 
+    const esOfertaVal = es_oferta === 'true' || es_oferta === true || es_oferta === 1 ? 1 : 0;
+    const precioOfertaVal = precio_oferta ? parseFloat(precio_oferta) : null;
+
     const sql = nuevaImagenUrl
-      ? "UPDATE productos SET nombre=?, precio=?, imagen=?, categoria_id=? WHERE id=?"
-      : "UPDATE productos SET nombre=?, precio=?, categoria_id=? WHERE id=?";
+      ? "UPDATE productos SET nombre=?, precio=?, imagen=?, categoria_id=?, precio_oferta=?, es_oferta=? WHERE id=?"
+      : "UPDATE productos SET nombre=?, precio=?, categoria_id=?, precio_oferta=?, es_oferta=? WHERE id=?";
 
     const valores = nuevaImagenUrl
-      ? [nombre, precio, nuevaImagenUrl, categoria_id, id]
-      : [nombre, precio, categoria_id, id];
+      ? [nombre, precio, nuevaImagenUrl, categoria_id || null, precioOfertaVal, esOfertaVal, id]
+      : [nombre, precio, categoria_id || null, precioOfertaVal, esOfertaVal, id];
 
     db.query(sql, valores, err => {
       if (err) return res.status(500).json({ error: "Error al actualizar producto" });
-      res.json({ mensaje: "Producto actualizado correctamente" });
+
+      // Update Categories
+      let categoriasArray = [];
+      if (categorias) {
+        try {
+          categoriasArray = typeof categorias === 'string' ? JSON.parse(categorias) : categorias;
+        } catch (e) { /* ignore */ }
+      }
+
+      // Legacy support
+      if (categoria_id && !categoriasArray.includes(Number(categoria_id))) {
+        categoriasArray.push(Number(categoria_id));
+      }
+
+      // First delete existing links
+      db.query("DELETE FROM producto_categorias WHERE producto_id = ?", [id], (errDel) => {
+        if (errDel) console.error("Error deleting old categories", errDel);
+
+        if (categoriasArray.length > 0) {
+          const values = categoriasArray.map(cid => [id, cid]);
+          db.query("INSERT INTO producto_categorias (producto_id, categoria_id) VALUES ?", [values], (errIns) => {
+            if (errIns) console.error("Error inserting new categories", errIns);
+            res.json({ mensaje: "Producto actualizado correctamente" });
+          });
+        } else {
+          res.json({ mensaje: "Producto actualizado correctamente" });
+        }
+      });
     });
   } catch (error) {
     console.error("Error actualizando producto:", error);
@@ -308,7 +457,7 @@ app.put("/api/productos/activar/:id", verificarToken, (req, res) => {
     res.json({ mensaje: "Producto activado correctamente" });
   });
 });
- 
+
 // ==============================
 // 🔐 LOGIN ADMIN
 // ==============================
@@ -407,7 +556,7 @@ app.post("/api/usuarios/login", (req, res) => {
     });
   });
 });
- 
+
 
 // ==============================
 // 🧾 COMPRAS (con y sin sesión)
@@ -712,7 +861,7 @@ app.delete('/api/favoritos/:producto_id', verificarToken, (req, res) => {
       res.json({ mensaje: 'Eliminado de favoritos' });
     }
   );
-}); 
+});
 
 // ==============================
 // 🔑 RECUPERACIÓN DE CONTRASEÑA USUARIOS
@@ -737,7 +886,7 @@ app.post("/api/usuarios/recuperar", (req, res) => {
       if (err) return res.status(500).json({ error: "Error al guardar token" });
 
       // URL para resetear contraseña (ajustá la carpeta si es distinta)
-     const resetUrl = `https://api.mielissimo.com.ar/reset-password.html?token=${token}`;
+      const resetUrl = `https://api.mielissimo.com.ar/reset-password.html?token=${token}`;
 
 
       // Responder rápido al frontend
@@ -960,6 +1109,6 @@ app.get("/api/productos/:id", (req, res) => {
 // 🚀 INICIAR SERVIDOR
 // ==============================
 app.listen(PORT, () => {
- console.log(`Servidor corriendo en http://localhost:${PORT}`);
+  console.log(`Servidor corriendo en http://localhost:${PORT}`);
 
 });

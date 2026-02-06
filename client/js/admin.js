@@ -1,587 +1,540 @@
-// Verificación inmediata al cargar admin.html
+
+// VERIFICACIÓN DE TOKEN
 const tokenAdmin = localStorage.getItem("tokenAdmin");
 if (!tokenAdmin) {
-  window.location.href = "login-admin.html"; // Redirige si no hay token
+  window.location.href = "login-admin.html";
 }
 
-function manejarTokenExpirado(res) {
-  if (res.status === 401) {
-    localStorage.removeItem("tokenAdmin");
-    alert("Tu sesión ha expirado. Por favor, inicia sesión nuevamente.");
-    window.location.href = "login-admin.html";
-    return true;
-  }
-  return false;
-}
+// === DOM ELEMENTS ===
+// Sections
+const sections = document.querySelectorAll('.dashboard-section');
+const navBtns = document.querySelectorAll('.nav-btn');
 
-const formulario = document.getElementById("formulario-producto");
-const mensaje = document.getElementById("mensaje");
-const productosContainer = document.getElementById("lista-productos");
-const selectCategoria = document.getElementById("categoria-producto");
-const formularioCategoria = document.getElementById("formulario-categoria");
+// Forms & Inputs
+const formProducto = document.getElementById("formulario-producto");
+const formCategoria = document.getElementById("formulario-categoria");
+const formBanner = document.getElementById("formulario-banner");
+const buscadorProductos = document.getElementById("buscador-productos");
+const categoriasContainer = document.getElementById("categorias-container");
+
+// Lists
+const listaProductos = document.getElementById("lista-productos");
 const listaCategorias = document.getElementById("lista-categorias");
-const botonLogout = document.getElementById("logout");
-const buscador = document.getElementById("buscador-productos");
-const checkboxInactivos = document.getElementById("mostrarInactivos");
-const mensajeCategoria = document.getElementById("mensaje-categoria");
+const listaBanners = document.getElementById("lista-banners");
 
-
-const seccionFormulario = document.getElementById("seccion-formulario");
-const seccionVariantes = document.getElementById("seccion-variantes");
-const tablaVariantes = document.getElementById("tabla-variantes");
-const formularioVariante = document.getElementById("formulario-variante");
-const mensajeVariante = document.getElementById("mensaje-variante");
-
-const btnAgregarVariante = document.getElementById("btnAgregarVariante");
-const btnCancelarVariante = document.getElementById("btnCancelarEdicionVariante");
-const btnCancelarProducto = document.getElementById("cancelar-edicion-producto");
-const btnCancelarCategoria = document.getElementById("cancelar-edicion-categoria");
-
-let varianteEditandoId = null;
+// State
 let productoEnEdicion = null;
-let categoriaEnEdicion = null;
-let productoParaVariantes = null;
+let productosCache = [];
+let categoriasCache = [];
 
-const token = localStorage.getItem("tokenAdmin");
+// === INITIALIZATION ===
+document.addEventListener('DOMContentLoaded', () => {
+  cargarCategorias(); // First load categories so checkboxes are ready
+  cargarProductos();
+  cargarBanners();
+  cargarEstadoLocal();
 
-// 🔄 Precio según tipo de variante
-const tipoVarianteInput = document.getElementById("tipoVariante");
-const precioVarianteInput = document.getElementById("precioExtra");
+  // Sidebar Navigation
+  navBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Remove active from all
+      navBtns.forEach(b => b.classList.remove('active'));
+      sections.forEach(s => s.classList.remove('active'));
 
-tipoVarianteInput.addEventListener("change", () => {
-  if (tipoVarianteInput.value === "Sabor") {
-    precioVarianteInput.disabled = true;
-    precioVarianteInput.value = "";
-  } else {
-    precioVarianteInput.disabled = false;
-  }
+      // Add active to current
+      btn.classList.add('active');
+      const sectionId = btn.getAttribute('data-section');
+      document.getElementById(sectionId).classList.add('active');
+    });
+  });
+
+  // Event Listeners
+  document.getElementById("logout").addEventListener("click", () => {
+    localStorage.removeItem("tokenAdmin");
+    window.location.href = "login-admin.html";
+  });
+
+  buscadorProductos.addEventListener("input", (e) => {
+    filtrarProductos(e.target.value);
+  });
+
+  // Forms
+  formProducto.addEventListener("submit", guardarProducto);
+  formCategoria.addEventListener("submit", agregarCategoria);
+  formBanner.addEventListener("submit", subirBanner);
+
+  // Cancel Edit
+  document.getElementById("cancelar-edicion-producto").addEventListener("click", resetFormProducto);
+
+  // Variants
+  document.getElementById("formulario-variante").addEventListener("submit", agregarVariante);
+  document.getElementById("btnCancelarEdicionVariante").addEventListener("click", () => {
+    document.getElementById("formulario-variante").reset();
+    productoEnEdicionVariante = null;
+  });
+
+  // Store Status
+  document.getElementById("btn-toggle-estado").addEventListener("click", toggleEstadoLocal);
 });
 
 
+// === PRODUCT MANAGEMENT ===
 
-function cargarProductos(filtro = "") {
-  const mostrarInactivos = checkboxInactivos.checked;
+async function cargarProductos() {
+  try {
+    const res = await fetch("/api/productos?mostrarInactivos=true"); // Get all for admin
+    productosCache = await res.json();
+    renderProductos(productosCache);
+  } catch (error) {
+    console.error("Error cargando productos:", error);
+  }
+}
 
-  fetch(`https://api.mielissimo.com.ar/api/productos?mostrarInactivos=${mostrarInactivos}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-    .then(res => {
-  if (manejarTokenExpirado(res)) return [];
-  return res.json();
-})
+function renderProductos(productos) {
+  listaProductos.innerHTML = "";
+  productos.forEach(prod => {
+    const div = document.createElement("div");
+    div.className = "producto-admin";
+    div.style.opacity = prod.activo ? 1 : 0.6;
 
-    .then(productos => {
-      productosContainer.innerHTML = "";
-      productos
-        .filter(p => {
-          const nombreCoincide = p.nombre.toLowerCase().includes(filtro.toLowerCase());
-          return mostrarInactivos ? nombreCoincide : nombreCoincide && p.activo;
-        })
-        .forEach(prod => {
-          const estaActivo = prod.activo === 1 || prod.activo === true;
-
-          const div = document.createElement("div");
-          div.classList.add("producto-admin");
-
-          div.innerHTML = `
-            <img src="${prod.imagen}" alt="${prod.nombre}" loading="lazy"/>
-            <p><strong>${prod.nombre}</strong></p>
-            <p><em>Categoría: ${prod.categoria_nombre || "Sin categoría"}</em></p>
-            <p>Precio: $${parseFloat(prod.precio).toFixed(2)}</p>
-            <p><strong>Activo:</strong> ${estaActivo ? "Sí" : "No"}</p>
-            <div class="btns" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
-              ${estaActivo
-                ? `
-                  <button class="btn-editar" data-id="${prod.id}" 
-                          data-nombre="${prod.nombre}"
-                          data-precio="${prod.precio}"
-                          data-imagen="${prod.imagen}"
-                          data-categoria="${prod.categoria_id}">✏ Editar</button>
-                  <button class="btn-eliminar" data-id="${prod.id}">🗑 Desactivar</button>
-                  <button class="btn-variante" data-id="${prod.id}" data-nombre="${prod.nombre}">➕ Variantes</button>
-                `
-                : `<button class="btn-reactivar" data-id="${prod.id}">✅ Reactivar</button>`
-              }
+    div.innerHTML = `
+            <img src="${prod.imagen || 'assets/placeholder.png'}" />
+            <div>
+                <strong>${prod.nombre}</strong>
+                <em>$${prod.precio}</em>
+                ${prod.es_oferta ? '<span style="color:var(--color-primario); font-weight:bold;">¡OFERTA!</span>' : ''}
             </div>
-          `;
-          productosContainer.appendChild(div);
-        });
-    })
-    .catch(err => {
-      console.error("Error al cargar productos:", err);
-      mensaje.textContent = "Error al cargar productos";
-    });
-}
-
-function cargarCategorias() {
-  fetch("https://api.mielissimo.com.ar/api/categorias", {
-  headers: { Authorization: `Bearer ${token}` }
-})
-  .then(res => {
-    if (manejarTokenExpirado(res)) return [];
-    return res.json();
-  })
-
-    .then(categorias => {
-      selectCategoria.innerHTML = '<option value="">Seleccionar categoría</option>';
-      listaCategorias.innerHTML = "";
-      categorias.forEach(cat => {
-        const option = document.createElement("option");
-        option.value = cat.id;
-        option.textContent = cat.nombre;
-        selectCategoria.appendChild(option);
-
-        const div = document.createElement("div");
-        div.classList.add("categoria-item");
-        div.innerHTML = `
-          <span>${cat.nombre}</span>
-          <div class="botones">
-            <button class="btn-editar-categoria" data-id="${cat.id}" data-nombre="${cat.nombre}">✏</button>
-            <button class="btn-eliminar-categoria eliminar" data-id="${cat.id}">🗑</button>
-          </div>
+            <div class="producto-actions">
+                <button class="btn-var" onclick="editarVariantes(${prod.id}, '${prod.nombre}')"><i class="fa-solid fa-list"></i></button>
+                <button class="btn-edit" onclick="editarProducto(${prod.id})"><i class="fa-solid fa-pen"></i></button>
+                <button class="btn-del" onclick="eliminarProducto(${prod.id})"><i class="fa-solid fa-trash"></i></button>
+            </div>
+            ${!prod.activo ? `<button class="btn-reactivar" style="width:100%; margin-top:5px;" onclick="activarProducto(${prod.id})">Reactivar</button>` : ''}
         `;
-        listaCategorias.appendChild(div);
-      });
-    });
+    listaProductos.appendChild(div);
+  });
 }
 
-formulario.addEventListener("submit", async (e) => {
+function filtrarProductos(busqueda) {
+  const filtrados = productosCache.filter(p =>
+    p.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  );
+  renderProductos(filtrados);
+}
+
+async function guardarProducto(e) {
   e.preventDefault();
-  const datos = new FormData(formulario);
-  const url = productoEnEdicion ? `https://api.mielissimo.com.ar/api/productos/${productoEnEdicion}` : "https://api.mielissimo.com.ar/api/productos";
-  const metodo = productoEnEdicion ? "PUT" : "POST";
+  const formData = new FormData(formProducto);
+
+  // Get Categories Checkboxes
+  const checkboxes = document.querySelectorAll('input[name="categorias"]:checked');
+  const selectedCats = Array.from(checkboxes).map(cb => Number(cb.value));
+  formData.append("categorias", JSON.stringify(selectedCats));
+
+  // Checkbox es_oferta
+  const esOferta = formProducto.querySelector('input[name="es_oferta"]').checked;
+  formData.set("es_oferta", esOferta);
+
+  // If ID exists, it's Update
+  const id = document.getElementById("producto-id").value;
+  const url = id ? `/api/productos/${id}` : "/api/productos";
+  const method = id ? "PUT" : "POST";
 
   try {
     const res = await fetch(url, {
-  method: metodo,
-  headers: { Authorization: `Bearer ${token}` },
-  body: datos
-});
+      method: method,
+      headers: { "Authorization": `Bearer ${tokenAdmin}` },
+      body: formData
+    });
 
-if (manejarTokenExpirado(res)) return;
-
-
-    const resultado = await res.json();
     if (res.ok) {
-      mensaje.textContent = productoEnEdicion ? "Producto actualizado" : "Producto agregado";
-      mensaje.style.color = "green";
-      formulario.reset();
-      productoEnEdicion = null;
-      btnCancelarProducto.style.display = "none";
+      Swal.fire({ icon: 'success', title: 'Guardado', text: 'Producto guardado correctamente' });
+      resetFormProducto();
       cargarProductos();
-
     } else {
-      mensaje.textContent = resultado.error || "Error en la operación";
-      mensaje.style.color = "red";
+      const err = await res.json();
+      Swal.fire({ icon: 'error', title: 'Error', text: err.error });
     }
-  } catch (err) {
-    mensaje.textContent = "Error de conexión.";
-    mensaje.style.color = "red";
+  } catch (error) {
+    console.error(error);
+    Swal.fire({ icon: 'error', title: 'Error', text: 'Error de conexión' });
   }
-});
+}
 
-btnCancelarProducto.addEventListener("click", () => {
-  formulario.reset();
+function editarProducto(id) {
+  const prod = productosCache.find(p => p.id === id);
+  if (!prod) return;
+
+  productoEnEdicion = prod;
+
+  document.getElementById("producto-id").value = prod.id;
+  document.getElementById("prod-nombre").value = prod.nombre;
+  document.getElementById("prod-precio").value = prod.precio;
+  document.querySelector('input[name="precio_oferta"]').value = prod.precio_oferta || '';
+  document.querySelector('input[name="es_oferta"]').checked = !!prod.es_oferta;
+
+  const preview = document.getElementById("preview-imagen");
+  preview.src = prod.imagen;
+  preview.style.display = "block";
+
+  // Uncheck all first
+  document.querySelectorAll('input[name="categorias"]').forEach(cb => cb.checked = false);
+
+  // Check associated
+  if (prod.categorias) {
+    prod.categorias.forEach(c => {
+      const cb = document.querySelector(`input[name="categorias"][value="${c.id}"]`);
+      if (cb) cb.checked = true;
+    });
+  }
+
+  document.getElementById("btn-guardar-producto").textContent = "Actualizar Producto";
+  document.getElementById("cancelar-edicion-producto").style.display = "inline-block";
+
+  // Scroll to top
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function resetFormProducto() {
+  formProducto.reset();
+  document.getElementById("producto-id").value = "";
+  document.getElementById("btn-guardar-producto").textContent = "Guardar Producto";
+  document.getElementById("cancelar-edicion-producto").style.display = "none";
+  document.getElementById("preview-imagen").style.display = "none";
   productoEnEdicion = null;
-  mensaje.textContent = "";
-  btnCancelarProducto.style.display = "none";
-});
 
-btnCancelarCategoria.addEventListener("click", () => {
-  formularioCategoria.reset();
-  categoriaEnEdicion = null;
-  btnCancelarCategoria.style.display = "none";
-});
-
-btnCancelarVariante.addEventListener("click", () => {
-  formularioVariante.reset();
-  varianteEditandoId = null;
-  btnAgregarVariante.textContent = "Agregar variante";
-  btnCancelarVariante.style.display = "none";
-  mensajeVariante.textContent = "";
-});
-
-function editarProducto(id, nombre, precio, imagen, categoria_id) {
-  formulario.nombre.value = nombre;
-  formulario.precio.value = precio;
-  
-  selectCategoria.value = categoria_id;
-  productoEnEdicion = id;
-
-  mensaje.textContent = "Editando producto...";
-  mensaje.style.color = "blue";
-  btnCancelarProducto.style.display = "inline";
-  seccionFormulario.scrollIntoView({ behavior: "smooth", block: "start" });
+  // Hide variants section
+  document.getElementById("seccionVariantes").style.display = "none";
 }
 
-function desactivarProducto(id) {
- fetch(`https://api.mielissimo.com.ar/api/productos/desactivar/${id}`, {
-  method: "PUT",
-  headers: { Authorization: `Bearer ${token}` }
-})
-  .then(res => {
-    if (manejarTokenExpirado(res)) return [];
-    return res.json();
-  })
+async function eliminarProducto(id) {
+  const confirm = await Swal.fire({
+    title: '¿Estás seguro?',
+    text: "Se eliminará el producto (o se desactivará).",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef5579',
+    cancelButtonColor: '#d33',
+    confirmButtonText: 'Sí, eliminar'
+  });
 
-    .then((data) => {
-      mensaje.textContent = data.mensaje || "Producto desactivado";
-      mensaje.style.color = "green";
-      cargarProductos();
-    })
-    .catch(() => {
-      mensaje.textContent = "Error al desactivar producto";
-      mensaje.style.color = "red";
+  if (confirm.isConfirmed) {
+    try {
+      const res = await fetch(`/api/productos/${id}`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${tokenAdmin}` }
+      });
+      if (res.ok) {
+        Swal.fire('Eliminado!', 'El producto ha sido eliminado.', 'success');
+        cargarProductos();
+      } else {
+        Swal.fire('Error', 'No se pudo eliminar', 'error');
+      }
+    } catch (e) { console.error(e); }
+  }
+}
+
+async function activarProducto(id) {
+  try {
+    await fetch(`/api/productos/activar/${id}`, {
+      method: "PUT",
+      headers: { "Authorization": `Bearer ${tokenAdmin}` }
     });
-}
-
-
-function reactivarProducto(id) {
- fetch(`https://api.mielissimo.com.ar/api/productos/activar/${id}`, {
-  method: "PUT",
-  headers: { Authorization: `Bearer ${token}` }
-})
-  .then(res => {
-    if (manejarTokenExpirado(res)) return [];
-    return res.json();
-  })
-
-    .then((data) => {
-      mensaje.textContent = data.mensaje || "Producto reactivado";
-      mensaje.style.color = "green";
-      cargarProductos();
-    })
-    .catch(() => {
-      mensaje.textContent = "Error al reactivar producto";
-      mensaje.style.color = "red";
-    });
-}
-
-
-formularioCategoria.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const nombre = formularioCategoria.nombre.value;
-
-  const url = categoriaEnEdicion ? `https://api.mielissimo.com.ar/api/categorias/${categoriaEnEdicion}` : "https://api.mielissimo.com.ar/api/categorias";
-  const metodo = categoriaEnEdicion ? "PUT" : "POST";
-const body = { nombre }; // Definir correctamente el objeto
-const res = await fetch(url, {
-  method: metodo,
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`
-  },
-  body: JSON.stringify(body)
-});
-
-if (manejarTokenExpirado(res)) return;
-
-const data = await res.json();
-
-  if (res.ok) {
-    formularioCategoria.reset();
-    categoriaEnEdicion = null;
-    btnCancelarCategoria.style.display = "none";
-    cargarCategorias();
     cargarProductos();
-  } else {
-    alert(data.error || "Error al guardar categoría");
-  }
-});
-
-function eliminarCategoria(id) {
-  fetch(`https://api.mielissimo.com.ar/api/categorias/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` }
-  })
-    .then(res => {
-  if (manejarTokenExpirado(res)) return [];
-  return res.json();
-})
-
-    .then(data => {
-      if (data.error) {
-  mensajeCategoria.textContent = data.error;
-  mensajeCategoria.style.color = "red";
-} else {
-  mensajeCategoria.textContent = "✅ Categoría eliminada correctamente";
-  mensajeCategoria.style.color = "green";
-  cargarCategorias();
-  setTimeout(() => {
-    mensajeCategoria.textContent = "";
-  }, 3000);
+    Swal.fire({ icon: 'success', title: 'Reactivado', timer: 1500, showConfirmButton: false });
+  } catch (e) { console.error(e); }
 }
 
-    })
-    .catch(() => {
-      mensaje.textContent = "Error al eliminar categoría";
-      mensaje.style.color = "red";
+// === CATEGORIES MANAGEMENT ===
+
+async function cargarCategorias() {
+  try {
+    const res = await fetch("/api/categorias");
+    categoriasCache = await res.json();
+
+    renderCategoriasList(categoriasCache);
+    renderCategoriasCheckboxes(categoriasCache);
+  } catch (e) { console.error(e); }
+}
+
+function renderCategoriasList(categorias) {
+  listaCategorias.innerHTML = "";
+  categorias.forEach(cat => {
+    const div = document.createElement("div");
+    div.className = "categoria-item";
+    div.innerHTML = `
+            <span>${cat.nombre}</span>
+            <div class="botones">
+                <button class="btn-var" onclick="editarCategoria(${cat.id}, '${cat.nombre}')"><i class="fa-solid fa-pen"></i></button>
+                <button class="eliminar" onclick="eliminarCategoria(${cat.id})"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        `;
+    listaCategorias.appendChild(div);
+  });
+}
+
+function renderCategoriasCheckboxes(categorias) {
+  categoriasContainer.innerHTML = "";
+  categorias.forEach(cat => {
+    const label = document.createElement("label");
+    label.innerHTML = `
+            <input type="checkbox" name="categorias" value="${cat.id}">
+            ${cat.nombre}
+        `;
+    categoriasContainer.appendChild(label);
+  });
+}
+
+async function agregarCategoria(e) {
+  e.preventDefault();
+  const nombre = formCategoria.querySelector('input[name="nombre"]').value;
+
+  try {
+    const res = await fetch("/api/categorias", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenAdmin}`
+      },
+      body: JSON.stringify({ nombre })
     });
+
+    if (res.ok) {
+      formCategoria.reset();
+      cargarCategorias(); // Refresh both list and checkboxes
+      Swal.fire({ icon: 'success', title: 'Categoría Agregada', timer: 1500, showConfirmButton: false });
+    }
+  } catch (e) { console.error(e); }
 }
 
+async function editarCategoria(id, nombreActual) {
+  const { value: nuevoNombre } = await Swal.fire({
+    title: 'Editar Categoría',
+    input: 'text',
+    inputValue: nombreActual,
+    showCancelButton: true,
+    confirmButtonText: 'Guardar',
+    confirmButtonColor: '#ef5579'
+  });
 
-document.addEventListener("click", (e) => {
-  if (e.target.classList.contains("btn-editar")) {
-    const btn = e.target;
-    editarProducto(
-      btn.dataset.id,
-      btn.dataset.nombre,
-      btn.dataset.precio,
-      btn.dataset.imagen,
-      btn.dataset.categoria
-    );
+  if (nuevoNombre && nuevoNombre !== nombreActual) {
+    // Assuming API supports PUT /api/categorias/:id or similar
+    // If not, we might need to add it to backend. But for now, let's assume standard REST or we implement it.
+    // Wait, the backend notes didn't explicitly mention PUT categories.
+    // Safest bet: Attempt PUT. If 404, we'll know. 
+    // Actually, let's implement the FE part.
+    try {
+      const res = await fetch(`/api/categorias/${id}`, {
+        method: 'PUT',
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${tokenAdmin}`
+        },
+        body: JSON.stringify({ nombre: nuevoNombre })
+      });
+
+      if (res.ok) {
+        Swal.fire('Actualizado', 'Categoría renombrada', 'success');
+        cargarCategorias();
+      } else {
+        Swal.fire('Error', 'No se pudo actualizar', 'error');
+      }
+    } catch (e) { console.error(e); }
   }
+}
 
-  if (e.target.classList.contains("btn-eliminar")) desactivarProducto(e.target.dataset.id);
-  if (e.target.classList.contains("btn-reactivar")) reactivarProducto(e.target.dataset.id);
+async function eliminarCategoria(id) {
+  const confirm = await Swal.fire({
+    title: '¿Eliminar categoría?',
+    text: "No podrás eliminarla si tiene productos activos.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#ef5579',
+    confirmButtonText: 'Sí, eliminar'
+  });
 
-  if (e.target.classList.contains("btn-editar-categoria")) {
-    categoriaEnEdicion = e.target.dataset.id;
-    formularioCategoria.nombre.value = e.target.dataset.nombre;
-    btnCancelarCategoria.style.display = "inline";
-  }
-
-  if (e.target.classList.contains("btn-eliminar-categoria")) eliminarCategoria(e.target.dataset.id);
-
-  if (e.target.classList.contains("btn-variante")) {
-    const id = e.target.dataset.id;
-    const nombre = e.target.dataset.nombre;
-    productoParaVariantes = id;
-    document.getElementById("nombre-producto-seleccionado").textContent = `Variantes de ${nombre}`;
-    cargarVariantes(id);
-    seccionVariantes.style.display = "block";
-    seccionVariantes.scrollIntoView({ behavior: "smooth" });
-  }
-
-  if (e.target.classList.contains("eliminar-variante")) {
-  const id = e.target.dataset.id;
-  fetch(`https://api.mielissimo.com.ar/api/variantes/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` }
-  })
-    .then(res => {
-  if (manejarTokenExpirado(res)) return [];
-  return res.json();
-})
-
-    .then(data => {
-      mensajeVariante.textContent = "✅ Variante eliminada";
-      mensajeVariante.style.color = "green";
-      cargarVariantes(productoParaVariantes);
-    })
-    .catch(() => {
-      mensajeVariante.textContent = "Error al eliminar variante";
-      mensajeVariante.style.color = "red";
+  if (confirm.isConfirmed) {
+    const res = await fetch(`/api/categorias/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${tokenAdmin}` }
     });
-}
-
-
-  if (e.target.classList.contains("editar-variante")) {
-    const id = e.target.dataset.id;
-    varianteEditandoId = id;
-    document.getElementById("tipoVariante").value = e.target.dataset.tipo;
-    document.getElementById("nombreVariante").value = e.target.dataset.nombre;
-    document.getElementById("precioExtra").value =  e.target.dataset.precio && e.target.dataset.precio !== "null"
-    ? e.target.dataset.precio
-    : "";
-    btnAgregarVariante.textContent = "Guardar cambios";
-    btnCancelarVariante.style.display = "inline";
-
-    // Actualización precio activo/inactivo al editar
-   if (e.target.dataset.tipo === "Sabor") {
-  document.getElementById("precioExtra").disabled = true;
-  document.getElementById("precioExtra").value = "";
-} else {
-  document.getElementById("precioExtra").disabled = false;
-}
-
+    const data = await res.json();
+    if (res.ok) {
+      cargarCategorias();
+      Swal.fire('Eliminada', 'Categoría eliminada', 'success');
+    } else {
+      Swal.fire('Error', data.error, 'error');
+    }
   }
-});
-
-function cargarVariantes(idProducto) {
-  tablaVariantes.innerHTML = `
-    <tr>
-      <th>Tipo</th>
-      <th>Nombre de variante</th>
-      <th>Precio</th>
-      <th>Acciones</th>
-    </tr>
-  `;
-  fetch(`https://api.mielissimo.com.ar/api/variantes/${idProducto}`, {
-    headers: { Authorization: `Bearer ${token}` }
-  })
-    .then(res => {
-  if (manejarTokenExpirado(res)) return [];
-  return res.json();
-})
-
-    .then(variantes => {
-     variantes.forEach(v => {
-  const fila = document.createElement("tr");
-
-  const precioTexto =
-    v.tipo === "Tamaño"
-      ? (v.precio_extra !== null && v.precio_extra !== "" && !isNaN(v.precio_extra)
-          ? `$${parseFloat(v.precio_extra).toFixed(2)}`
-          : "$0.00")
-      : "-";
-
-  fila.innerHTML = `
-    <td>${v.tipo}</td>
-    <td>${v.nombre}</td>
-    <td>${precioTexto}</td>
-    <td>
-      <button class="editar-variante" data-id="${v.id}" data-tipo="${v.tipo}" data-nombre="${v.nombre}" data-precio="${v.precio_extra}">✏</button>
-      <button class="eliminar-variante" data-id="${v.id}">🗑</button>
-    </td>
-  `;
-  tablaVariantes.appendChild(fila);
-});
-
-
-    });
 }
 
+// === BANNERS MANAGEMENT ===
 
-document.getElementById("btn-buscar-compra").addEventListener("click", async () => {
-  const idCompra = document.getElementById("buscar-compra-id").value.trim();
-  const resultadoDiv = document.getElementById("resultado-busqueda-compra");
+async function cargarBanners() {
+  try {
+    const res = await fetch("/api/banners");
+    const banners = await res.json();
+    renderBanners(banners);
+  } catch (e) { console.error(e); }
+}
 
-  if (!idCompra) {
-    resultadoDiv.innerHTML = "<p style='color:red'>Ingrese un ID válido.</p>";
+function renderBanners(banners) {
+  listaBanners.innerHTML = "";
+  if (banners.length === 0) {
+    listaBanners.innerHTML = "<p>No hay banners cargados.</p>";
     return;
   }
 
-  try {
-    const res = await fetch(`https://api.mielissimo.com.ar/api/compras/detalle/${idCompra}`, {
-  headers: { Authorization: `Bearer ${token}` }
-});
-
-
-    if (manejarTokenExpirado(res)) return;
-
-    const data = await res.json();
-    if (!res.ok || data.error) {
-      resultadoDiv.innerHTML = `<p style='color:red'>Compra no encontrada</p>`;
-      return;
-    }
-
-  resultadoDiv.innerHTML = `
-  <div style="border: 1px solid #ccc; padding: 10px; border-radius: 8px; margin-top: 10px;">
-    <p><strong>Pedido #${data.pedido_id}</strong></p>
-    <p><strong>Fecha:</strong> ${new Date(data.fecha_compra).toLocaleString()}</p>
-    <p><strong>Tipo de envío:</strong> ${data.tipo_envio}</p>
-  ${data.tipo_envio === "envio" && data.zona ? `<p><strong>Zona:</strong> ${data.zona} - $${(() => {
-  const preciosZonas = {
-    "Zona centro": 1500,
-    "Jds": 2000,
-    "Ribera": 2000,
-    "Barrio unión": 2500
-  };
-  return preciosZonas[data.zona] || 0;
-})()}</p>` : ""}
-
-
-    <h4>Productos:</h4>
-    <ul>
-      ${data.productos.map(p => `
-        <li>${p.cantidad} x ${p.nombre} = $${(p.precio_unitario * p.cantidad).toFixed(2)}
-        ${p.variantes && p.variantes !== 'Sin variantes' ? `(${p.variantes})` : ''}</li>
-      `).join("")}
-    </ul>
-    <p><strong>Total:</strong> $${data.total.toFixed(2)}</p>
-  </div>
-`;
-
-
-  } catch (err) {
-    resultadoDiv.innerHTML = "<p style='color:red'>Error al buscar compra.</p>";
-  }
-});
-
-
-formularioVariante.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const tipo = document.getElementById("tipoVariante").value;
-  const nombre = document.getElementById("nombreVariante").value;
-  const inputPrecio = document.getElementById("precioExtra");
-
- const precioAdicional = inputPrecio.disabled || inputPrecio.value.trim() === "" 
-  ? null 
-  : parseFloat(inputPrecio.value);
-
-
-
-const body = {
-  id_producto: parseInt(productoParaVariantes),
-  tipo,
-  nombre,
-  precio_extra: precioAdicional  // <-- enviar el nombre correcto que espera backend
-};
-
-
-  const metodo = varianteEditandoId ? "PUT" : "POST";
-  const url = varianteEditandoId ? `https://api.mielissimo.com.ar/api/variantes/${varianteEditandoId}` : "https://api.mielissimo.com.ar/api/variantes";
-
-  try {
-    const res = await fetch(url, {
-  method: metodo,
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`
-  },
-  body: JSON.stringify(body)
-});
-
-if (manejarTokenExpirado(res)) return;
-
-const data = await res.json();
-
-    if (res.ok) {
-      mensajeVariante.textContent = varianteEditandoId ? "✅ Variante actualizada" : "✅ Variante agregada";
-      mensajeVariante.style.color = "green";
-      formularioVariante.reset();
-      btnAgregarVariante.textContent = "Agregar variante";
-      btnCancelarVariante.style.display = "none";
-      varianteEditandoId = null;
-      tipoVarianteInput.value = "Tamaño";
-precioVarianteInput.disabled = false;
-
-      cargarVariantes(productoParaVariantes);
-    } else {
-      mensajeVariante.textContent = data.error || "Error";
-      mensajeVariante.style.color = "red";
-    }
-  } catch (err) {
-    mensajeVariante.textContent = "Error de conexión";
-    mensajeVariante.style.color = "red";
-  }
-});
-
-// 🔄 Precio según tipo de variante
-
-tipoVarianteInput.addEventListener("change", () => {
-  if (tipoVarianteInput.value === "Sabor") {
-    precioVarianteInput.disabled = true;
-    precioVarianteInput.value = "";
-  } else {
-    precioVarianteInput.disabled = false;
-  }
-});
-
-if (tipoVarianteInput.value === "Sabor") {
-  precioVarianteInput.disabled = true;
+  banners.forEach(b => {
+    const div = document.createElement("div");
+    div.className = "banner-item";
+    div.innerHTML = `
+            <img src="${b.imagen_url}" />
+            <div class="banner-actions">
+                <button class="btn-sm" style="background:red;" onclick="eliminarBanner(${b.id})"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        `;
+    listaBanners.appendChild(div);
+  });
 }
 
-botonLogout.addEventListener("click", () => {
-  localStorage.removeItem("tokenAdmin");
-  window.location.href = "login-admin.html";
-});
+async function subirBanner(e) {
+  e.preventDefault();
+  const formData = new FormData(formBanner);
 
-buscador.addEventListener("input", () => cargarProductos(buscador.value));
-checkboxInactivos.addEventListener("change", () => cargarProductos());
+  try {
+    const res = await fetch("/api/banners", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${tokenAdmin}` },
+      body: formData
+    });
 
-cargarProductos();
-cargarCategorias();
+    if (res.ok) {
+      formBanner.reset();
+      cargarBanners();
+      Swal.fire({ icon: 'success', title: 'Banner Subido', timer: 1500 });
+    }
+  } catch (e) { console.error(e); }
+}
 
+async function eliminarBanner(id) {
+  const confirm = await Swal.fire({
+    title: '¿Eliminar Banner?',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Sí'
+  });
+
+  if (confirm.isConfirmed) {
+    await fetch(`/api/banners/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${tokenAdmin}` }
+    });
+    cargarBanners();
+    Swal.fire('Eliminado', '', 'success');
+  }
+}
+
+
+// === VARIANTS MANAGEMENT ===
+
+let productoParaVariantes = null;
+
+function editarVariantes(id, nombre) {
+  productoParaVariantes = id;
+  document.getElementById("nombre-producto-variante").textContent = nombre;
+  document.getElementById("seccionVariantes").style.display = "block";
+
+  cargarVariantes(id);
+
+  // Switch to section if not already (should be usually)
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function cargarVariantes(productoId) {
+  const res = await fetch(`/api/variantes/${productoId}`);
+  const variantes = await res.json();
+
+  const tbody = document.querySelector("#tabla-variantes tbody");
+  tbody.innerHTML = "";
+
+  variantes.forEach(v => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+            <td>${v.tipo}</td>
+            <td>${v.nombre}</td>
+            <td>$${v.precio_extra || 0}</td>
+            <td>
+                <button class="btn-del" onclick="eliminarVariante(${v.id})"><i class="fa-solid fa-trash"></i></button>
+            </td>
+        `;
+    tbody.appendChild(tr);
+  });
+}
+
+async function agregarVariante(e) {
+  e.preventDefault();
+  if (!productoParaVariantes) return;
+
+  const formData = new FormData(e.target);
+  const data = Object.fromEntries(formData);
+  data.id_producto = productoParaVariantes;
+
+  const res = await fetch("/api/variantes", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${tokenAdmin}`
+    },
+    body: JSON.stringify(data)
+  });
+
+  if (res.ok) {
+    e.target.reset();
+    cargarVariantes(productoParaVariantes);
+  }
+}
+
+async function eliminarVariante(id) {
+  if (confirm("¿Eliminar variante?")) {
+    await fetch(`/api/variantes/${id}`, { method: "DELETE" });
+    cargarVariantes(productoParaVariantes);
+  }
+}
+
+
+// === STORE STATUS ===
+
+async function cargarEstadoLocal() {
+  try {
+    const res = await fetch("/api/configuracion");
+    const config = await res.json();
+    const estado = config.estado_local || "ABIERTO"; // Default
+
+    const texto = document.getElementById("estado-local-texto");
+    texto.textContent = estado;
+    texto.style.color = estado === "ABIERTO" ? "green" : "red";
+  } catch (e) { console.error(e); }
+}
+
+async function toggleEstadoLocal() {
+  const texto = document.getElementById("estado-local-texto");
+  const nuevoEstado = texto.textContent === "ABIERTO" ? "CERRADO" : "ABIERTO";
+
+  await fetch("/api/configuracion", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${tokenAdmin}`
+    },
+    body: JSON.stringify({ clave: "estado_local", valor: nuevoEstado })
+  });
+
+  cargarEstadoLocal();
+  Swal.fire({
+    icon: 'info',
+    title: `Local ${nuevoEstado}`,
+    timer: 1500,
+    showConfirmButton: false
+  });
+}

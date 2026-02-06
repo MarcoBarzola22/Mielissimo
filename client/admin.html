@@ -1,117 +1,212 @@
-<!-- admin.html -->
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Panel de Administración - Mielissimo</title>
   <link rel="stylesheet" href="css/styles.css">
   <link rel="stylesheet" href="css/admin.css">
   <link rel="icon" href="assets/favicon/favicon.ico" type="image/x-icon" />
-
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+
 <body>
-  <header class="header-admin">
-    <div class="logo">
-      <img src="assets/logoCanva.png" alt="Logo de Mielissimo" />
-    </div>
-    <button id="logout">Cerrar sesión</button>
-  </header>
 
-  <main>
-    <!-- Categorías -->
-    <section class="seccion">
-      <h2>Crear / Editar categoría</h2>
-      <form id="formulario-categoria">
-        <input type="text" name="nombre" placeholder="Nombre de categoría" required />
-        <button type="submit">Agregar categoría</button>
-        <button type="button" id="cancelar-edicion-categoria" style="display:none;">Cancelar edición</button>
-      </form>
-      <p id="mensaje-categoria" style="margin-top: 5px;"></p>
+  <div class="admin-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="logo-area">
+        <img src="assets/logoCanva.png" alt="Mielissimo" />
+        <h2>Admin</h2>
+      </div>
+      <nav>
+        <button class="nav-btn active" data-section="section-productos">
+          <i class="fa-solid fa-jar"></i> Productos
+        </button>
+        <button class="nav-btn" data-section="section-categorias">
+          <i class="fa-solid fa-tags"></i> Categorías
+        </button>
+        <button class="nav-btn" data-section="section-carrusel">
+          <i class="fa-solid fa-images"></i> Carrusel
+        </button>
+        <button class="nav-btn" data-section="section-pedidos">
+          <i class="fa-solid fa-receipt"></i> Pedidos (Historial)
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <button id="logout" class="logout-btn">
+          <i class="fa-solid fa-sign-out-alt"></i> Cerrar Sesión
+        </button>
+      </div>
+    </aside>
 
-    </section>
+    <!-- MAIN CONTENT -->
+    <main class="content-area">
 
-    <section class="seccion">
-      <h2>Editar / Eliminar categorías</h2>
-      <div id="lista-categorias" class="categorias-grid"></div>
-    </section>
+      <!-- Store Status Header -->
+      <header class="top-bar">
+        <div class="status-indicator">
+          Estado del Local: <strong id="estado-local-texto">Cargando...</strong>
+          <button id="btn-toggle-estado" class="btn-sm">Cambiar</button>
+        </div>
+      </header>
 
-    <!-- Productos -->
-    <section class="seccion" id="seccion-formulario">
-      <h2>Agregar / Editar Producto</h2>
-      <p id="mensaje" style="margin-top: 1rem;"></p>
-      <form id="formulario-producto" enctype="multipart/form-data">
-        <input type="text" name="nombre" placeholder="Nombre" required />
-        <input type="number" name="precio" step="0.01" placeholder="Precio base" required />
-        <input type="file" name="imagen" accept="image/*" />
-        <select id="categoria-producto" name="categoria_id" required>
-          <option value="">Seleccionar categoría</option>
-        </select>
-        <button type="submit">Guardar</button>
-        <button type="button" id="cancelar-edicion-producto" style="display:none;">Cancelar edición</button>
-      </form>
-    </section>
+      <!-- SECTION: PRODUCTOS -->
+      <section id="section-productos" class="dashboard-section active">
+        <div class="section-header">
+          <h2>Gestión de Productos</h2>
+        </div>
 
-    <!-- Variantes -->
-    <section class="seccion" id="seccion-variantes" style="display: none;">
-      <h2 id="nombre-producto-seleccionado">Variantes del producto</h2>
-      <form id="formulario-variante">
-        <select id="tipoVariante" name="tipo" required>
-          <option value="Sabor">Sabor</option>
-          <option value="Tamaño">Tamaño</option>
-        </select>
-        <input type="text" id="nombreVariante" name="nombre" placeholder="Nombre de la variante" required />
-       <input type="number" id="precioExtra" name="precio_extra" placeholder="Precio" step="0.01" />
-        <button type="submit" id="btnAgregarVariante">Agregar variante</button>
-        <button type="button" id="btnCancelarEdicionVariante" style="display:none;">Cancelar edición</button>
-      </form>
-      <p id="mensaje-variante"></p>
+        <div class="panel-card">
+          <h3>Agregar / Editar Producto</h3>
+          <form id="formulario-producto">
+            <input type="hidden" id="producto-id" />
+            <div class="form-row">
+              <input type="text" id="prod-nombre" name="nombre" placeholder="Nombre del producto" required />
+              <input type="number" id="prod-precio" name="precio" step="0.01" placeholder="Precio ($)" required />
+            </div>
 
-      <table id="tabla-variantes" style="margin-top: 1rem; border-collapse: collapse;">
-        <thead>
-          <tr>
-            <th>Tipo</th>
-            <th>Nombre de variante</th>
-            <th>Precio</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
-    </section>
+            <div class="form-row">
+              <div style="flex:1;">
+                <label>Precio Oferta (Opcional)</label>
+                <input type="number" name="precio_oferta" step="0.01" placeholder="$ Oferta" />
+              </div>
+              <div style="flex:0 0 auto; display:flex; align-items:center;">
+                <label style="cursor:pointer; display:flex; align-items:center; gap:5px;">
+                  <input type="checkbox" name="es_oferta" /> En Oferta
+                </label>
+              </div>
+            </div>
 
-    <!-- Productos actuales -->
-    <section class="seccion">
-      <h2>Productos actuales</h2>
-      <input type="text" id="buscador-productos" placeholder="Buscar producto por nombre..." />
-      <label>
-        <input type="checkbox" id="mostrarInactivos" />
-        Mostrar productos desactivados
-      </label>
-      <div id="lista-productos" class="productos-grid"></div>
-    </section>
+            <div class="categories-selector">
+              <p>Categorías:</p>
+              <div id="categorias-container" class="checkbox-grid">
+                <!-- Checkboxes injected by JS -->
+              </div>
+            </div>
 
-<section class="seccion">
-  <h2>Buscar compra por ID</h2>
-  <input type="number" id="buscar-compra-id" placeholder="Ingrese ID de compra..." />
-  <button id="btn-buscar-compra">Buscar</button>
-  <div id="resultado-busqueda-compra"></div>
-</section>
+            <input type="file" id="prod-imagen" name="imagen" accept="image/*" />
+            <img id="preview-imagen" src="" alt="Vista previa"
+              style="max-height: 100px; display: none; object-fit: cover; border-radius: 8px;" />
 
+            <div class="form-actions">
+              <button type="submit" id="btn-guardar-producto">Guardar Producto</button>
+              <button type="button" id="cancelar-edicion-producto" style="display: none; background:#999;">Cancelar
+                Edición</button>
+            </div>
+          </form>
+        </div>
 
-  </main>
+        <!-- Variants Panel (Hidden until Edit Mode) -->
+        <div id="seccionVariantes" class="panel-card"
+          style="display: none; margin-top: 20px; border-left: 5px solid orange;">
+          <h3>Variantes del producto: <span id="nombre-producto-variante"></span></h3>
+          <form id="formulario-variante" style="flex-direction: row; align-items: flex-end; gap: 10px;">
+            <div>
+              <label>Tipo (ej. Tamaño, Sabor)</label>
+              <input type="text" name="tipo" placeholder="Ej. Tamaño" required />
+            </div>
+            <div>
+              <label>Nombre (ej. 1kg, Frutilla)</label>
+              <input type="text" name="nombre" placeholder="Ej. Grande" required />
+            </div>
+            <div>
+              <label>Precio Extra ($)</label>
+              <input type="number" name="precio_extra" placeholder="0" />
+            </div>
+            <button type="submit" id="btnAgregarVariante">Agregar Variante</button>
+            <button type="button" id="btnCancelarEdicionVariante"
+              style="display:none; background:#999;">Cancelar</button>
+          </form>
+          <p id="mensaje-variante"></p>
 
-  <footer>
-  <p>© 2025 Mielissimo – Villa Mercedes</p>
-  <p>
-    WhatsApp: <a href="https://wa.me/5492657603387" target="_blank">2657-603387</a> |
-    Instagram: <a href="https://www.instagram.com/mielissimo__/" target="_blank">@mielissimo_</a>
-  </p>
-  <p style="font-size: 0.9em;">
-    Todos los derechos reservados. Sitio desarrollado por Marco Barzola.
-  </p>
-</footer>
+          <table id="tabla-variantes" class="styled-table">
+            <thead>
+              <tr>
+                <th>Tipo</th>
+                <th>Nombre</th>
+                <th>Precio Extra</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Loaded via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="panel-card mt-4">
+          <h3>Lista de Productos</h3>
+          <input type="text" id="buscador-productos" placeholder="Buscar producto..." />
+          <div id="lista-productos" class="productos-grid">
+            <!-- Products Grid Loaded via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: CATEGORIAS -->
+      <section id="section-categorias" class="dashboard-section">
+        <div class="section-header">
+          <h2>Gestión de Categorías</h2>
+        </div>
+        <div class="panel-card">
+          <form id="formulario-categoria" style="max-width: 500px;">
+            <div class="form-row">
+              <input type="text" name="nombre" placeholder="Nueva Categoría" required />
+              <button type="submit">Agregar</button>
+            </div>
+          </form>
+          <p id="mensaje-categoria"></p>
+
+          <div id="lista-categorias" class="categorias-grid mt-4">
+            <!-- Categories Loaded via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: CARRUSEL (BANNERS) -->
+      <section id="section-carrusel" class="dashboard-section">
+        <div class="section-header">
+          <h2>Gestionar Banners (Carrusel)</h2>
+        </div>
+        <div class="panel-card">
+          <h3>Agregar Nuevo Banner</h3>
+          <form id="formulario-banner">
+            <div class="form-row">
+              <input type="text" name="titulo" placeholder="Título (Opcional)" />
+              <input type="file" name="imagen" accept="image/*" required />
+              <button type="submit">Subir Banner</button>
+            </div>
+          </form>
+          <div id="lista-banners" class="banners-grid mt-4">
+            <!-- Banners Load via JS -->
+            <p>Cargando banners...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION: PEDIDOS -->
+      <section id="section-pedidos" class="dashboard-section">
+        <div class="section-header">
+          <h2>Historial de Pedidos</h2>
+        </div>
+        <div class="panel-card">
+          <div class="search-box">
+            <input type="text" id="buscar-compra-id" placeholder="Buscar por ID de Pedido" />
+            <button id="btn-buscar-compra">Buscar</button>
+          </div>
+          <div id="resultado-busqueda" class="mt-4"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
 
   <script src="js/admin.js"></script>
 </body>
+
 </html>
