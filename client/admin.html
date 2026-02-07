@@ -75,9 +75,15 @@
                 <label>Precio Oferta (Opcional)</label>
                 <input type="number" name="precio_oferta" step="0.01" placeholder="$ Oferta" />
               </div>
-              <div style="flex:0 0 auto; display:flex; align-items:center;">
+              <div style="flex:0 0 auto; display:flex; gap: 15px; align-items:center; flex-wrap: wrap;">
                 <label style="cursor:pointer; display:flex; align-items:center; gap:5px;">
                   <input type="checkbox" name="es_oferta" /> En Oferta
+                </label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:5px;">
+                  <input type="checkbox" name="es_nuevo" /> Es Nuevo
+                </label>
+                <label style="cursor:pointer; display:flex; align-items:center; gap:5px;">
+                  <input type="checkbox" name="en_carrusel" /> Mostrar en Carrusel
                 </label>
               </div>
             </div>
@@ -108,7 +114,12 @@
           <form id="formulario-variante" style="flex-direction: row; align-items: flex-end; gap: 10px;">
             <div>
               <label>Tipo (ej. Tamaño, Sabor)</label>
-              <input type="text" name="tipo" placeholder="Ej. Tamaño" required />
+              <select name="tipo" required style="padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px;">
+                <option value="Sabor">Sabor</option>
+                <option value="Tamaño">Tamaño</option>
+                <option value="Color">Color</option>
+                <option value="Otro">Otro</option>
+              </select>
             </div>
             <div>
               <label>Nombre (ej. 1kg, Frutilla)</label>
@@ -174,17 +185,11 @@
           <h2>Gestionar Banners (Carrusel)</h2>
         </div>
         <div class="panel-card">
-          <h3>Agregar Nuevo Banner</h3>
-          <form id="formulario-banner">
-            <div class="form-row">
-              <input type="text" name="titulo" placeholder="Título (Opcional)" />
-              <input type="file" name="imagen" accept="image/*" required />
-              <button type="submit">Subir Banner</button>
-            </div>
-          </form>
-          <div id="lista-banners" class="banners-grid mt-4">
-            <!-- Banners Load via JS -->
-            <p>Cargando banners...</p>
+          <h3>Seleccionar Productos para Hero Carousel</h3>
+          <p class="text-sm text-gray-500 mb-4">Activa los productos que quieras mostrar en el carrusel principal.</p>
+          <div id="lista-carrusel-toggle" class="productos-grid">
+            <!-- Loaded via JS -->
+            <p>Cargando productos...</p>
           </div>
         </div>
       </section>

@@ -3,7 +3,7 @@ import { ShoppingBag, Menu } from 'lucide-react';
 import { useStore } from '../context/store';
 
 export default function Navbar() {
-    const { cart, toggleCart } = useStore();
+    const { cart, toggleCart, searchQuery, setSearchQuery } = useStore();
     const totalItems = cart.reduce((acc, item) => acc + item.cantidad, 0);
 
     return (
@@ -15,8 +15,25 @@ export default function Navbar() {
                         <h1 className="text-2xl font-bold text-white tracking-tight">Mielissimo</h1>
                     </div>
 
-                    {/* Right Icons */}
-                    <div className="flex items-center space-x-4">
+                    {/* Right Icons (Search + Cart) */}
+                    <div className="flex items-center space-x-3">
+
+                        {/* Search Bar */}
+                        <div className="relative hidden md:block">
+                            <input
+                                type="text"
+                                placeholder="Buscar..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="pl-3 pr-8 py-1 rounded-full text-sm bg-white/20 text-white placeholder-white/70 border border-transparent focus:bg-white focus:text-[#ef5579] focus:placeholder-gray-400 focus:outline-none transition-all w-32 focus:w-48"
+                            />
+                            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none text-white/70">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                        </div>
+
                         {/* Cart Trigger */}
                         <button
                             onClick={toggleCart}

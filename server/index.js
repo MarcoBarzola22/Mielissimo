@@ -31,8 +31,6 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-
-
 // 🔸 Multer configuración para subir imágenes
 const storage = multer.diskStorage({
   destination: path.join(__dirname, 'uploads'),
@@ -46,28 +44,49 @@ const upload = multer({ storage });
 // 🔸 Middlewares
 app.use(cors());
 app.use(express.json());
+
 // Proteger admin.html para acceso directo
 app.get('/admin.html', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'client', 'admin.html'));
 });
 
-
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
-// 🔸 Conexión a la base de datos
-/* 
-const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '44994334marco',
-  database: 'mielissimo'
+// 🛠️ MIGRATION / SCHEMA UPDATE ON START
+// 🛠️ MIGRATION / SCHEMA UPDATE ON START
+// Try to add fecha_creacion if it doesn't exist
+db.query("SHOW COLUMNS FROM productos LIKE 'fecha_creacion'", (err, result) => {
+  if (!err && result.length === 0) {
+    console.log("⚠️ Columna 'fecha_creacion' no existe. Intentando agregar...");
+    db.query("ALTER TABLE productos ADD COLUMN fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP", (err) => {
+      if (err) console.error("❌ Error agregando columna fecha_creacion:", err);
+      else console.log("✅ Columna 'fecha_creacion' agregada correctamente.");
+    });
+  }
 });
-db.connect(err => {
-  if (err) console.error("Error en la DB:", err);
-  else console.log("MySQL conectado correctamente");
+
+// Add es_nuevo
+db.query("SHOW COLUMNS FROM productos LIKE 'es_nuevo'", (err, result) => {
+  if (!err && result.length === 0) {
+    db.query("ALTER TABLE productos ADD COLUMN es_nuevo BOOLEAN DEFAULT FALSE", (err) => {
+      if (err) console.error("❌ Error agregando columna es_nuevo");
+      else console.log("✅ Columna 'es_nuevo' agregada.");
+    });
+  }
 });
-*/
+
+// Add en_carrusel
+db.query("SHOW COLUMNS FROM productos LIKE 'en_carrusel'", (err, result) => {
+  if (!err && result.length === 0) {
+    db.query("ALTER TABLE productos ADD COLUMN en_carrusel BOOLEAN DEFAULT FALSE", (err) => {
+      if (err) console.error("❌ Error agregando columna en_carrusel");
+      else console.log("✅ Columna 'en_carrusel' agregada.");
+    });
+  }
+});
+
+
 // 🔐 Middleware para validar token
 function verificarToken(req, res, next) {
   const auth = req.headers.authorization;
@@ -206,12 +225,12 @@ app.delete("/api/categorias/:id", verificarToken, (req, res) => {
 // 📂 RUTAS PRODUCTOS
 // ==============================
 app.get("/api/productos", (req, res) => {
-  const { categoria, id, mostrarInactivos } = req.query;
+  const { categoria, id, mostrarInactivos, q } = req.query;
 
   let sql = `
     SELECT p.*, 
-           GROUP_CONCAT(c.id) as categorias_ids,
-           GROUP_CONCAT(c.nombre) as categorias_nombres
+            GROUP_CONCAT(c.id) as categorias_ids,
+            GROUP_CONCAT(c.nombre) as categorias_nombres
     FROM productos p
     LEFT JOIN producto_categorias pc ON p.id = pc.producto_id
     LEFT JOIN categorias c ON pc.categoria_id = c.id
@@ -223,40 +242,72 @@ app.get("/api/productos", (req, res) => {
     sql += " AND p.id = ?";
     valores.push(id);
   } else if (categoria) {
-    // Filter by category needs a subquery or join condition modification because of the GROUP BY
-    // simplified: check if category_id exists in the junction table for this product
     sql += " AND p.id IN (SELECT producto_id FROM producto_categorias WHERE categoria_id = ?)";
     valores.push(categoria);
+  }
+
+  // SEARCH LOGIC
+  if (q) {
+    sql += " AND p.nombre LIKE ?";
+    valores.push(`%${q}%`);
   }
 
   if (mostrarInactivos !== "true") {
     sql += " AND p.activo = TRUE";
   }
 
-  sql += " GROUP BY p.id";
+  sql += " GROUP BY p.id ORDER BY p.id DESC"; // ORDER BY DESC ADDED
 
   db.query(sql, valores, (err, resultados) => {
     if (err) return res.status(500).json({ error: "Error al obtener productos" });
 
-    // Process results to format categories as arrays
-    const productos = resultados.map(prod => {
-      const catIds = prod.categorias_ids ? prod.categorias_ids.toString().split(',').map(Number) : [];
-      const catNombres = prod.categorias_nombres ? prod.categorias_nombres.toString().split(',') : [];
+    if (resultados.length === 0) return res.json([]);
 
-      const categorias = catIds.map((id, index) => ({
-        id: id,
-        nombre: catNombres[index]
-      }));
+    // Get Variants separately to avoid join complexity
+    // We get ALL variants for the fetched products
+    const productIds = resultados.map(p => p.id);
+    if (productIds.length === 0) return res.json([]);
 
-      return {
-        ...prod,
-        categorias, // Array of { id, nombre }
-        categoria_id: catIds[0] || null, // Keep for backward compatibility if needed
-        categoria_nombre: catNombres[0] || null // Keep for backward compatibility
-      };
+    // This is safe provided we don't have thousands of products in one page. 
+    // For pagination we would limit above.
+    const sqlVariantes = `SELECT * FROM variantes WHERE id_producto IN (${productIds.join(',')})`;
+
+    db.query(sqlVariantes, (errV, variantesRes) => {
+      if (errV) {
+        console.error("Error fetching variantes", errV);
+        // Don't fail the whole request, return products without variants
+        // or return [] for variants
+      }
+
+      const variantesPorProducto = {};
+      if (!errV && variantesRes) {
+        variantesRes.forEach(v => {
+          if (!variantesPorProducto[v.id_producto]) variantesPorProducto[v.id_producto] = [];
+          variantesPorProducto[v.id_producto].push(v);
+        });
+      }
+
+      // Process results
+      const productos = resultados.map(prod => {
+        const catIds = prod.categorias_ids ? prod.categorias_ids.toString().split(',').map(Number) : [];
+        const catNombres = prod.categorias_nombres ? prod.categorias_nombres.toString().split(',') : [];
+
+        const categorias = catIds.map((id, index) => ({
+          id: id,
+          nombre: catNombres[index]
+        }));
+
+        return {
+          ...prod,
+          categorias,
+          categoria_id: catIds[0] || null,
+          categoria_nombre: catNombres[0] || null,
+          variantes: variantesPorProducto[prod.id] || [] // Attach variants array
+        };
+      });
+
+      res.json(productos);
     });
-
-    res.json(productos);
   });
 });
 
@@ -276,13 +327,15 @@ app.post("/api/productos", verificarToken, upload.single("imagen"), async (req, 
 
     const imagenUrl = resultado.secure_url;
 
-    // Handle 'es_oferta' boolean specifically
+    // Handle booleans
     const esOfertaVal = es_oferta === 'true' || es_oferta === true || es_oferta === 1 ? 1 : 0;
+    const esNuevoVal = req.body.es_nuevo === 'true' || req.body.es_nuevo === true || req.body.es_nuevo === 1 ? 1 : 0;
+    const enCarruselVal = req.body.en_carrusel === 'true' || req.body.en_carrusel === true || req.body.en_carrusel === 1 ? 1 : 0;
     const precioOfertaVal = precio_oferta ? parseFloat(precio_oferta) : null;
 
     db.query(
-      "INSERT INTO productos (nombre, precio, imagen, categoria_id, activo, precio_oferta, es_oferta) VALUES (?, ?, ?, ?, 1, ?, ?)",
-      [nombre, precio, imagenUrl, categoria_id || null, precioOfertaVal, esOfertaVal],
+      "INSERT INTO productos (nombre, precio, imagen, categoria_id, activo, precio_oferta, es_oferta, es_nuevo, en_carrusel) VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?)",
+      [nombre, precio, imagenUrl, categoria_id || null, precioOfertaVal, esOfertaVal, esNuevoVal, enCarruselVal],
       (err, resultadoDb) => {
         if (err) return res.status(500).json({ error: "Error al insertar producto" });
 
@@ -341,15 +394,17 @@ app.put("/api/productos/:id", verificarToken, upload.single("imagen"), async (re
     }
 
     const esOfertaVal = es_oferta === 'true' || es_oferta === true || es_oferta === 1 ? 1 : 0;
+    const esNuevoVal = req.body.es_nuevo === 'true' || req.body.es_nuevo === true || req.body.es_nuevo === 1 ? 1 : 0;
+    const enCarruselVal = req.body.en_carrusel === 'true' || req.body.en_carrusel === true || req.body.en_carrusel === 1 ? 1 : 0;
     const precioOfertaVal = precio_oferta ? parseFloat(precio_oferta) : null;
 
     const sql = nuevaImagenUrl
-      ? "UPDATE productos SET nombre=?, precio=?, imagen=?, categoria_id=?, precio_oferta=?, es_oferta=? WHERE id=?"
-      : "UPDATE productos SET nombre=?, precio=?, categoria_id=?, precio_oferta=?, es_oferta=? WHERE id=?";
+      ? "UPDATE productos SET nombre=?, precio=?, imagen=?, categoria_id=?, precio_oferta=?, es_oferta=?, es_nuevo=?, en_carrusel=? WHERE id=?"
+      : "UPDATE productos SET nombre=?, precio=?, categoria_id=?, precio_oferta=?, es_oferta=?, es_nuevo=?, en_carrusel=? WHERE id=?";
 
     const valores = nuevaImagenUrl
-      ? [nombre, precio, nuevaImagenUrl, categoria_id || null, precioOfertaVal, esOfertaVal, id]
-      : [nombre, precio, categoria_id || null, precioOfertaVal, esOfertaVal, id];
+      ? [nombre, precio, nuevaImagenUrl, categoria_id || null, precioOfertaVal, esOfertaVal, esNuevoVal, enCarruselVal, id]
+      : [nombre, precio, categoria_id || null, precioOfertaVal, esOfertaVal, esNuevoVal, enCarruselVal, id];
 
     db.query(sql, valores, err => {
       if (err) return res.status(500).json({ error: "Error al actualizar producto" });
@@ -455,6 +510,17 @@ app.put("/api/productos/activar/:id", verificarToken, (req, res) => {
       return res.status(500).json({ error: "Error al activar producto" });
     }
     res.json({ mensaje: "Producto activado correctamente" });
+  });
+});
+
+app.put("/api/productos/toggle-carrusel/:id", verificarToken, (req, res) => {
+  const { id } = req.params;
+  const { en_carrusel } = req.body;
+  const val = en_carrusel ? 1 : 0;
+
+  db.query("UPDATE productos SET en_carrusel = ? WHERE id = ?", [val, id], (err) => {
+    if (err) return res.status(500).json({ error: "Error actualizando carrusel" });
+    res.json({ mensaje: "Estado de carrusel actualizado" });
   });
 });
 

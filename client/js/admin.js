@@ -31,7 +31,9 @@ let categoriasCache = [];
 document.addEventListener('DOMContentLoaded', () => {
   cargarCategorias(); // First load categories so checkboxes are ready
   cargarProductos();
-  cargarBanners();
+  cargarProductos();
+  cargarProductosCarrusel(); // NEW: Load Carousel Toggle List
+  cargarEstadoLocal();
   cargarEstadoLocal();
 
   // Sidebar Navigation
@@ -61,7 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Forms
   formProducto.addEventListener("submit", guardarProducto);
   formCategoria.addEventListener("submit", agregarCategoria);
-  formBanner.addEventListener("submit", subirBanner);
+  formProducto.addEventListener("submit", guardarProducto);
+  formCategoria.addEventListener("submit", agregarCategoria);
+  // formBanner removed
 
   // Cancel Edit
   document.getElementById("cancelar-edicion-producto").addEventListener("click", resetFormProducto);
@@ -143,8 +147,14 @@ async function guardarProducto(e) {
   formData.append("categorias", JSON.stringify(selectedCats));
 
   // Checkbox es_oferta
+  // Checkboxes
   const esOferta = formProducto.querySelector('input[name="es_oferta"]').checked;
-  formData.set("es_oferta", esOferta); // FormData handles boolean as string "true"/"false" usually, backend parses it
+  const esNuevo = formProducto.querySelector('input[name="es_nuevo"]').checked;
+  const enCarrusel = formProducto.querySelector('input[name="en_carrusel"]').checked;
+
+  formData.set("es_oferta", esOferta);
+  formData.set("es_nuevo", esNuevo);
+  formData.set("en_carrusel", enCarrusel);
 
   // If ID exists, it's Update
   const id = document.getElementById("producto-id").value;
@@ -182,7 +192,10 @@ function editarProducto(id) {
   document.getElementById("prod-nombre").value = prod.nombre;
   document.getElementById("prod-precio").value = prod.precio;
   document.querySelector('input[name="precio_oferta"]').value = prod.precio_oferta || '';
-  document.querySelector('input[name="es_oferta"]').checked = !!prod.es_oferta;
+  document.querySelector('input[name="precio_oferta"]').value = prod.precio_oferta || '';
+  document.querySelector('input[name="es_oferta"]').checked = prod.es_oferta === 1 || prod.es_oferta === true;
+  document.querySelector('input[name="es_nuevo"]').checked = prod.es_nuevo === 1 || prod.es_nuevo === true;
+  document.querySelector('input[name="en_carrusel"]').checked = prod.en_carrusel === 1 || prod.en_carrusel === true;
 
   const preview = document.getElementById("preview-imagen");
   preview.src = prod.imagen;
@@ -422,72 +435,95 @@ async function eliminarCategoria(id) {
 
 // === BANNERS MANAGEMENT ===
 
-async function cargarBanners() {
+// === CARRUSEL (PRODUCT TOGGLE) ===
+
+async function cargarProductosCarrusel() {
+  const container = document.getElementById("lista-carrusel-toggle");
+  if (!container) return;
+
+  container.innerHTML = "<p>Cargando...</p>";
+
   try {
-    const res = await fetch("/api/banners", {
+    const res = await fetch("/api/productos?mostrarInactivos=true", {
       headers: { "Authorization": `Bearer ${tokenAdmin}` }
     });
-    const banners = await res.json();
-    renderBanners(banners);
-  } catch (e) { console.error(e); }
-}
+    const productos = await res.json();
 
-function renderBanners(banners) {
-  listaBanners.innerHTML = "";
-  if (banners.length === 0) {
-    listaBanners.innerHTML = "<p>No hay banners cargados.</p>";
-    return;
-  }
+    container.innerHTML = "";
 
-  banners.forEach(b => {
-    const div = document.createElement("div");
-    div.className = "banner-item";
-    div.innerHTML = `
-            <img src="${b.imagen_url}" />
-            <div class="banner-actions">
-                <button class="btn-sm" style="background:red;" onclick="eliminarBanner(${b.id})"><i class="fa-solid fa-trash"></i></button>
-            </div>
-        `;
-    listaBanners.appendChild(div);
-  });
-}
-
-async function subirBanner(e) {
-  e.preventDefault();
-  const formData = new FormData(formBanner);
-
-  try {
-    const res = await fetch("/api/banners", {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${tokenAdmin}` }, // FormData, no Content-Type
-      body: formData
-    });
-
-    if (res.ok) {
-      formBanner.reset();
-      cargarBanners();
-      Swal.fire({ icon: 'success', title: 'Banner Subido', timer: 1500 });
+    if (productos.length === 0) {
+      container.innerHTML = "<p>No hay productos.</p>";
+      return;
     }
-  } catch (e) { console.error(e); }
-}
 
-async function eliminarBanner(id) {
-  const confirm = await Swal.fire({
-    title: '¿Eliminar Banner?',
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonText: 'Sí'
-  });
+    productos.forEach(p => {
+      const card = document.createElement("div");
+      card.className = "producto-card";
+      card.style.display = "flex";
+      card.style.alignItems = "center";
+      card.style.gap = "10px";
+      card.style.padding = "10px";
+      card.style.borderBottom = "1px solid #eee";
 
-  if (confirm.isConfirmed) {
-    await fetch(`/api/banners/${id}`, {
-      method: "DELETE",
-      headers: { "Authorization": `Bearer ${tokenAdmin}` }
+      const isChecked = p.en_carrusel === 1 || p.en_carrusel === true;
+
+      card.innerHTML = `
+        <img src="${p.imagen || 'assets/placeholder.png'}" style="width:50px; height:50px; object-fit:cover; border-radius:4px;">
+        <div style="flex:1;">
+          <strong style="font-size: 0.9rem;">${p.nombre}</strong>
+        </div>
+        <label class="switch" style="position: relative; display: inline-block; width: 40px; height: 24px;">
+          <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleCarrusel(${p.id}, this.checked)" style="opacity: 0; width: 0; height: 0;">
+          <span class="slider round" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px;"></span>
+        </label>
+        <style>
+          .switch input:checked + .slider { background-color: #ef5579; }
+          .slider:before { position: absolute; content: ''; height: 16px; width: 16px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+          .switch input:checked + .slider:before { transform: translateX(16px); }
+        </style>
+      `;
+      container.appendChild(card);
     });
-    cargarBanners();
-    Swal.fire('Eliminado', '', 'success');
+
+  } catch (error) {
+    console.error(error);
+    container.innerHTML = "<p>Error al cargar productos.</p>";
   }
 }
+
+window.toggleCarrusel = async (id, checked) => {
+  try {
+    const res = await fetch(`/api/productos/toggle-carrusel/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenAdmin}`
+      },
+      body: JSON.stringify({ en_carrusel: checked })
+    });
+
+    if (!res.ok) throw new Error("Error updating");
+
+    // Toast notification
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 2000,
+      timerProgressBar: true,
+    });
+
+    Toast.fire({
+      icon: 'success',
+      title: checked ? 'Añadido al Carrusel' : 'Removido del Carrusel'
+    });
+
+  } catch (e) {
+    console.error(e);
+    Swal.fire("Error", "No se pudo actualizar el estado", "error");
+    cargarProductosCarrusel(); // Revert
+  }
+};
 
 
 // === VARIANTS MANAGEMENT ===
@@ -502,9 +538,13 @@ function editarVariantes(id, nombre) {
   const seccionVar = document.getElementById("seccionVariantes");
   if (seccionVar) seccionVar.style.display = "block";
 
+  // Reset Input Form
+  const formVar = document.getElementById("formulario-variante");
+  if (formVar) formVar.reset();
+
   cargarVariantes(id);
 
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (seccionVar) seccionVar.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 async function cargarVariantes(productoId) {
@@ -569,6 +609,8 @@ async function eliminarVariante(id) {
 
 // === STORE STATUS ===
 
+// === STORE STATUS ===
+
 async function cargarEstadoLocal() {
   try {
     const res = await fetch("/api/configuracion", {
@@ -587,22 +629,40 @@ async function cargarEstadoLocal() {
 
 async function toggleEstadoLocal() {
   const texto = document.getElementById("estado-local-texto");
-  const nuevoEstado = texto.textContent === "ABIERTO" ? "CERRADO" : "ABIERTO";
+  const estadoActual = texto.textContent;
+  const nuevoEstado = estadoActual === "ABIERTO" ? "CERRADO" : "ABIERTO";
 
-  await fetch("/api/configuracion", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${tokenAdmin}`
-    },
-    body: JSON.stringify({ clave: "estado_local", valor: nuevoEstado })
-  });
+  // 1. Optimistic UI Update
+  texto.textContent = nuevoEstado;
+  texto.style.color = nuevoEstado === "ABIERTO" ? "green" : "red";
 
-  cargarEstadoLocal();
-  Swal.fire({
-    icon: 'info',
-    title: `Local ${nuevoEstado}`,
-    timer: 1500,
-    showConfirmButton: false
-  });
+  try {
+    // 2. Network Request
+    const res = await fetch("/api/configuracion", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${tokenAdmin}`
+      },
+      body: JSON.stringify({ clave: "estado_local", valor: nuevoEstado })
+    });
+
+    if (!res.ok) throw new Error("Failed to update");
+
+    Swal.fire({
+      icon: 'info',
+      title: `Local ${nuevoEstado}`,
+      timer: 1000,
+      showConfirmButton: false,
+      toast: true,
+      position: 'top-end'
+    });
+
+  } catch (e) {
+    // Revert on error
+    console.error(e);
+    texto.textContent = estadoActual;
+    texto.style.color = estadoActual === "ABIERTO" ? "green" : "red";
+    Swal.fire({ icon: 'error', title: 'Error al actualizar estado' });
+  }
 }

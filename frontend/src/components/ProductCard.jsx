@@ -6,32 +6,29 @@ import toast from 'react-hot-toast';
 export default function ProductCard({ product, onClick }) {
     const { addToCart } = useStore();
 
-    // Check if product is on offer
-    const isOffer = product.es_oferta;
-    const price = parseFloat(product.precio);
-    const offerPrice = product.precio_oferta ? parseFloat(product.precio_oferta) : null;
+    // Strict value parsing
+    const precio = parseFloat(product.precio);
+    const precioOferta = product.precio_oferta ? parseFloat(product.precio_oferta) : 0;
+    const esOferta = product.es_oferta === 1 || product.es_oferta === true;
 
-    const displayPrice = isOffer && offerPrice ? offerPrice : price;
+    // Determine strict display mode
+    // If Offer matches criteria (> 1 and marked as offer), show Offer mode.
+    // Otherwise show Standard mode.
+    // If strict price <= 1, consider invalid/hidden (or just show 0 if that's the intent, but user said 'No Zeros').
+    // User said: "If product.precio_oferta > 1, show offer... Else if product.precio > 1, show normal... If 0 or null, DO NOT render".
 
-    // Check if "New" (simple logic, or field if exists, for now random or checking date if available? 
-    // User asked "Add a visible badge 'NUEVO' (top-left) for recent products". 
-    // Assuming 'id' is auto-increment, high IDs are newer. Or just show it for now.)
-    // Let's assume top 20% IDs are new, or just add logic. 
-    // Actually, let's keep it simple: ALL products get the badge if they look new (maybe > some ID).
-    // Or just always show for demo if I can't check date. The user didn't give date logic.
-    // I will add the badge UI, conditional on a 'nuevo' prop or just mock it for high IDs for now.
-    const isNew = product.id > 10; // Simple mock logic for "Recent"
+    const hasValidOffer = esOferta && precioOferta > 1;
+    const hasValidPrice = precio > 1;
+
+    // Badge Logic: Strictly use 'es_nuevo' flag from DB
+    const isNew = product.es_nuevo === 1 || product.es_nuevo === true;
 
     const handleQuickAdd = (e) => {
-        e.stopPropagation(); // Prevent opening modal
-
-        // If has variants, open modal (fallback to card click)
+        e.stopPropagation();
         if (product.variantes && product.variantes.length > 0) {
             onClick(product);
             return;
         }
-
-        // Add to cart directly
         addToCart(product, null, 1);
         toast.success(`Agregado: ${product.nombre}`);
     };
@@ -39,50 +36,60 @@ export default function ProductCard({ product, onClick }) {
     return (
         <div
             onClick={() => onClick(product)}
-            className="bg-[#ef5579] rounded-2xl shadow-md hover:shadow-lg transition-all cursor-pointer overflow-hidden group border border-pink-400 h-full flex flex-col transform hover:-translate-y-1"
+            className="bg-[#ef5579] rounded-2xl shadow-md hover:shadow-lg transition-all cursor-pointer overflow-hidden group border border-pink-400 h-full flex flex-col transform hover:-translate-y-1 relative"
         >
-            <div className="relative aspect-square overflow-hidden bg-white">
+            {/* IMAGE CONTAINER - FORCED COVER */}
+            <div className="relative w-full h-64 overflow-hidden bg-white">
                 <img
                     src={product.imagen || 'https://via.placeholder.com/300'}
                     alt={product.nombre}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                     loading="lazy"
                 />
 
                 {/* LABELS */}
-                {isNew && (
-                    <div className="absolute top-2 left-2 bg-yellow-400 text-pink-900 text-[10px] font-black px-2 py-1 rounded-sm shadow-sm tracking-wider">
-                        NUEVO
-                    </div>
-                )}
-
-                {isOffer && (
-                    <div className="absolute top-2 right-2 bg-white text-[#ef5579] text-[10px] font-black px-2 py-1 rounded-sm shadow-sm tracking-wider">
-                        OFERTA
-                    </div>
-                )}
+                <div className="absolute top-2 left-2 flex flex-col gap-1">
+                    {isNew && (
+                        <div className="bg-yellow-400 text-pink-900 text-[10px] font-black px-2 py-1 rounded-sm shadow-sm tracking-wider uppercase">
+                            NUEVO
+                        </div>
+                    )}
+                    {hasValidOffer && (
+                        <div className="bg-white text-[#ef5579] text-[10px] font-black px-2 py-1 rounded-sm shadow-sm tracking-wider uppercase">
+                            OFERTA
+                        </div>
+                    )}
+                </div>
             </div>
 
+            {/* CONTENT */}
             <div className="p-4 flex flex-col flex-1 justify-between">
                 <div>
-                    <h3 className="font-bold text-white text-md leading-tight mb-1">{product.nombre}</h3>
+                    <h3 className="font-bold text-white text-md leading-tight mb-2 line-clamp-2">{product.nombre}</h3>
                 </div>
 
-                <div className="flex items-end justify-between mt-3">
+                <div className="flex items-end justify-between mt-2">
+                    {/* PRICE CONTAINER - STRICT CHECKS */}
                     <div className="flex flex-col">
-                        {isOffer && offerPrice ? (
+                        {hasValidOffer ? (
                             <>
-                                <span className="text-pink-200 line-through text-xs">${price.toFixed(2)}</span>
-                                <span className="text-yellow-300 font-extrabold text-xl">${offerPrice.toFixed(2)}</span>
+                                <span className="text-pink-200 line-through text-xs font-medium">
+                                    ${precio.toFixed(2)}
+                                </span>
+                                <span className="text-yellow-300 font-extrabold text-xl leading-none">
+                                    ${precioOferta.toFixed(2)}
+                                </span>
                             </>
-                        ) : (
-                            <span className="text-white font-extrabold text-xl">${price.toFixed(2)}</span>
-                        )}
+                        ) : hasValidPrice ? (
+                            <span className="text-white font-extrabold text-xl leading-none">
+                                ${precio.toFixed(2)}
+                            </span>
+                        ) : null}
                     </div>
 
                     <button
                         onClick={handleQuickAdd}
-                        className="bg-white text-[#ef5579] p-2 rounded-full hover:bg-yellow-300 hover:text-pink-900 transition-colors shadow-sm"
+                        className="bg-white text-[#ef5579] w-8 h-8 flex items-center justify-center rounded-full hover:bg-yellow-300 hover:text-pink-900 transition-colors shadow-sm"
                     >
                         <Plus size={20} strokeWidth={3} />
                     </button>

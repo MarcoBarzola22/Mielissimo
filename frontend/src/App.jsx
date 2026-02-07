@@ -14,8 +14,10 @@ function App() {
   useEffect(() => {
     // Load store configuration on mount
     fetchConfig().then(config => {
-      if (config.ESTADO_LOCAL) {
-        setStoreStatus(config.ESTADO_LOCAL);
+      // Key must match DB 'clave' (admin.js saves as 'estado_local')
+      const status = config.estado_local || config.ESTADO_LOCAL;
+      if (status) {
+        setStoreStatus(status.toUpperCase());
       }
     }).catch(console.error);
   }, []);
