@@ -67,11 +67,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById("cancelar-edicion-producto").addEventListener("click", resetFormProducto);
 
   // Variants
-  document.getElementById("formulario-variante").addEventListener("submit", agregarVariante);
-  document.getElementById("btnCancelarEdicionVariante").addEventListener("click", () => {
-    document.getElementById("formulario-variante").reset();
-    productoEnEdicionVariante = null;
-  });
+  const formVariante = document.getElementById("formulario-variante");
+  if (formVariante) {
+    formVariante.addEventListener("submit", agregarVariante);
+    document.getElementById("btnCancelarEdicionVariante").addEventListener("click", () => {
+      formVariante.reset();
+      productoEnEdicionVariante = null;
+    });
+  }
 
   // Store Status
   document.getElementById("btn-toggle-estado").addEventListener("click", toggleEstadoLocal);
@@ -82,7 +85,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function cargarProductos() {
   try {
-    const res = await fetch("/api/productos?mostrarInactivos=true"); // Get all for admin
+    // Authenticated fetch just in case, though usually public, but admin view might need it if logic changes
+    const res = await fetch("/api/productos?mostrarInactivos=true", {
+      headers: { "Authorization": `Bearer ${tokenAdmin}` }
+    });
     productosCache = await res.json();
     renderProductos(productosCache);
   } catch (error) {
@@ -95,7 +101,9 @@ function renderProductos(productos) {
   productos.forEach(prod => {
     const div = document.createElement("div");
     div.className = "producto-admin";
+    // Soft delete visualization
     div.style.opacity = prod.activo ? 1 : 0.6;
+    if (!prod.activo) div.style.backgroundColor = "#fff0f5"; // Slight pink tint for inactive
 
     div.innerHTML = `
             <img src="${prod.imagen || 'assets/placeholder.png'}" />
@@ -103,13 +111,16 @@ function renderProductos(productos) {
                 <strong>${prod.nombre}</strong>
                 <em>$${prod.precio}</em>
                 ${prod.es_oferta ? '<span style="color:var(--color-primario); font-weight:bold;">¡OFERTA!</span>' : ''}
+                ${!prod.activo ? '<span style="color:red; font-size:0.8rem; display:block;">(Paustado)</span>' : ''}
             </div>
             <div class="producto-actions">
                 <button class="btn-var" onclick="editarVariantes(${prod.id}, '${prod.nombre}')"><i class="fa-solid fa-list"></i></button>
                 <button class="btn-edit" onclick="editarProducto(${prod.id})"><i class="fa-solid fa-pen"></i></button>
-                <button class="btn-del" onclick="eliminarProducto(${prod.id})"><i class="fa-solid fa-trash"></i></button>
+                <button class="btn-del" onclick="eliminarProducto(${prod.id}, ${prod.activo})">
+                    <i class="fa-solid ${prod.activo ? 'fa-trash' : 'fa-trash-arrow-up'}"></i>
+                </button>
             </div>
-            ${!prod.activo ? `<button class="btn-reactivar" style="width:100%; margin-top:5px;" onclick="activarProducto(${prod.id})">Reactivar</button>` : ''}
+            ${!prod.activo ? `<button class="btn-reactivar" style="width:100%; margin-top:5px; background:#4CAF50; color:white; border:none; padding:5px; cursor:pointer;" onclick="activarProducto(${prod.id})">Reactivar</button>` : ''}
         `;
     listaProductos.appendChild(div);
   });
@@ -133,7 +144,7 @@ async function guardarProducto(e) {
 
   // Checkbox es_oferta
   const esOferta = formProducto.querySelector('input[name="es_oferta"]').checked;
-  formData.set("es_oferta", esOferta);
+  formData.set("es_oferta", esOferta); // FormData handles boolean as string "true"/"false" usually, backend parses it
 
   // If ID exists, it's Update
   const id = document.getElementById("producto-id").value;
@@ -143,7 +154,7 @@ async function guardarProducto(e) {
   try {
     const res = await fetch(url, {
       method: method,
-      headers: { "Authorization": `Bearer ${tokenAdmin}` },
+      headers: { "Authorization": `Bearer ${tokenAdmin}` }, // FormData does NOT need Content-Type header (browser sets it)
       body: formData
     });
 
@@ -191,8 +202,11 @@ function editarProducto(id) {
   document.getElementById("btn-guardar-producto").textContent = "Actualizar Producto";
   document.getElementById("cancelar-edicion-producto").style.display = "inline-block";
 
-  // Scroll to top
+  // Scroll to top FORCE
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Also try scrolling the content area if it has its own scrollbar
+  const contentArea = document.querySelector('.content-area');
+  if (contentArea) contentArea.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function resetFormProducto() {
@@ -204,31 +218,70 @@ function resetFormProducto() {
   productoEnEdicion = null;
 
   // Hide variants section
-  document.getElementById("seccionVariantes").style.display = "none";
+  const sectionVariantes = document.getElementById("seccionVariantes");
+  if (sectionVariantes) sectionVariantes.style.display = "none";
 }
 
-async function eliminarProducto(id) {
+// SOFT DELETE
+async function eliminarProducto(id, activoActual) {
+  // If active, we deactivate (Soft Delete)
+  // If inactive, we could offer Hard Delete or nothing. User prefers Soft Delete.
+  // Let's implement toggle logic: Delete = Desactivar.
+
+  if (!activoActual) {
+    // Already inactive, ask if want to delete permanently or just leave it
+    // For now, let's assume "Eliminar" on inactive means Hard Delete or just warn.
+    // But user said "Delete vs Deactivate: The user prefers 'Soft Delete'".
+    // So the main button should do Soft Delete.
+    // If it's already inactive, maybe we hard delete?
+    // Let's stick to Desactivar for the main flow as requested.
+    const confirm = await Swal.fire({
+      title: '¿Eliminar permanentemente?',
+      text: "Este producto ya está desactivado. ¿Deseas eliminarlo por completo de la base de datos?",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      confirmButtonText: 'Sí, eliminar permanentemente'
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        const res = await fetch(`/api/productos/${id}`, {
+          method: "DELETE",
+          headers: { "Authorization": `Bearer ${tokenAdmin}` }
+        });
+        if (res.ok) {
+          Swal.fire('Eliminado!', 'El producto ha sido eliminado.', 'success');
+          cargarProductos();
+        } else {
+          Swal.fire('Error', 'No se pudo eliminar', 'error');
+        }
+      } catch (e) { console.error(e); }
+    }
+    return;
+  }
+
   const confirm = await Swal.fire({
-    title: '¿Estás seguro?',
-    text: "Se eliminará el producto (o se desactivará).",
+    title: '¿Desactivar producto?',
+    text: "El producto dejará de ser visible en la tienda, pero no se borrará.",
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: '#ef5579',
     cancelButtonColor: '#d33',
-    confirmButtonText: 'Sí, eliminar'
+    confirmButtonText: 'Sí, ocultar'
   });
 
   if (confirm.isConfirmed) {
     try {
-      const res = await fetch(`/api/productos/${id}`, {
-        method: "DELETE",
+      const res = await fetch(`/api/productos/desactivar/${id}`, {
+        method: "PUT",
         headers: { "Authorization": `Bearer ${tokenAdmin}` }
       });
       if (res.ok) {
-        Swal.fire('Eliminado!', 'El producto ha sido eliminado.', 'success');
+        Swal.fire('Desactivado!', 'El producto ha sido ocultado.', 'success');
         cargarProductos();
       } else {
-        Swal.fire('Error', 'No se pudo eliminar', 'error');
+        Swal.fire('Error', 'No se pudo desactivar', 'error');
       }
     } catch (e) { console.error(e); }
   }
@@ -236,12 +289,14 @@ async function eliminarProducto(id) {
 
 async function activarProducto(id) {
   try {
-    await fetch(`/api/productos/activar/${id}`, {
+    const res = await fetch(`/api/productos/activar/${id}`, {
       method: "PUT",
       headers: { "Authorization": `Bearer ${tokenAdmin}` }
     });
-    cargarProductos();
-    Swal.fire({ icon: 'success', title: 'Reactivado', timer: 1500, showConfirmButton: false });
+    if (res.ok) {
+      cargarProductos();
+      Swal.fire({ icon: 'success', title: 'Reactivado', timer: 1500, showConfirmButton: false });
+    }
   } catch (e) { console.error(e); }
 }
 
@@ -249,7 +304,9 @@ async function activarProducto(id) {
 
 async function cargarCategorias() {
   try {
-    const res = await fetch("/api/categorias");
+    const res = await fetch("/api/categorias", {
+      headers: { "Authorization": `Bearer ${tokenAdmin}` }
+    });
     categoriasCache = await res.json();
 
     renderCategoriasList(categoriasCache);
@@ -318,11 +375,6 @@ async function editarCategoria(id, nombreActual) {
   });
 
   if (nuevoNombre && nuevoNombre !== nombreActual) {
-    // Assuming API supports PUT /api/categorias/:id or similar
-    // If not, we might need to add it to backend. But for now, let's assume standard REST or we implement it.
-    // Wait, the backend notes didn't explicitly mention PUT categories.
-    // Safest bet: Attempt PUT. If 404, we'll know. 
-    // Actually, let's implement the FE part.
     try {
       const res = await fetch(`/api/categorias/${id}`, {
         method: 'PUT',
@@ -372,7 +424,9 @@ async function eliminarCategoria(id) {
 
 async function cargarBanners() {
   try {
-    const res = await fetch("/api/banners");
+    const res = await fetch("/api/banners", {
+      headers: { "Authorization": `Bearer ${tokenAdmin}` }
+    });
     const banners = await res.json();
     renderBanners(banners);
   } catch (e) { console.error(e); }
@@ -405,7 +459,7 @@ async function subirBanner(e) {
   try {
     const res = await fetch("/api/banners", {
       method: "POST",
-      headers: { "Authorization": `Bearer ${tokenAdmin}` },
+      headers: { "Authorization": `Bearer ${tokenAdmin}` }, // FormData, no Content-Type
       body: formData
     });
 
@@ -442,34 +496,41 @@ let productoParaVariantes = null;
 
 function editarVariantes(id, nombre) {
   productoParaVariantes = id;
-  document.getElementById("nombre-producto-variante").textContent = nombre;
-  document.getElementById("seccionVariantes").style.display = "block";
+  const nombreLabel = document.getElementById("nombre-producto-variante");
+  if (nombreLabel) nombreLabel.textContent = nombre;
+
+  const seccionVar = document.getElementById("seccionVariantes");
+  if (seccionVar) seccionVar.style.display = "block";
 
   cargarVariantes(id);
 
-  // Switch to section if not already (should be usually)
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 async function cargarVariantes(productoId) {
-  const res = await fetch(`/api/variantes/${productoId}`);
-  const variantes = await res.json();
+  try {
+    const res = await fetch(`/api/variantes/${productoId}`, {
+      headers: { "Authorization": `Bearer ${tokenAdmin}` }
+    });
+    const variantes = await res.json();
 
-  const tbody = document.querySelector("#tabla-variantes tbody");
-  tbody.innerHTML = "";
+    const tbody = document.querySelector("#tabla-variantes tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
 
-  variantes.forEach(v => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-            <td>${v.tipo}</td>
-            <td>${v.nombre}</td>
-            <td>$${v.precio_extra || 0}</td>
-            <td>
-                <button class="btn-del" onclick="eliminarVariante(${v.id})"><i class="fa-solid fa-trash"></i></button>
-            </td>
-        `;
-    tbody.appendChild(tr);
-  });
+    variantes.forEach(v => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+                <td>${v.tipo}</td>
+                <td>${v.nombre}</td>
+                <td>$${v.precio_extra || 0}</td>
+                <td>
+                    <button class="btn-del" onclick="eliminarVariante(${v.id})"><i class="fa-solid fa-trash"></i></button>
+                </td>
+            `;
+      tbody.appendChild(tr);
+    });
+  } catch (e) { console.error(e); }
 }
 
 async function agregarVariante(e) {
@@ -497,7 +558,10 @@ async function agregarVariante(e) {
 
 async function eliminarVariante(id) {
   if (confirm("¿Eliminar variante?")) {
-    await fetch(`/api/variantes/${id}`, { method: "DELETE" });
+    await fetch(`/api/variantes/${id}`, {
+      method: "DELETE",
+      headers: { "Authorization": `Bearer ${tokenAdmin}` }
+    });
     cargarVariantes(productoParaVariantes);
   }
 }
@@ -507,13 +571,17 @@ async function eliminarVariante(id) {
 
 async function cargarEstadoLocal() {
   try {
-    const res = await fetch("/api/configuracion");
+    const res = await fetch("/api/configuracion", {
+      headers: { "Authorization": `Bearer ${tokenAdmin}` }
+    });
     const config = await res.json();
     const estado = config.estado_local || "ABIERTO"; // Default
 
     const texto = document.getElementById("estado-local-texto");
-    texto.textContent = estado;
-    texto.style.color = estado === "ABIERTO" ? "green" : "red";
+    if (texto) {
+      texto.textContent = estado;
+      texto.style.color = estado === "ABIERTO" ? "green" : "red";
+    }
   } catch (e) { console.error(e); }
 }
 

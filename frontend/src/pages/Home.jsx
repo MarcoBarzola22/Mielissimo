@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { fetchProducts, fetchCategories } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import ProductModal from '../components/ProductModal';
+import CategoryPills from '../components/CategoryPills';
 import { motion } from 'framer-motion';
 
 export default function Home() {
@@ -9,7 +10,7 @@ export default function Home() {
     const [categories, setCategories] = useState([]);
     const [banners, setBanners] = useState([]);
     const [selectedProduct, setSelectedProduct] = useState(null);
-    const [activeCategory, setActiveCategory] = useState({ id: 'ofertas', nombre: 'Ofertas' });
+    const [activeCategory, setActiveCategory] = useState({ id: 'todas', nombre: 'Ver Todo' }); // DEFAULT CHANGED
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -22,10 +23,9 @@ export default function Home() {
         Promise.all([fetchProducts(), fetchCategories()])
             .then(([productsData, categoriesData]) => {
                 setProducts(productsData);
-                // Prepend "Ofertas" and "Todas" (though user asked for Ofertas fixed at start, "Todas" usually good too)
-                // User request: "Add a fixed 'Ofertas' category at the start of the list."
-                // We'll treat 'Ofertas' as a special filter mode.
-                setCategories([{ id: 'ofertas', nombre: 'Ofertas 🔥' }, { id: 'todas', nombre: 'Ver Todo' }, ...categoriesData]);
+                // "Ver Todo" is the default. "Ofertas" is just another category now if desired, or we can keep it at start.
+                // User asked: "The App must load showing 'Ver Todo' (All Products) by default, NOT 'Ofertas'."
+                setCategories([{ id: 'todas', nombre: 'Ver Todo' }, { id: 'ofertas', nombre: 'Ofertas 🔥' }, ...categoriesData]);
                 setLoading(false);
             })
             .catch(err => {
@@ -41,17 +41,14 @@ export default function Home() {
         return p.categorias.some(c => c.id === activeCategory.id) || p.categoria_id === activeCategory.id;
     });
 
-    // Offers for Hero Carousel (always show if available)
-    const offers = products.filter(p => p.es_oferta);
-
     return (
-        <div className="pb-20 bg-[#fff0f5] min-h-screen">
+        <div className="pb-20 bg-[#fff0f5] min-h-screen pt-32"> {/* ADDED pt-32 to fix header overlap */}
 
             {/* 🍬 HERO CAROUSEL (BANNERS) */}
             {banners.length > 0 && (
-                <section className="relative w-full h-[200px] md:h-[300px] overflow-hidden mb-6">
-                    {/* Simple Slider or just List for now - User asked for Carousel */}
-                    <div className="flex overflow-x-auto snap-x snap-mandatory h-full hide-scrollbar">
+                <section className="relative w-full h-[200px] md:h-[300px] overflow-hidden mb-6 mt-4">
+                    {/* Simple Slider */}
+                    <div className="flex overflow-x-auto snap-x snap-mandatory h-full scrollbar-hide">
                         {banners.map(banner => (
                             <div key={banner.id} className="min-w-full snap-center h-full relative">
                                 <img
@@ -70,36 +67,12 @@ export default function Home() {
                 </section>
             )}
 
-            {/* If no banners, fallback to Offers title or nothing */}
-            {banners.length === 0 && (
-                <div className="pt-6"></div>
-            )}
-
-            {/* 🏷️ CATEGORY PILLS (Sticky) */}
-            <div className="sticky top-16 z-30 bg-white/95 backdrop-blur-md shadow-sm py-3 border-b border-pink-100">
-                <div className="max-w-7xl mx-auto px-4">
-                    <div className="flex overflow-x-auto gap-3 hide-scrollbar pb-1">
-                        {categories.map(cat => {
-                            const isActive = activeCategory.id === cat.id;
-                            return (
-                                <button
-                                    key={cat.id}
-                                    onClick={() => setActiveCategory(cat)}
-                                    className={`
-                     px-5 py-2 rounded-full whitespace-nowrap text-sm font-bold transition-all duration-200 transform
-                     ${isActive
-                                            ? 'bg-[#ef5579] text-white shadow-lg shadow-pink-200 scale-105'
-                                            : 'bg-white text-gray-500 border border-gray-100 hover:border-[#ef5579] hover:text-[#ef5579] hover:bg-pink-50'
-                                        }
-                   `}
-                                >
-                                    {cat.nombre}
-                                </button>
-                            )
-                        })}
-                    </div>
-                </div>
-            </div>
+            {/* 🏷️ CATEGORY PILLS (Refactored) */}
+            <CategoryPills
+                categories={categories}
+                activeCategory={activeCategory}
+                onSelectCategory={setActiveCategory}
+            />
 
             {/* 📦 PRODUCT GRID */}
             <div className="max-w-7xl mx-auto px-4 mt-6">
@@ -136,4 +109,3 @@ export default function Home() {
         </div>
     );
 }
-
