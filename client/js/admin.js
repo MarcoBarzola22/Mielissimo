@@ -24,12 +24,12 @@ document.addEventListener('DOMContentLoaded', () => {
             // Quitar clase active de todos
             navBtns.forEach(b => b.classList.remove('active'));
             sections.forEach(s => s.classList.remove('active'));
-            
+
             // Activar el actual
             btn.classList.add('active');
             const sectionId = btn.getAttribute('data-section');
             const section = document.getElementById(sectionId);
-            if(section) {
+            if (section) {
                 section.classList.add('active');
             } else {
                 console.error("Sección no encontrada:", sectionId);
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnLogout = document.getElementById("logout");
     if (btnLogout) {
         btnLogout.addEventListener("click", () => {
-            try { localStorage.removeItem("tokenAdmin"); } catch(e){}
+            try { localStorage.removeItem("tokenAdmin"); } catch (e) { }
             window.location.href = "login-admin.html";
         });
     }
@@ -55,7 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formProducto) formProducto.addEventListener("submit", guardarProducto);
 
     const buscador = document.getElementById("buscador-productos");
-    if (buscador) buscador.addEventListener("input", (e) => filtrarProductos(e.target.value));
+    if (buscador) buscador.addEventListener("input", filtrarProductos);
+
+    const filtroCat = document.getElementById("filtro-categoria-productos");
+    if (filtroCat) filtroCat.addEventListener("change", filtrarProductos);
 
     const btnCancelProd = document.getElementById("cancelar-edicion-producto");
     if (btnCancelProd) btnCancelProd.addEventListener("click", resetFormProducto);
@@ -70,9 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnCancelVar = document.getElementById("btnCancelarEdicionVariante");
     if (btnCancelVar) btnCancelVar.addEventListener("click", () => {
-        if(formVariante) formVariante.reset();
+        if (formVariante) formVariante.reset();
         const secVar = document.getElementById("seccionVariantes");
-        if(secVar) secVar.style.display = "none";
+        if (secVar) secVar.style.display = "none";
     });
 
     // Pedidos
@@ -95,12 +98,14 @@ let productoEnEdicion = null;
 
 async function cargarProductos() {
     try {
-        const res = await fetch("/api/productos?mostrarInactivos=true", { 
-            headers: { "Authorization": `Bearer ${tokenAdmin}` } 
+        const res = await fetch("/api/productos?mostrarInactivos=true", {
+            headers: { "Authorization": `Bearer ${tokenAdmin}` }
         });
-        if(!res.ok) throw new Error("Error fetching productos");
+        if (!res.ok) throw new Error("Error fetching productos");
         productosCache = await res.json();
-        renderProductos(productosCache);
+
+        // Initial render limited to first 50 to avoid lag
+        renderProductos(productosCache.slice(0, 50));
     } catch (e) { console.error("Error cargando productos:", e); }
 }
 
@@ -113,12 +118,15 @@ function renderProductos(lista) {
         const div = document.createElement("div");
         div.className = "producto-admin";
         div.style = `display: flex; gap: 10px; padding: 10px; border-bottom: 1px solid #eee; align-items: center; ${!prod.activo ? 'opacity:0.6; background:#fff0f5;' : ''}`;
-        
+
         div.innerHTML = `
             <img src="${prod.imagen || 'assets/placeholder.png'}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
             <div style="flex:1;">
                 <strong>${prod.nombre}</strong> - $${prod.precio}
                 ${!prod.activo ? '<span style="color:red; font-size:0.8em;">(Pausado)</span>' : ''}
+                <div style="font-size:0.8em; color:#666;">
+                    ${prod.categorias && prod.categorias.length > 0 ? prod.categorias.map(c => c.nombre).join(', ') : 'Sin categoría'}
+                </div>
             </div>
             <div style="display:flex; gap:5px;">
                 <button class="btn-var" onclick="editarVariantes(${prod.id}, '${prod.nombre}')" title="Variantes"><i class="fa-solid fa-list"></i></button>
@@ -132,10 +140,25 @@ function renderProductos(lista) {
     });
 }
 
-function filtrarProductos(texto) {
-    if(!texto) { renderProductos(productosCache); return; }
-    const filtrados = productosCache.filter(p => p.nombre.toLowerCase().includes(texto.toLowerCase()));
-    renderProductos(filtrados);
+function filtrarProductos() {
+    const texto = document.getElementById("buscador-productos").value.toLowerCase();
+    const catId = document.getElementById("filtro-categoria-productos").value;
+
+    let filtrados = productosCache;
+
+    if (texto) {
+        filtrados = filtrados.filter(p => p.nombre.toLowerCase().includes(texto));
+    }
+
+    if (catId) {
+        filtrados = filtrados.filter(p => {
+            // Check against array of categories
+            return p.categorias.some(c => c.id == catId);
+        });
+    }
+
+    // Since user is searching, show all matches (or limit if too many, but usually search narrows it down)
+    renderProductos(filtrados.slice(0, 100));
 }
 
 async function guardarProducto(e) {
@@ -174,77 +197,78 @@ async function guardarProducto(e) {
     } catch (e) { console.error(e); }
 }
 
-window.editarProducto = function(id) {
+window.editarProducto = function (id) {
     const p = productosCache.find(prod => prod.id === id);
     if (!p) return;
 
     document.getElementById("producto-id").value = p.id;
     document.getElementById("prod-nombre").value = p.nombre;
     document.getElementById("prod-precio").value = p.precio;
-    
+
     // Inputs opcionales
     const inputOferta = document.querySelector('input[name="precio_oferta"]');
-    if(inputOferta) inputOferta.value = p.precio_oferta || '';
-    
+    if (inputOferta) inputOferta.value = p.precio_oferta || '';
+
     const checkOferta = document.querySelector('input[name="es_oferta"]');
-    if(checkOferta) checkOferta.checked = !!p.es_oferta;
-    
+    if (checkOferta) checkOferta.checked = !!p.es_oferta;
+
     const checkNuevo = document.querySelector('input[name="es_nuevo"]');
-    if(checkNuevo) checkNuevo.checked = !!p.es_nuevo;
+    if (checkNuevo) checkNuevo.checked = !!p.es_nuevo;
 
     const checkCarrusel = document.querySelector('input[name="en_carrusel"]');
-    if(checkCarrusel) checkCarrusel.checked = !!p.en_carrusel;
-    
+    if (checkCarrusel) checkCarrusel.checked = !!p.en_carrusel;
+
     // Imagen preview
     const imgPreview = document.getElementById("preview-imagen");
-    if(imgPreview) {
+    if (imgPreview) {
         imgPreview.src = p.imagen || '';
         imgPreview.style.display = p.imagen ? "block" : "none";
     }
 
-    // Categorías
+    // Categorías - Robust check
     document.querySelectorAll('input[name="categorias"]').forEach(cb => cb.checked = false);
     if (p.categorias) {
         p.categorias.forEach(cat => {
+            // Ensure ID comparison matches types
             const cb = document.querySelector(`input[name="categorias"][value="${cat.id}"]`);
             if (cb) cb.checked = true;
         });
     }
 
     const btnGuardar = document.getElementById("btn-guardar-producto");
-    if(btnGuardar) btnGuardar.textContent = "Actualizar";
-    
+    if (btnGuardar) btnGuardar.textContent = "Actualizar";
+
     const btnCancel = document.getElementById("cancelar-edicion-producto");
-    if(btnCancel) btnCancel.style.display = "inline-block";
-    
+    if (btnCancel) btnCancel.style.display = "inline-block";
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 function resetFormProducto() {
     const form = document.getElementById("formulario-producto");
-    if(form) form.reset();
-    
+    if (form) form.reset();
+
     document.getElementById("producto-id").value = "";
-    
+
     const btnGuardar = document.getElementById("btn-guardar-producto");
-    if(btnGuardar) btnGuardar.textContent = "Guardar";
-    
+    if (btnGuardar) btnGuardar.textContent = "Guardar";
+
     const btnCancel = document.getElementById("cancelar-edicion-producto");
-    if(btnCancel) btnCancel.style.display = "none";
-    
+    if (btnCancel) btnCancel.style.display = "none";
+
     const imgPreview = document.getElementById("preview-imagen");
-    if(imgPreview) imgPreview.style.display = "none";
+    if (imgPreview) imgPreview.style.display = "none";
 }
 
-window.eliminarProducto = async function(id, activoActual) {
-    if(!confirm(activoActual ? "¿Pausar producto?" : "¿Reactivar producto?")) return;
+window.eliminarProducto = async function (id, activoActual) {
+    if (!confirm(activoActual ? "¿Pausar producto?" : "¿Reactivar producto?")) return;
     const endpoint = activoActual ? 'desactivar' : 'activar';
     try {
-        await fetch(`/api/productos/${endpoint}/${id}`, { 
-            method: "PUT", headers: { "Authorization": `Bearer ${tokenAdmin}` } 
+        await fetch(`/api/productos/${endpoint}/${id}`, {
+            method: "PUT", headers: { "Authorization": `Bearer ${tokenAdmin}` }
         });
         cargarProductos();
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 };
 
 // =========================================================
@@ -256,11 +280,11 @@ async function cargarProductosCarrusel() {
     container.innerHTML = "Cargando...";
 
     try {
-        const res = await fetch("/api/productos?mostrarInactivos=true", { 
-            headers: { "Authorization": `Bearer ${tokenAdmin}` } 
+        const res = await fetch("/api/productos?mostrarInactivos=true", {
+            headers: { "Authorization": `Bearer ${tokenAdmin}` }
         });
         let lista = await res.json();
-        
+
         // ORDENAR: Activos primero
         lista.sort((a, b) => (b.en_carrusel - a.en_carrusel));
 
@@ -268,7 +292,7 @@ async function cargarProductosCarrusel() {
         lista.forEach(p => {
             const isChecked = !!p.en_carrusel;
             const div = document.createElement("div");
-            
+
             // ESTILOS EN LINEA PARA QUE SE VEA BIEN SI O SI
             div.style = `
                 display:flex; flex-direction:column; gap:10px; padding:15px; margin-bottom:10px; 
@@ -318,20 +342,20 @@ async function cargarProductosCarrusel() {
     } catch (e) { console.error(e); }
 }
 
-window.toggleCarrusel = async function(id, val) {
+window.toggleCarrusel = async function (id, val) {
     try {
         const res = await fetch(`/api/productos/toggle-carrusel/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenAdmin}` },
             body: JSON.stringify({ en_carrusel: val })
         });
-        if(res.ok) {
+        if (res.ok) {
             cargarProductosCarrusel(); // Recargar para reordenar y actualizar estilos
         }
-    } catch(e) { Swal.fire("Error", "No se pudo cambiar estado", "error"); }
+    } catch (e) { Swal.fire("Error", "No se pudo cambiar estado", "error"); }
 };
 
-window.guardarInfoCarrusel = async function(id) {
+window.guardarInfoCarrusel = async function (id) {
     const desc = document.getElementById(`desc-${id}`).value;
     const tag = document.getElementById(`tag-${id}`).value;
     try {
@@ -340,11 +364,11 @@ window.guardarInfoCarrusel = async function(id) {
             headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenAdmin}` },
             body: JSON.stringify({ descripcion_carrusel: desc, carrusel_etiqueta: tag })
         });
-        if(res.ok) {
+        if (res.ok) {
             const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
             Toast.fire({ icon: 'success', title: 'Información actualizada' });
         }
-    } catch(e) { Swal.fire("Error", "No se pudo guardar", "error"); }
+    } catch (e) { Swal.fire("Error", "No se pudo guardar", "error"); }
 };
 
 // =========================================================
@@ -354,21 +378,37 @@ async function cargarCategorias() {
     try {
         const res = await fetch("/api/categorias", { headers: { "Authorization": `Bearer ${tokenAdmin}` } });
         const cats = await res.json();
-        
+
         // Renderizar lista para eliminar
         const listContainer = document.getElementById("lista-categorias");
-        if(listContainer) {
+        if (listContainer) {
             listContainer.innerHTML = cats.map(c => `
-                <div class="categoria-item" style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #eee; align-items:center;">
-                    <span>${c.nombre}</span>
-                    <button onclick="eliminarCategoria(${c.id})" style="color:#d33; border:none; background:none; cursor:pointer; padding:5px;"><i class="fa-solid fa-trash"></i></button>
+                <div class="categoria-item" style="display:flex; justify-content:space-between; padding:15px; border:1px solid #e0e0e0; border-radius: 8px; background: white; align-items:center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="font-weight: 500;">${c.nombre}</div>
+                    <div style="display:flex; gap:10px;">
+                        <button onclick="editarCategoria(${c.id}, '${c.nombre}')" style="color:#007bff; border:none; background:none; cursor:pointer;" title="Editar">
+                           <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button onclick="eliminarCategoria(${c.id})" style="color:#dc3545; border:none; background:none; cursor:pointer;" title="Borrar">
+                           <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('');
         }
 
+        // Renderizar filter dropdown
+        const filtro = document.getElementById("filtro-categoria-productos");
+        if (filtro) {
+            const currentVal = filtro.value;
+            filtro.innerHTML = '<option value="">Todas las categorías</option>' +
+                cats.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+            filtro.value = currentVal;
+        }
+
         // Renderizar checkboxes en formulario producto
         const checkContainer = document.getElementById("categorias-container");
-        if(checkContainer) {
+        if (checkContainer) {
             checkContainer.innerHTML = cats.map(c => `
                 <label style="display:inline-flex; gap:5px; align-items:center; margin-right:10px; cursor:pointer;">
                     <input type="checkbox" name="categorias" value="${c.id}"> ${c.nombre}
@@ -381,9 +421,9 @@ async function cargarCategorias() {
 async function agregarCategoria(e) {
     e.preventDefault();
     const input = e.target.querySelector('input[name="nombre"]');
-    if(!input) return;
+    if (!input) return;
     const nombre = input.value;
-    
+
     await fetch("/api/categorias", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenAdmin}` },
@@ -393,10 +433,66 @@ async function agregarCategoria(e) {
     cargarCategorias();
 }
 
-window.eliminarCategoria = async function(id) {
-    if(!confirm("¿Eliminar categoría?")) return;
-    await fetch(`/api/categorias/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${tokenAdmin}` } });
-    cargarCategorias();
+window.editarCategoria = async function (id, nombreActual) {
+    const { value: nuevoNombre } = await Swal.fire({
+        title: 'Editar Categoría',
+        input: 'text',
+        inputValue: nombreActual,
+        showCancelButton: true,
+        inputValidator: (value) => {
+            if (!value) { return 'Debes escribir un nombre!' }
+        }
+    });
+
+    if (nuevoNombre && nuevoNombre !== nombreActual) {
+        try {
+            const res = await fetch(`/api/categorias/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenAdmin}` },
+                body: JSON.stringify({ nombre: nuevoNombre })
+            });
+            if (res.ok) {
+                Swal.fire("Actualizado", "", "success");
+                cargarCategorias();
+                // Si el filtro estaba en esta categoria, podriamos necesitar resetearlo o no, pero mejor dejarlo
+            } else {
+                Swal.fire("Error", "No se pudo actualizar", "error");
+            }
+        } catch (e) { console.error(e); }
+    }
+}
+
+window.eliminarCategoria = async function (id) {
+    // Check product count in cache first to give instance feedback
+    const productosEnCategoria = productosCache.filter(p => p.categorias && p.categorias.some(c => c.id == id));
+
+    if (productosEnCategoria.length > 0) {
+        const confirmResult = await Swal.fire({
+            title: 'Categoría en uso',
+            text: `Hay ${productosEnCategoria.length} productos usando esta categoría. Si la eliminas, esos productos quedarán sin ella. ¿Seguro?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (!confirmResult.isConfirmed) return;
+    } else {
+        if (!confirm("¿Eliminar categoría vacía?")) return;
+    }
+
+    try {
+        const res = await fetch(`/api/categorias/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${tokenAdmin}` } });
+        const data = await res.json();
+
+        if (!res.ok) {
+            Swal.fire("Error", data.error || "No se pudo eliminar", "error");
+        } else {
+            Swal.fire("Eliminado", "Categoría eliminada.", "success");
+            cargarCategorias();
+        }
+    } catch (e) { console.error(e); }
 };
 
 // =========================================================
@@ -404,13 +500,13 @@ window.eliminarCategoria = async function(id) {
 // =========================================================
 let prodVarianteId = null;
 
-window.editarVariantes = function(id, nombre) {
+window.editarVariantes = function (id, nombre) {
     prodVarianteId = id;
     const nombreEl = document.getElementById("nombre-producto-variante");
-    if(nombreEl) nombreEl.textContent = nombre;
-    
+    if (nombreEl) nombreEl.textContent = nombre;
+
     const secVar = document.getElementById("seccionVariantes");
-    if(secVar) {
+    if (secVar) {
         secVar.style.display = "block";
         secVar.scrollIntoView({ behavior: 'smooth' });
     }
@@ -421,7 +517,7 @@ async function cargarVariantes(id) {
     const res = await fetch(`/api/variantes/${id}`, { headers: { "Authorization": `Bearer ${tokenAdmin}` } });
     const variantes = await res.json();
     const tbody = document.querySelector("#tabla-variantes tbody");
-    if(tbody) {
+    if (tbody) {
         tbody.innerHTML = variantes.map(v => `
             <tr>
                 <td>${v.tipo}</td>
@@ -446,8 +542,8 @@ async function agregarVariante(e) {
     cargarVariantes(prodVarianteId);
 }
 
-window.eliminarVariante = async function(id) {
-    if(!confirm("¿Borrar variante?")) return;
+window.eliminarVariante = async function (id) {
+    if (!confirm("¿Borrar variante?")) return;
     await fetch(`/api/variantes/${id}`, { method: "DELETE", headers: { "Authorization": `Bearer ${tokenAdmin}` } });
     cargarVariantes(prodVarianteId);
 };
@@ -458,24 +554,24 @@ window.eliminarVariante = async function(id) {
 async function cargarEstadoLocal() {
     try {
         const res = await fetch("/api/configuracion");
-        if(!res.ok) return;
+        if (!res.ok) return;
         const config = await res.json();
-        
+
         const texto = document.getElementById("estado-local-texto");
         // Manejar mayúsculas/minúsculas o falta de dato
         const estado = config.estado_local || config.ESTADO_LOCAL || "ABIERTO";
-        
-        if(texto) {
+
+        if (texto) {
             texto.textContent = estado.toUpperCase();
             texto.style.color = estado.toUpperCase() === "ABIERTO" ? "green" : "red";
         }
-    } catch(e) { console.error(e); }
+    } catch (e) { console.error(e); }
 }
 
 async function toggleEstadoLocal() {
     const texto = document.getElementById("estado-local-texto");
-    if(!texto) return;
-    
+    if (!texto) return;
+
     const nuevo = texto.textContent === "ABIERTO" ? "CERRADO" : "ABIERTO";
     await fetch("/api/configuracion", {
         method: "POST",
@@ -490,37 +586,56 @@ async function toggleEstadoLocal() {
 // =========================================================
 async function buscarPedidoPorId() {
     const input = document.getElementById("buscar-compra-id");
-    if(!input) return;
+    if (!input) return;
     const id = input.value;
     const contenedor = document.getElementById("resultado-busqueda");
-    if(!contenedor) return;
-    
+    if (!contenedor) return;
+
     contenedor.innerHTML = "Buscando...";
-    
+
     try {
+        // Updated to use the new route that joins users
         const res = await fetch(`/api/pedidos/${id}`, { headers: { "Authorization": `Bearer ${tokenAdmin}` } });
-        if(!res.ok) {
+        if (!res.ok) {
             contenedor.innerHTML = "<p style='color:red;'>Pedido no encontrado.</p>";
             return;
         }
         const pedido = await res.json();
-        
+
         // Parsear detalles de manera segura
         let detalles = [];
-        try { detalles = JSON.parse(pedido.detalles || '[]'); } catch(e){}
+        try { detalles = typeof pedido.detalles === 'string' ? JSON.parse(pedido.detalles) : pedido.detalles; } catch (e) { }
+
+        // Fallback if details are empty but products array exists (from new endpoint structure)
+        if ((!detalles || detalles.length === 0) && pedido.productos) {
+            detalles = pedido.productos;
+        }
+
+        const usuarioInfo = pedido.usuario
+            ? `<p><strong>Usuario:</strong> ${pedido.usuario.nombre} (${pedido.usuario.email})</p>`
+            : '<p><strong>Usuario:</strong> Invitado / No registrado</p>';
 
         contenedor.innerHTML = `
             <div style="background:#f9f9f9; padding:15px; border:1px solid #ddd; margin-top:10px; border-radius:8px;">
-                <h4 style="margin-top:0;">Pedido #${pedido.id}</h4>
+                <h4 style="margin-top:0;">Pedido #${pedido.pedido_id || pedido.id}</h4>
                 <p><strong>Total:</strong> $${pedido.total}</p>
-                <p><strong>Fecha:</strong> ${new Date(pedido.fecha).toLocaleString()}</p>
+                <p><strong>Fecha:</strong> ${new Date(pedido.fecha_compra).toLocaleString()}</p>
+                <p><strong>Pago/Envio:</strong> ${pedido.tipo_envio} - ${pedido.zona || 'N/A'}</p>
+                ${usuarioInfo}
+                <hr style="margin: 10px 0; border: 0; border-top: 1px solid #eee;">
                 <h5>Items:</h5>
                 <ul style="padding-left:20px;">
-                    ${detalles.map(d => `<li>${d.cantidad}x ${d.nombre} ($${d.precio})</li>`).join('')}
+                    ${detalles.map(d => `
+                        <li>
+                            ${d.cantidad}x ${d.nombre} ($${d.precio || d.precio_unitario})
+                            ${d.variantes && d.variantes !== "Sin variantes" ? `<br><small style="color:gray;">${d.variantes}</small>` : ''}
+                        </li>
+                    `).join('')}
                 </ul>
             </div>
         `;
-    } catch(e) {
+    } catch (e) {
+        console.error(e);
         contenedor.innerHTML = "<p>Error al buscar.</p>";
     }
 }

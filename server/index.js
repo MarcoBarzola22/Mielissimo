@@ -10,7 +10,6 @@ const nodemailer = require("nodemailer");
 const db = require('./db');
 const cloudinary = require('./config/cloudinary');
 
-
 require('dotenv').config();
 
 const app = express();
@@ -54,8 +53,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, '..', 'client')));
 
 // 🛠️ MIGRATION / SCHEMA UPDATE ON START
-// 🛠️ MIGRATION / SCHEMA UPDATE ON START
-// Try to add fecha_creacion if it doesn't exist
 db.query("SHOW COLUMNS FROM productos LIKE 'fecha_creacion'", (err, result) => {
   if (!err && result.length === 0) {
     console.log("⚠️ Columna 'fecha_creacion' no existe. Intentando agregar...");
@@ -230,6 +227,11 @@ app.delete("/api/categorias/:id", verificarToken, (req, res) => {
       return res.status(400).json({ error: "No se puede eliminar una categoría que tiene productos activos." });
     }
 
+    // Desasociar productos de la tabla pivot tambien por si acaso (aunque la logica principal usa pivot ahora)
+    db.query("DELETE FROM producto_categorias WHERE categoria_id = ?", [id], (errCat) => {
+      // Ignoramos error aqui, intentamos borrar
+    });
+
     db.query("UPDATE productos SET categoria_id = NULL WHERE categoria_id = ?", [id], (err) => {
       if (err) return res.status(500).json({ error: "Error al desasociar productos inactivos" });
 
@@ -289,7 +291,7 @@ app.get("/api/productos", (req, res) => {
     if (productIds.length === 0) return res.json([]);
 
     // This is safe provided we don't have thousands of products in one page. 
-    // For pagination we would limit above.
+    // For pagination we should limit above but client handles pagination based on user request.
     const sqlVariantes = `SELECT * FROM variantes WHERE id_producto IN (${productIds.join(',')})`;
 
     db.query(sqlVariantes, (errV, variantesRes) => {
@@ -332,7 +334,7 @@ app.get("/api/productos", (req, res) => {
 });
 
 app.post("/api/productos", verificarToken, upload.single("imagen"), async (req, res) => {
-  const { nombre, precio, categoria_id, precio_oferta, es_oferta, categorias } = req.body; // categorias can be JSON string or array
+  const { nombre, precio, categoria_id, precio_oferta, es_oferta, categorias } = req.body; 
 
   if (!req.file) {
     return res.status(400).json({ error: "Imagen requerida" });
@@ -347,7 +349,6 @@ app.post("/api/productos", verificarToken, upload.single("imagen"), async (req, 
 
     const imagenUrl = resultado.secure_url;
 
-    // Handle booleans
     const esOfertaVal = es_oferta === 'true' || es_oferta === true || es_oferta === 1 ? 1 : 0;
     const esNuevoVal = req.body.es_nuevo === 'true' || req.body.es_nuevo === true || req.body.es_nuevo === 1 ? 1 : 0;
     const enCarruselVal = req.body.en_carrusel === 'true' || req.body.en_carrusel === true || req.body.en_carrusel === 1 ? 1 : 0;
@@ -361,24 +362,33 @@ app.post("/api/productos", verificarToken, upload.single("imagen"), async (req, 
 
         const productoId = resultadoDb.insertId;
 
-        // Handle Multiple Categories
+        // --- ROBUST CATEGORY HANDLING ---
         let categoriasArray = [];
         if (categorias) {
           try {
-            categoriasArray = typeof categorias === 'string' ? JSON.parse(categorias) : categorias;
-          } catch (e) { /* ignore */ }
+            // Check if it's already an array or needs parsing
+            if (Array.isArray(categorias)) {
+                categoriasArray = categorias;
+            } else if (typeof categorias === 'string') {
+                categoriasArray = JSON.parse(categorias);
+            }
+          } catch (e) { 
+              console.error("Error parsing categorias JSON", e);
+          }
         }
 
-        // If legacy categoria_id is present and not in array, add it
+        // Add legacy categoria_id if not present
         if (categoria_id && !categoriasArray.includes(Number(categoria_id))) {
           categoriasArray.push(Number(categoria_id));
         }
 
-        if (categoriasArray.length > 0) {
-          const values = categoriasArray.map(cid => [productoId, cid]);
+        // Deduplicate and filter valid IDs
+        const uniqueCats = [...new Set(categoriasArray.map(Number))].filter(id => !isNaN(id));
+
+        if (uniqueCats.length > 0) {
+          const values = uniqueCats.map(cid => [productoId, cid]);
           db.query("INSERT INTO producto_categorias (producto_id, categoria_id) VALUES ?", [values], (errCat) => {
             if (errCat) console.error("Error linking categories", errCat);
-            // Respond anyway
             res.status(201).json({ mensaje: "Producto agregado", id: productoId });
           });
         } else {
@@ -429,25 +439,33 @@ app.put("/api/productos/:id", verificarToken, upload.single("imagen"), async (re
     db.query(sql, valores, err => {
       if (err) return res.status(500).json({ error: "Error al actualizar producto" });
 
-      // Update Categories
+      // --- ROBUST CATEGORY HANDLING ---
       let categoriasArray = [];
-      if (categorias) {
-        try {
-          categoriasArray = typeof categorias === 'string' ? JSON.parse(categorias) : categorias;
-        } catch (e) { /* ignore */ }
-      }
+        if (categorias) {
+          try {
+            if (Array.isArray(categorias)) {
+                categoriasArray = categorias;
+            } else if (typeof categorias === 'string') {
+                categoriasArray = JSON.parse(categorias);
+            }
+          } catch (e) { 
+              console.error("Error parsing categorias JSON", e);
+          }
+        }
 
       // Legacy support
       if (categoria_id && !categoriasArray.includes(Number(categoria_id))) {
         categoriasArray.push(Number(categoria_id));
       }
 
+      const uniqueCats = [...new Set(categoriasArray.map(Number))].filter(id => !isNaN(id));
+
       // First delete existing links
       db.query("DELETE FROM producto_categorias WHERE producto_id = ?", [id], (errDel) => {
         if (errDel) console.error("Error deleting old categories", errDel);
 
-        if (categoriasArray.length > 0) {
-          const values = categoriasArray.map(cid => [id, cid]);
+        if (uniqueCats.length > 0) {
+          const values = uniqueCats.map(cid => [id, cid]);
           db.query("INSERT INTO producto_categorias (producto_id, categoria_id) VALUES ?", [values], (errIns) => {
             if (errIns) console.error("Error inserting new categories", errIns);
             res.json({ mensaje: "Producto actualizado correctamente" });
@@ -511,24 +529,16 @@ app.delete("/api/productos/:id", verificarToken, (req, res) => {
 
 app.put("/api/productos/desactivar/:id", verificarToken, (req, res) => {
   const { id } = req.params;
-
   db.query("UPDATE productos SET activo = FALSE WHERE id = ?", [id], (err) => {
-    if (err) {
-      console.error("❌ Error al desactivar producto:", err);
-      return res.status(500).json({ error: "Error al desactivar producto" });
-    }
+    if (err) return res.status(500).json({ error: "Error al desactivar producto" });
     res.json({ mensaje: "Producto desactivado correctamente" });
   });
 });
 
 app.put("/api/productos/activar/:id", verificarToken, (req, res) => {
   const { id } = req.params;
-
   db.query("UPDATE productos SET activo = TRUE WHERE id = ?", [id], (err) => {
-    if (err) {
-      console.error("❌ Error al activar producto:", err);
-      return res.status(500).json({ error: "Error al activar producto" });
-    }
+    if (err) return res.status(500).json({ error: "Error al activar producto" });
     res.json({ mensaje: "Producto activado correctamente" });
   });
 });
@@ -589,7 +599,7 @@ app.post("/api/newsletter", async (req, res) => {
     return res.status(400).json({ error: "Email inválido" });
   }
 
-  // Primero, guardar en tu base de datos local (como ya lo hacías)
+  // Primero, guardar en tu base de datos local
   db.query("INSERT INTO suscriptores (email) VALUES (?)", [email], async (err) => {
     if (err && err.code === "ER_DUP_ENTRY") {
       return res.status(400).json({ error: "Correo ya registrado" });
@@ -804,7 +814,69 @@ app.get("/api/historial", verificarToken, (req, res) => {
   });
 });
 
-// Buscar compra por ID individual (para panel admin)
+// ✅ NUEVO ENDPOINT: GET /api/pedidos/:id con JOIN de usuarios y detalle
+app.get("/api/pedidos/:id", verificarToken, (req, res) => {
+    const { id } = req.params;
+  
+    // Obtenemos los productos del pedido + Info de usuario si existe
+    const query = `
+      SELECT c.pedido_id, c.fecha_compra, c.tipo_envio, c.zona, c.variantes,
+             p.nombre AS producto, c.cantidad, c.precio_unitario,
+             u.nombre as usuario_nombre, u.email as usuario_email, c.id_usuario
+      FROM compras c
+      JOIN productos p ON c.id_producto = p.id
+      LEFT JOIN usuarios u ON c.id_usuario = u.id
+      WHERE c.pedido_id = ?
+    `;
+  
+    db.query(query, [id], (err, resultados) => {
+      if (err) return res.status(500).json({ error: "Error al obtener detalle de compra" });
+      if (resultados.length === 0) return res.status(404).json({ error: "Compra no encontrada" });
+  
+      // Calcular total de los productos
+      let total = resultados.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
+  
+      // Sumar costo de zona si es envío
+      if (resultados[0].tipo_envio === "envio" && resultados[0].zona) {
+        const preciosZonas = {
+          "Zona centro": 1500,
+          "Jds": 2000,
+          "Ribera": 2000,
+          "Barrio unión": 2500
+        };
+        total += preciosZonas[resultados[0].zona] || 0;
+      }
+  
+      // Responder con los datos completos
+      res.json({
+        pedido_id: id,
+        fecha_compra: resultados[0].fecha_compra,
+        tipo_envio: resultados[0].tipo_envio,
+        zona: resultados[0].zona,
+        usuario: resultados[0].usuario_nombre ? {
+            nombre: resultados[0].usuario_nombre,
+            email: resultados[0].usuario_email,
+            id: resultados[0].id_usuario
+        } : null,
+        detalles: JSON.stringify(resultados.map(item => ({
+          nombre: item.producto,
+          cantidad: item.cantidad,
+          precio: item.precio_unitario,
+          variantes: item.variantes
+        }))), // Para compatibilidad con frontend que espera stringified JSON en 'detalles'
+        productos: resultados.map(item => ({
+          nombre: item.producto,
+          cantidad: item.cantidad,
+          precio_unitario: item.precio_unitario,
+          variantes: item.variantes
+        })),
+        total
+      });
+    });
+  });
+
+// Buscar compra por ID individual (para panel admin) - Legacy
+// Dejamos esto por compatibilidad, pero el frontend ahora usa /api/pedidos/:id
 app.get("/api/compras/detalle/:id", verificarToken, (req, res) => {
   const { id } = req.params;
 
