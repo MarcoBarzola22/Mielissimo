@@ -5,19 +5,23 @@ import { AlertCircle } from 'lucide-react';
 export default function StoreStatusBanner() {
     const { storeStatus } = useStore();
 
-    if (!storeStatus || storeStatus === 'ABIERTO') return null;
+    // Robust check: Normalize input to upper case safely
+    const status = storeStatus ? String(storeStatus).toUpperCase() : '';
+    const isClosed = status === 'CERRADO';
+
+    if (!isClosed) return null;
 
     return (
-        <div className="bg-red-600 text-white px-4 py-4 shadow-lg sticky top-0 z-[60] text-center w-full">
-            <div className="max-w-7xl mx-auto flex items-center justify-center animate-pulse">
-                <AlertCircle size={24} className="mr-3" />
-                <span className="font-bold text-base md:text-lg uppercase tracking-wide">
-                    ¡El local se encuentra actualmente CERRADO!
+        <div className="bg-red-600 text-white px-4 py-3 shadow-lg sticky top-0 z-[60] text-center w-full border-b border-red-800">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-center gap-2 animate-pulse">
+                <div className="flex items-center gap-2 font-black uppercase tracking-wider text-sm md:text-base">
+                    <AlertCircle size={20} />
+                    <span>¡El local está cerrado!</span>
+                </div>
+                <span className="text-xs md:text-sm font-medium opacity-90">
+                    Tu pedido será procesado cuando volvamos a abrir.
                 </span>
             </div>
-            <p className="text-xs md:text-sm mt-1 opacity-90">
-                Podés armar tu pedido, pero lo procesaremos cuando abramos nuevamente.
-            </p>
         </div>
     );
 }

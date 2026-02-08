@@ -50,21 +50,16 @@ export default function ProductModal({ product, onClose }) {
     // Calculate Price
     const precio = parseFloat(product.precio);
     const precioOferta = product.precio_oferta ? parseFloat(product.precio_oferta) : 0;
-    const esOferta = product.es_oferta === 1 || product.es_oferta === true;
+    const esOferta = (product.es_oferta === 1 || product.es_oferta === true) && precioOferta > 0;
 
     // Logic for Modal Price Display (Mirror Card Logic)
-    const basePrice = (esOferta && precioOferta > 1) ? precioOferta : precio;
+    const basePrice = esOferta ? precioOferta : precio;
     const variantsPrice = Object.values(selectedVariants).reduce((acc, v) => acc + parseFloat(v.precio_extra || 0), 0);
     const finalPrice = basePrice + variantsPrice;
 
     // New Badge Logic
-    const isNew = (() => {
-        if (!product.fecha_creacion) return false;
-        const createdDate = new Date(product.fecha_creacion);
-        const hours48Ago = new Date();
-        hours48Ago.setHours(hours48Ago.getHours() - 48);
-        return createdDate > hours48Ago;
-    })();
+    // STRICT: Only use es_nuevo flag
+    const isNew = product.es_nuevo === 1 || product.es_nuevo === true;
 
     return (
         <AnimatePresence>
@@ -92,14 +87,6 @@ export default function ProductModal({ product, onClose }) {
                             <X size={20} />
                         </button>
 
-                        {/* Image - Forced Contain or Cover? User said "Force object-cover" for "Image Quality".
-                             However, for a Modal detailed view, 'contain' usually shows the whole product. 
-                             'Cover' cuts it off. 
-                             If I strictly follow "Ensure ALL product images use the class object-cover", I should use cover.
-                             But usually that's for the card thumbnails. 
-                             I will use 'object-contain' here but background white to look clean, as standard for Modals.
-                             Wait, user said: "4. IMAGE QUALITY (ProductCard.jsx & ProductModal.jsx) ... Force CSS: Ensure ALL product images use the class object-cover".
-                             I must follow instructions. I will use object-cover. */}
                         <div className="w-full h-72 bg-gray-100 relative">
                             <img
                                 src={product.imagen || 'https://via.placeholder.com/400'}
@@ -113,7 +100,7 @@ export default function ProductModal({ product, onClose }) {
                                         NUEVO
                                     </span>
                                 )}
-                                {esOferta && precioOferta > 1 && (
+                                {esOferta && (
                                     <span className="bg-[#ef5579] text-white px-3 py-1 rounded-md text-xs font-bold shadow-md">
                                         OFERTA
                                     </span>
@@ -131,7 +118,7 @@ export default function ProductModal({ product, onClose }) {
                             </div>
                             <div className="text-right shrink-0 ml-4">
                                 <span className="text-2xl font-bold text-[#ef5579] block">${finalPrice.toFixed(2)}</span>
-                                {esOferta && precioOferta > 1 && (
+                                {esOferta && (
                                     <span className="text-xs text-gray-400 line-through block decoration-1">
                                         ${precio.toFixed(2)}
                                     </span>

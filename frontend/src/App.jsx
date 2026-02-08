@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -7,6 +7,7 @@ import StoreStatusBanner from './components/StoreStatusBanner';
 import Home from './pages/Home';
 import { useStore } from './context/store';
 import { fetchConfig } from './services/api';
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   const { setStoreStatus } = useStore();
@@ -14,18 +15,26 @@ function App() {
   useEffect(() => {
     // Load store configuration on mount
     fetchConfig().then(config => {
-      // Key must match DB 'clave' (admin.js saves as 'estado_local')
+      // Robust check: config keys might be lowercase from DB
+      // We look for 'estado_local' (DB column) or 'ESTADO_LOCAL' (Legacy)
       const status = config.estado_local || config.ESTADO_LOCAL;
       if (status) {
-        setStoreStatus(status.toUpperCase());
+        setStoreStatus(String(status).toUpperCase());
       }
     }).catch(console.error);
   }, []);
 
   return (
     <Router>
-      <div className="min-h-screen flex flex-col bg-gray-50">
-        <StoreStatusBanner />
+      <ScrollToTop />
+      {/* Wrapper relative to ensure Z-Index stacking works */}
+      <div className="min-h-screen flex flex-col bg-gray-50 relative">
+
+        {/* Banner with high Z-Index */}
+        <div className="sticky top-0 z-[9999] w-full">
+          <StoreStatusBanner />
+        </div>
+
         <Navbar />
         <CartSlideOver />
 

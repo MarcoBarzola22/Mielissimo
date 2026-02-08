@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { fetchProducts, fetchCategories } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import ProductModal from '../components/ProductModal';
-import ProductModal from '../components/ProductModal';
 import CategoryPills from '../components/CategoryPills';
 import HeroCarousel from '../components/HeroCarousel';
 import { motion } from 'framer-motion';

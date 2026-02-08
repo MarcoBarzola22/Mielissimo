@@ -86,6 +86,26 @@ db.query("SHOW COLUMNS FROM productos LIKE 'en_carrusel'", (err, result) => {
   }
 });
 
+// Add descripcion_carrusel
+db.query("SHOW COLUMNS FROM productos LIKE 'descripcion_carrusel'", (err, result) => {
+  if (!err && result.length === 0) {
+    db.query("ALTER TABLE productos ADD COLUMN descripcion_carrusel TEXT", (err) => {
+      if (err) console.error("❌ Error agregando columna descripcion_carrusel");
+      else console.log("✅ Columna 'descripcion_carrusel' agregada.");
+    });
+  }
+});
+
+// Add carrusel_etiqueta
+db.query("SHOW COLUMNS FROM productos LIKE 'carrusel_etiqueta'", (err, result) => {
+  if (!err && result.length === 0) {
+    db.query("ALTER TABLE productos ADD COLUMN carrusel_etiqueta VARCHAR(50) DEFAULT 'NINGUNO'", (err) => {
+      if (err) console.error("❌ Error agregando columna carrusel_etiqueta");
+      else console.log("✅ Columna 'carrusel_etiqueta' agregada.");
+    });
+  }
+});
+
 
 // 🔐 Middleware para validar token
 function verificarToken(req, res, next) {
@@ -521,6 +541,22 @@ app.put("/api/productos/toggle-carrusel/:id", verificarToken, (req, res) => {
   db.query("UPDATE productos SET en_carrusel = ? WHERE id = ?", [val, id], (err) => {
     if (err) return res.status(500).json({ error: "Error actualizando carrusel" });
     res.json({ mensaje: "Estado de carrusel actualizado" });
+  });
+});
+
+// Update Carousel Details
+app.put("/api/productos/:id/carrusel", verificarToken, (req, res) => {
+  const { id } = req.params;
+  const { en_carrusel, descripcion, etiqueta } = req.body;
+  const val = en_carrusel ? 1 : 0;
+
+  const sql = "UPDATE productos SET en_carrusel = ?, descripcion_carrusel = ?, carrusel_etiqueta = ? WHERE id = ?";
+  db.query(sql, [val, descripcion, etiqueta, id], (err) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ error: "Error actualizando detalles del carrusel" });
+    }
+    res.json({ mensaje: "Carrusel actualizado correctamente" });
   });
 });
 
