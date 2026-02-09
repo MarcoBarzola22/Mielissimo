@@ -24,13 +24,12 @@ function App() {
   return (
     <Router>
       <ScrollToTop />
-
-      {/* BANNER FIXED OUTSIDE MAIN LAYOUT */}
+      
+      {/* --- AQUÍ ESTÁ LA SOLUCIÓN DEL CARTEL --- */}
+      {/* Al ponerlo afuera del div relative, el fixed funciona perfecto */}
       <StoreStatusBanner />
 
-      {/* Main Container with 0 top padding since banner overlays */}
-      <div className="min-h-screen flex flex-col bg-gray-50 relative" style={{ paddingTop: '0px' }}>
-
+      <div className="min-h-screen flex flex-col bg-gray-50 relative">
         <Navbar />
         <CartSlideOver />
 
