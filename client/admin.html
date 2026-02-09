@@ -152,12 +152,14 @@
 
         <div class="panel-card mt-4">
           <h3>Lista de Productos</h3>
-          <div class="search-controls" style="display: flex; gap: 15px; margin-bottom: 20px;">
-              <input type="text" id="buscador-productos" placeholder="Buscar producto..." style="flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ddd;"/>
-              <select id="filtro-categoria-productos" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
-                  <option value="">Todas las categorías</option>
-                  <!-- Categories loaded via JS -->
-              </select>
+          <div class="search-controls"
+            style="display: grid; grid-template-columns: 1fr 250px; gap: 15px; margin-bottom: 20px;">
+            <input type="text" id="buscador-productos" placeholder="Buscar producto..."
+              style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;" />
+            <select id="filtro-categoria-productos" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+              <option value="">Todas las categorías</option>
+              <!-- Categories loaded via JS -->
+            </select>
           </div>
           <div id="lista-productos" class="productos-grid">
             <!-- Products Grid Loaded via JS -->
@@ -179,7 +181,8 @@
           </form>
           <p id="mensaje-categoria"></p>
 
-          <div id="lista-categorias" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 20px;">
+          <div id="lista-categorias"
+            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 20px;">
             <!-- Categories Loaded via JS -->
           </div>
         </div>

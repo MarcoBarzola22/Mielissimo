@@ -15,20 +15,20 @@ export default function CategoryPills({ categories, activeCategory, onSelectCate
     };
 
     return (
-        <div className="sticky top-16 z-30 bg-[#ef5579] shadow-sm py-3 border-b border-pink-700/10">
-            <div className="max-w-7xl mx-auto px-4 relative flex items-center group">
+        <div className="sticky top-16 z-30 bg-[#ef5579] shadow-sm py-3 border-b border-pink-700/10 w-full">
+            <div className="w-full relative flex items-center px-2">
 
-                {/* Left Arrow */}
+                {/* Left Arrow (Visible Siempre) */}
                 <button
                     onClick={() => scroll('left')}
-                    className="absolute left-0 z-10 p-1 bg-[#ef5579]/80 backdrop-blur rounded-full text-white hover:bg-white hover:text-[#ef5579] transition-all hidden md:block opacity-0 group-hover:opacity-100 shadow-md"
+                    className="absolute left-2 z-20 p-2 bg-white/20 hover:bg-white hover:text-[#ef5579] text-white rounded-full transition-all shadow-md backdrop-blur-sm"
                 >
-                    <ChevronLeft size={20} />
+                    <ChevronLeft size={24} />
                 </button>
 
                 <div
                     ref={scrollContainerRef}
-                    className="flex overflow-x-auto gap-3 scrollbar-hide pb-1 w-full px-2"
+                    className="flex overflow-x-auto gap-3 scrollbar-hide pb-1 w-full px-12"
                 >
                     {categories.map(cat => {
                         const isActive = activeCategory.id === cat.id;
@@ -37,10 +37,10 @@ export default function CategoryPills({ categories, activeCategory, onSelectCate
                                 key={cat.id}
                                 onClick={() => onSelectCategory(cat)}
                                 className={`
-                                    px-5 py-2 rounded-full whitespace-nowrap text-sm font-bold transition-all duration-200 transform flex-shrink-0
+                                    px-6 py-2 rounded-full whitespace-nowrap text-sm font-bold transition-all duration-200 transform flex-shrink-0
                                     ${isActive
-                                        ? 'bg-white text-[#ef5579] shadow-lg shadow-pink-900/20 scale-105'
-                                        : 'bg-transparent text-white border border-white/30 hover:bg-white/10'
+                                        ? 'bg-white text-[#ef5579] shadow-lg shadow-pink-900/20 scale-105 ring-2 ring-white'
+                                        : 'bg-black/10 text-white hover:bg-white/20 border border-white/10'
                                     }
                                 `}
                             >
@@ -50,12 +50,12 @@ export default function CategoryPills({ categories, activeCategory, onSelectCate
                     })}
                 </div>
 
-                {/* Right Arrow */}
+                {/* Right Arrow (Visible Siempre) */}
                 <button
                     onClick={() => scroll('right')}
-                    className="absolute right-0 z-10 p-1 bg-[#ef5579]/80 backdrop-blur rounded-full text-white hover:bg-white hover:text-[#ef5579] transition-all hidden md:block opacity-0 group-hover:opacity-100 shadow-md"
+                    className="absolute right-2 z-20 p-2 bg-white/20 hover:bg-white hover:text-[#ef5579] text-white rounded-full transition-all shadow-md backdrop-blur-sm"
                 >
-                    <ChevronRight size={20} />
+                    <ChevronRight size={24} />
                 </button>
             </div>
         </div>
