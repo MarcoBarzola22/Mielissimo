@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { fetchProducts, fetchCategories } from '../services/api';
 import ProductCard from '../components/ProductCard';
 import CategoryPills from '../components/CategoryPills';
 import ProductModal from '../components/ProductModal';
-import Footer from '../components/Footer';
+// Footer eliminado de aquí para evitar duplicados
+import HeroCarousel from '../components/HeroCarousel'; 
+import StoreStatusBanner from '../components/StoreStatusBanner'; // <--- Banner aquí
 import { motion } from 'framer-motion';
 import { useStore } from '../context/store';
 
@@ -14,12 +16,18 @@ export default function Home() {
     const [activeCategory, setActiveCategory] = useState({ id: 'todas', nombre: 'Ver Todo' });
     const { searchQuery } = useStore();
     const [loading, setLoading] = useState(true);
+    
+    // Referencia para el scroll automático
+    const productsSectionRef = useRef(null);
+
+    const scrollToProducts = () => {
+        productsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
     useEffect(() => {
         Promise.all([fetchProducts(), fetchCategories()])
             .then(([productsData, categoriesData]) => {
                 setProducts(productsData);
-                // ACÁ ESTÁ: Agregamos "Ofertas 🔥" manualmente
                 setCategories([
                     { id: 'todas', nombre: 'Ver Todo' }, 
                     { id: 'ofertas', nombre: 'Ofertas 🔥' }, 
@@ -31,30 +39,41 @@ export default function Home() {
     }, []);
 
     const filteredProducts = products.filter(p => {
-        // 1. Filtro por Buscador
         if (searchQuery && !p.nombre.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-        
-        // 2. Filtro por Categoría
         if (activeCategory.id === 'todas') return true;
-        
-        // LOGICA DE OFERTAS RESTAURADA
-        if (activeCategory.id === 'ofertas') {
-            return p.es_oferta === 1 || p.es_oferta === true;
-        }
-
-        return (p.categorias && p.categorias.some(c => c.id === activeCategory.id)) || p.categoria_id === activeCategory.id;
+        if (activeCategory.id === 'ofertas') return p.es_oferta === 1 || p.es_oferta === true;
+        if (p.categorias && Array.isArray(p.categorias)) return p.categorias.some(c => c.id === activeCategory.id);
+        return p.categoria_id === activeCategory.id;
     });
 
     return (
-        <div className="bg-gray-50 min-h-screen flex flex-col">
-            <div className="flex-grow pt-32 px-4 pb-10">
+        <div className="bg-gray-50 flex flex-col">
+            
+            {/* 1. Carrusel con lógica de botones */}
+            <HeroCarousel 
+                onSelectCategory={(cat) => {
+                    setActiveCategory(cat);
+                    scrollToProducts();
+                }}
+                onScrollToProducts={scrollToProducts}
+            />
+
+            <div className="flex-grow px-4 pb-10 pt-4"> 
+                
+                {/* 2. Banner ENTRE Carrusel y Categorías */}
+                {/* Si la tienda está abierta, esto no ocupa espacio */}
+                <div className="mb-6">
+                    <StoreStatusBanner />
+                </div>
+
                 <CategoryPills
                     categories={categories}
                     activeCategory={activeCategory}
                     onSelectCategory={setActiveCategory}
                 />
 
-                <div className="max-w-7xl mx-auto mt-8">
+                {/* Referencia para el scroll */}
+                <div ref={productsSectionRef} className="max-w-7xl mx-auto mt-8">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-2xl font-bold text-gray-800 border-l-4 border-[#ef5579] pl-3">
                             {activeCategory.nombre}
@@ -82,7 +101,6 @@ export default function Home() {
                 </div>
             </div>
 
-            <Footer />
             <ProductModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
         </div>
     );

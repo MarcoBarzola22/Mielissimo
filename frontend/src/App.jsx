@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import CartSlideOver from './components/CartSlideOver';
-import StoreStatusBanner from './components/StoreStatusBanner';
 import Home from './pages/Home';
 import { useStore } from './context/store';
 import { fetchConfig } from './services/api';
@@ -15,9 +14,7 @@ function App() {
   useEffect(() => {
     fetchConfig().then(config => {
       const status = config.estado_local || config.ESTADO_LOCAL;
-      if (status) {
-        setStoreStatus(String(status).toUpperCase());
-      }
+      if (status) setStoreStatus(String(status).toUpperCase());
     }).catch(console.error);
   }, []);
 
@@ -25,9 +22,7 @@ function App() {
     <Router>
       <ScrollToTop />
       
-      {/* --- AQUÍ ESTÁ LA SOLUCIÓN DEL CARTEL --- */}
-      {/* Al ponerlo afuera del div relative, el fixed funciona perfecto */}
-      <StoreStatusBanner />
+      {/* Banner quitado de aquí, ahora vive en Home */}
 
       <div className="min-h-screen flex flex-col bg-gray-50 relative">
         <Navbar />
@@ -39,6 +34,7 @@ function App() {
           </Routes>
         </div>
 
+        {/* Footer Global (Solo aquí) */}
         <Footer />
       </div>
     </Router>

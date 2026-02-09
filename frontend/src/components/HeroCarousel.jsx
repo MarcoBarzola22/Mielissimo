@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 
 export default function HeroCarousel({ onSelectCategory }) {
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -10,6 +10,8 @@ export default function HeroCarousel({ onSelectCategory }) {
             bg: "bg-gradient-to-r from-pink-500 to-rose-500",
             title: "¡Bienvenidos a Mielissimo!",
             subtitle: "Dulzura en cada detalle para alegrar tu día.",
+            // Horarios agregados aquí:
+            extraInfo: "Lunes a Sábado: 8:00 - 13:00 y 17:00 - 21:00",
             buttonText: null,
             action: null
         },
@@ -19,7 +21,6 @@ export default function HeroCarousel({ onSelectCategory }) {
             title: "Ofertas Maravillosas",
             subtitle: "Precios increíbles en productos seleccionados.",
             buttonText: "Ver Ofertas 🔥",
-            // Acción segura: verifica si la función existe antes de llamarla
             action: () => onSelectCategory && onSelectCategory({ id: 'ofertas', nombre: 'Ofertas 🔥' })
         },
         {
@@ -43,7 +44,7 @@ export default function HeroCarousel({ onSelectCategory }) {
     const prevSlide = () => setCurrentSlide((prev) => (prev === 0 ? slides.length - 1 : prev - 1));
 
     return (
-        <div className="relative w-full h-[400px] overflow-hidden bg-gray-900 text-white shadow-xl">
+        <div className="relative w-full h-[400px] overflow-hidden bg-gray-900 text-white shadow-xl rounded-b-3xl mb-2">
             {slides.map((slide, index) => (
                 <div
                     key={slide.id}
@@ -51,16 +52,25 @@ export default function HeroCarousel({ onSelectCategory }) {
                         index === currentSlide ? 'opacity-100 z-10' : 'opacity-0 z-0'
                     } ${slide.bg}`}
                 >
-                    <h2 className="text-4xl md:text-6xl font-black mb-4 drop-shadow-lg animate-fade-in-up">
+                    <h2 className="text-4xl md:text-6xl font-black mb-4 drop-shadow-lg">
                         {slide.title}
                     </h2>
-                    <p className="text-lg md:text-2xl mb-8 font-medium drop-shadow-md opacity-90">
+                    <p className="text-lg md:text-2xl mb-4 font-medium drop-shadow-md opacity-90">
                         {slide.subtitle}
                     </p>
+
+                    {/* MOSTRAR HORARIOS SI EXISTEN (SOLO EN SLIDE 1) */}
+                    {slide.extraInfo && (
+                        <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full backdrop-blur-sm mb-6 animate-pulse">
+                            <Clock size={20} />
+                            <span className="font-semibold text-sm md:text-base">{slide.extraInfo}</span>
+                        </div>
+                    )}
+
                     {slide.buttonText && (
                         <button
                             onClick={slide.action}
-                            className="bg-white text-gray-900 px-8 py-3 rounded-full font-bold text-lg hover:bg-gray-100 hover:scale-105 transition-all shadow-xl"
+                            className="bg-white text-gray-900 px-8 py-3 rounded-full font-bold text-lg hover:bg-gray-100 hover:scale-105 transition-all shadow-xl cursor-pointer"
                         >
                             {slide.buttonText}
                         </button>
@@ -68,10 +78,10 @@ export default function HeroCarousel({ onSelectCategory }) {
                 </div>
             ))}
 
-            <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/20 hover:bg-white/40 rounded-full transition-colors">
+            <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/20 hover:bg-white/40 rounded-full text-white cursor-pointer transition-colors">
                 <ChevronLeft size={30} />
             </button>
-            <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/20 hover:bg-white/40 rounded-full transition-colors">
+            <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-2 bg-white/20 hover:bg-white/40 rounded-full text-white cursor-pointer transition-colors">
                 <ChevronRight size={30} />
             </button>
 
@@ -80,7 +90,7 @@ export default function HeroCarousel({ onSelectCategory }) {
                     <button
                         key={idx}
                         onClick={() => setCurrentSlide(idx)}
-                        className={`w-3 h-3 rounded-full transition-all ${
+                        className={`w-3 h-3 rounded-full transition-all cursor-pointer ${
                             idx === currentSlide ? 'bg-white scale-125' : 'bg-white/50'
                         }`}
                     />

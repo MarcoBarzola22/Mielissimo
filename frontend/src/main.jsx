@@ -1,16 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import Home from './pages/Home'
-import Navbar from './components/Navbar'
-import CartSlideOver from './components/CartSlideOver'
+import App from './App' // <--- ESTO ES LO IMPORTANTE: Traemos el cerebro de la app
 import { Toaster } from 'react-hot-toast'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <Navbar />
-    <CartSlideOver />
-    <Home />
+    {/* Al renderizar <App />, cargamos el Banner, el Router y todo lo que arreglamos */}
+    <App /> 
     <Toaster position="bottom-right" toastOptions={{ style: { background: '#333', color: '#fff' } }} />
   </StrictMode>,
 )
