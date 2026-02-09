@@ -5,26 +5,42 @@ import { AlertCircle } from 'lucide-react';
 export default function StoreStatusBanner() {
     const { storeStatus } = useStore();
 
-    // ============================================
-    // MODO FORZADO ACTIVADO (Para probar diseño)
-    // ============================================
-    const isClosed = true; 
-    
-    // Cuando quieras que funcione real, borra la línea de arriba y usa esta:
-    // const isClosed = String(storeStatus).toUpperCase() === 'CERRADO';
+    // === LOGIC ===
+    // Cambia esto a 'false' SOLO cuando confirmes que ves el cartel rojo.
+    const FORCE_SHOW = true;
+    const status = storeStatus ? String(storeStatus).toUpperCase() : '';
+    const isClosed = FORCE_SHOW || status === 'CERRADO';
 
     if (!isClosed) return null;
 
     return (
-        <div className="fixed top-0 left-0 w-full bg-red-600 text-white px-4 py-3 shadow-2xl z-[99999] text-center border-b-4 border-red-800 flex justify-center items-center">
-            <div className="max-w-7xl flex flex-col md:flex-row items-center justify-center gap-3 animate-pulse">
-                <div className="flex items-center gap-2 font-black uppercase tracking-wider text-sm md:text-base bg-red-800 px-3 py-1 rounded-lg">
-                    <AlertCircle size={24} className="text-yellow-400" />
-                    <span>¡LOCAL CERRADO!</span>
+        // COMPONENTE BLINDADO: Fixed, Top 0, Z-Index Millonario
+        <div style={{
+            position: 'fixed',
+            top: '0px',
+            left: '0px',
+            width: '100vw',
+            height: 'auto',
+            zIndex: '2147483647', /* Max Z-Index seguro */
+            backgroundColor: '#dc2626',
+            color: 'white',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '10px 0',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+            textAlign: 'center'
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', maxWidth: '90%' }}>
+                <AlertCircle size={28} color="#fbbf24" strokeWidth={3} />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                    <span style={{ fontWeight: '900', textTransform: 'uppercase', fontSize: '16px', lineHeight: '1' }}>
+                        ¡TIENDA CERRADA!
+                    </span>
+                    <span style={{ fontSize: '12px', opacity: 0.9 }}>
+                        No estamos tomando pedidos ahora.
+                    </span>
                 </div>
-                <span className="text-xs md:text-sm font-bold opacity-100">
-                    (Modo Prueba Visual Activo)
-                </span>
             </div>
         </div>
     );

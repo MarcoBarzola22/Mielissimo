@@ -261,7 +261,7 @@ app.get("/api/productos", (req, res) => {
   const valores = [];
 
   if (id) {
-    sql += " AND p.id = ?";
+    sql += " GROUP BY p.id ORDER BY p.es_nuevo DESC, p.id DESC"
     valores.push(id);
   } else if (categoria) {
     sql += " AND p.id IN (SELECT producto_id FROM producto_categorias WHERE categoria_id = ?)";
@@ -278,7 +278,8 @@ app.get("/api/productos", (req, res) => {
     sql += " AND p.activo = TRUE";
   }
 
-  sql += " GROUP BY p.id ORDER BY p.id DESC"; // ORDER BY DESC ADDED
+  // FIX: Sort by 'es_nuevo' (treating null as 0) DESC, then by ID DESC 
+  sql += " GROUP BY p.id ORDER BY COALESCE(p.es_nuevo, 0) DESC, p.id DESC";
 
   db.query(sql, valores, (err, resultados) => {
     if (err) return res.status(500).json({ error: "Error al obtener productos" });
@@ -334,7 +335,7 @@ app.get("/api/productos", (req, res) => {
 });
 
 app.post("/api/productos", verificarToken, upload.single("imagen"), async (req, res) => {
-  const { nombre, precio, categoria_id, precio_oferta, es_oferta, categorias } = req.body; 
+  const { nombre, precio, categoria_id, precio_oferta, es_oferta, categorias } = req.body;
 
   if (!req.file) {
     return res.status(400).json({ error: "Imagen requerida" });
@@ -368,12 +369,12 @@ app.post("/api/productos", verificarToken, upload.single("imagen"), async (req, 
           try {
             // Check if it's already an array or needs parsing
             if (Array.isArray(categorias)) {
-                categoriasArray = categorias;
+              categoriasArray = categorias;
             } else if (typeof categorias === 'string') {
-                categoriasArray = JSON.parse(categorias);
+              categoriasArray = JSON.parse(categorias);
             }
-          } catch (e) { 
-              console.error("Error parsing categorias JSON", e);
+          } catch (e) {
+            console.error("Error parsing categorias JSON", e);
           }
         }
 
@@ -441,17 +442,17 @@ app.put("/api/productos/:id", verificarToken, upload.single("imagen"), async (re
 
       // --- ROBUST CATEGORY HANDLING ---
       let categoriasArray = [];
-        if (categorias) {
-          try {
-            if (Array.isArray(categorias)) {
-                categoriasArray = categorias;
-            } else if (typeof categorias === 'string') {
-                categoriasArray = JSON.parse(categorias);
-            }
-          } catch (e) { 
-              console.error("Error parsing categorias JSON", e);
+      if (categorias) {
+        try {
+          if (Array.isArray(categorias)) {
+            categoriasArray = categorias;
+          } else if (typeof categorias === 'string') {
+            categoriasArray = JSON.parse(categorias);
           }
+        } catch (e) {
+          console.error("Error parsing categorias JSON", e);
         }
+      }
 
       // Legacy support
       if (categoria_id && !categoriasArray.includes(Number(categoria_id))) {
@@ -816,10 +817,10 @@ app.get("/api/historial", verificarToken, (req, res) => {
 
 // ✅ NUEVO ENDPOINT: GET /api/pedidos/:id con JOIN de usuarios y detalle
 app.get("/api/pedidos/:id", verificarToken, (req, res) => {
-    const { id } = req.params;
-  
-    // Obtenemos los productos del pedido + Info de usuario si existe
-    const query = `
+  const { id } = req.params;
+
+  // Obtenemos los productos del pedido + Info de usuario si existe
+  const query = `
       SELECT c.pedido_id, c.fecha_compra, c.tipo_envio, c.zona, c.variantes,
              p.nombre AS producto, c.cantidad, c.precio_unitario,
              u.nombre as usuario_nombre, u.email as usuario_email, c.id_usuario
@@ -828,52 +829,52 @@ app.get("/api/pedidos/:id", verificarToken, (req, res) => {
       LEFT JOIN usuarios u ON c.id_usuario = u.id
       WHERE c.pedido_id = ?
     `;
-  
-    db.query(query, [id], (err, resultados) => {
-      if (err) return res.status(500).json({ error: "Error al obtener detalle de compra" });
-      if (resultados.length === 0) return res.status(404).json({ error: "Compra no encontrada" });
-  
-      // Calcular total de los productos
-      let total = resultados.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
-  
-      // Sumar costo de zona si es envío
-      if (resultados[0].tipo_envio === "envio" && resultados[0].zona) {
-        const preciosZonas = {
-          "Zona centro": 1500,
-          "Jds": 2000,
-          "Ribera": 2000,
-          "Barrio unión": 2500
-        };
-        total += preciosZonas[resultados[0].zona] || 0;
-      }
-  
-      // Responder con los datos completos
-      res.json({
-        pedido_id: id,
-        fecha_compra: resultados[0].fecha_compra,
-        tipo_envio: resultados[0].tipo_envio,
-        zona: resultados[0].zona,
-        usuario: resultados[0].usuario_nombre ? {
-            nombre: resultados[0].usuario_nombre,
-            email: resultados[0].usuario_email,
-            id: resultados[0].id_usuario
-        } : null,
-        detalles: JSON.stringify(resultados.map(item => ({
-          nombre: item.producto,
-          cantidad: item.cantidad,
-          precio: item.precio_unitario,
-          variantes: item.variantes
-        }))), // Para compatibilidad con frontend que espera stringified JSON en 'detalles'
-        productos: resultados.map(item => ({
-          nombre: item.producto,
-          cantidad: item.cantidad,
-          precio_unitario: item.precio_unitario,
-          variantes: item.variantes
-        })),
-        total
-      });
+
+  db.query(query, [id], (err, resultados) => {
+    if (err) return res.status(500).json({ error: "Error al obtener detalle de compra" });
+    if (resultados.length === 0) return res.status(404).json({ error: "Compra no encontrada" });
+
+    // Calcular total de los productos
+    let total = resultados.reduce((sum, item) => sum + (item.precio_unitario * item.cantidad), 0);
+
+    // Sumar costo de zona si es envío
+    if (resultados[0].tipo_envio === "envio" && resultados[0].zona) {
+      const preciosZonas = {
+        "Zona centro": 1500,
+        "Jds": 2000,
+        "Ribera": 2000,
+        "Barrio unión": 2500
+      };
+      total += preciosZonas[resultados[0].zona] || 0;
+    }
+
+    // Responder con los datos completos
+    res.json({
+      pedido_id: id,
+      fecha_compra: resultados[0].fecha_compra,
+      tipo_envio: resultados[0].tipo_envio,
+      zona: resultados[0].zona,
+      usuario: resultados[0].usuario_nombre ? {
+        nombre: resultados[0].usuario_nombre,
+        email: resultados[0].usuario_email,
+        id: resultados[0].id_usuario
+      } : null,
+      detalles: JSON.stringify(resultados.map(item => ({
+        nombre: item.producto,
+        cantidad: item.cantidad,
+        precio: item.precio_unitario,
+        variantes: item.variantes
+      }))), // Para compatibilidad con frontend que espera stringified JSON en 'detalles'
+      productos: resultados.map(item => ({
+        nombre: item.producto,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+        variantes: item.variantes
+      })),
+      total
     });
   });
+});
 
 // Buscar compra por ID individual (para panel admin) - Legacy
 // Dejamos esto por compatibilidad, pero el frontend ahora usa /api/pedidos/:id
