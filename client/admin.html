@@ -30,9 +30,6 @@
         <button class="nav-btn" data-section="section-categorias">
           <i class="fa-solid fa-tags"></i> Categorías
         </button>
-        <button class="nav-btn" data-section="section-carrusel">
-          <i class="fa-solid fa-images"></i> Carrusel
-        </button>
         <button class="nav-btn" data-section="section-pedidos">
           <i class="fa-solid fa-receipt"></i> Pedidos (Historial)
         </button>
@@ -152,7 +149,8 @@
 
         <div class="panel-card mt-4">
           <h3>Lista de Productos</h3>
-          <div class="search-controls" style="display: grid; grid-template-columns: 1fr 250px; gap: 15px; margin-bottom: 20px;">
+          <div class="search-controls"
+            style="display: grid; grid-template-columns: 1fr 250px; gap: 15px; margin-bottom: 20px;">
             <input type="text" id="buscador-productos" placeholder="Buscar producto..."
               style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;" />
             <select id="filtro-categoria-productos" style="padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
@@ -187,32 +185,13 @@
         </div>
       </section>
 
-      <!-- SECTION: CARRUSEL (BANNERS) -->
-      <section id="section-carrusel" class="dashboard-section">
-        <div class="section-header">
-          <h2>Gestionar Banners (Carrusel)</h2>
-        </div>
-        <div class="panel-card">
-          <h3>Seleccionar Productos para Hero Carousel</h3>
-          <p class="text-sm text-gray-500 mb-4">Activa los productos que quieras mostrar en el carrusel principal.</p>
-
-          <input type="text" id="searchCarrusel" placeholder="🔎 Buscar producto..."
-            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 15px;" />
-
-          <div id="lista-carrusel-toggle" class="productos-grid">
-            <!-- Loaded via JS -->
-            <p>Cargando productos...</p>
-          </div>
-        </div>
-      </section>
-
       <!-- SECTION: PEDIDOS -->
       <section id="section-pedidos" class="dashboard-section">
         <div class="section-header">
           <h2>Historial de Pedidos</h2>
         </div>
         <div class="panel-card">
-          <div class="search-box" style="display: flex; gap: 10px; margin-bottom: 10px;">
+          <div class="search-box" style="display: flex; gap: 10px; margin-bottom: 20px;">
             <input type="text" id="buscar-compra-id" placeholder="Buscar por ID de Pedido" />
             <button id="btn-buscar-compra">Buscar</button>
           </div>
