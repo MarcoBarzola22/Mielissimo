@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. CARGA INICIAL DE DATOS
     cargarCategorias();
     cargarProductos();
-    cargarProductosCarrusel();
+    // cargarProductosCarrusel(); <--- ESTO YA NO EXISTE, LO COMENTAMOS PARA EVITAR ERRORES
     cargarEstadoLocal();
 });
 
@@ -129,7 +129,7 @@ function renderProductos(lista) {
                 </div>
             </div>
             <div style="display:flex; gap:5px;">
-                <button class="btn-var" onclick="editarVariantes(${prod.id}, '${prod.nombre}')" title="Variantes"><i class="fa-solid fa-list"></i></button>
+                <button class="btn-var" onclick="editarVariantes(${prod.id}, '${prod.nombre.replace(/'/g, "\\'")}')" title="Variantes"><i class="fa-solid fa-list"></i></button>
                 <button class="btn-edit" onclick="editarProducto(${prod.id})" title="Editar"><i class="fa-solid fa-pen"></i></button>
                 <button class="btn-del" onclick="eliminarProducto(${prod.id}, ${prod.activo})" title="Borrar/Pausar">
                     <i class="fa-solid ${prod.activo ? 'fa-trash' : 'fa-trash-arrow-up'}"></i>
@@ -166,10 +166,16 @@ async function guardarProducto(e) {
     const form = e.target;
     const formData = new FormData(form);
 
-    // Checkboxes manuales
-    formData.set("es_oferta", form.querySelector('input[name="es_oferta"]').checked);
-    formData.set("es_nuevo", form.querySelector('input[name="es_nuevo"]').checked);
-    formData.set("en_carrusel", form.querySelector('input[name="en_carrusel"]').checked);
+    // === CORRECCIÓN CLAVE: Validar existencia antes de leer .checked ===
+    const checkOferta = form.querySelector('input[name="es_oferta"]');
+    if (checkOferta) formData.set("es_oferta", checkOferta.checked);
+
+    const checkNuevo = form.querySelector('input[name="es_nuevo"]');
+    if (checkNuevo) formData.set("es_nuevo", checkNuevo.checked);
+
+    // ELIMINADO: formData.set("en_carrusel", ...) porque ese input YA NO EXISTE
+    // Lo mandamos false por defecto para que la base de datos no se queje
+    formData.set("en_carrusel", false); 
 
     // Categorías
     const catsChecked = Array.from(document.querySelectorAll('input[name="categorias"]:checked')).map(c => c.value);
@@ -189,7 +195,7 @@ async function guardarProducto(e) {
             Swal.fire({ icon: 'success', title: 'Guardado', timer: 1500, showConfirmButton: false });
             resetFormProducto();
             cargarProductos();
-            cargarProductosCarrusel();
+            // cargarProductosCarrusel(); <--- ELIMINADO
         } else {
             const err = await res.json();
             Swal.fire({ icon: 'error', title: 'Error', text: err.error || 'No se pudo guardar' });
@@ -205,7 +211,7 @@ window.editarProducto = function (id) {
     document.getElementById("prod-nombre").value = p.nombre;
     document.getElementById("prod-precio").value = p.precio;
 
-    // Inputs opcionales
+    // Inputs opcionales con chequeo de seguridad
     const inputOferta = document.querySelector('input[name="precio_oferta"]');
     if (inputOferta) inputOferta.value = p.precio_oferta || '';
 
@@ -215,8 +221,7 @@ window.editarProducto = function (id) {
     const checkNuevo = document.querySelector('input[name="es_nuevo"]');
     if (checkNuevo) checkNuevo.checked = !!p.es_nuevo;
 
-    const checkCarrusel = document.querySelector('input[name="en_carrusel"]');
-    if (checkCarrusel) checkCarrusel.checked = !!p.en_carrusel;
+    // ELIMINADO: const checkCarrusel ... (Ya no existe)
 
     // Imagen preview
     const imgPreview = document.getElementById("preview-imagen");
@@ -272,107 +277,7 @@ window.eliminarProducto = async function (id, activoActual) {
 };
 
 // =========================================================
-// 2. GESTIÓN DEL CARRUSEL (ESTILOS FORZADOS)
-// =========================================================
-async function cargarProductosCarrusel() {
-    const container = document.getElementById("lista-carrusel-toggle");
-    if (!container) return;
-    container.innerHTML = "Cargando...";
-
-    try {
-        const res = await fetch("/api/productos?mostrarInactivos=true", {
-            headers: { "Authorization": `Bearer ${tokenAdmin}` }
-        });
-        let lista = await res.json();
-
-        // ORDENAR: Activos primero
-        lista.sort((a, b) => (b.en_carrusel - a.en_carrusel));
-
-        container.innerHTML = "";
-        lista.forEach(p => {
-            const isChecked = !!p.en_carrusel;
-            const div = document.createElement("div");
-
-            // ESTILOS EN LINEA PARA QUE SE VEA BIEN SI O SI
-            div.style = `
-                display:flex; flex-direction:column; gap:10px; padding:15px; margin-bottom:10px; 
-                border:1px solid #eee; background:${isChecked ? '#f0fdf4' : '#fff'};
-                border-left: 5px solid ${isChecked ? '#4CAF50' : '#ccc'};
-                border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            `;
-
-            div.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <img src="${p.imagen || 'assets/placeholder.png'}" style="width:40px; height:40px; object-fit:cover; border-radius:4px;">
-                        <strong style="color:${isChecked ? '#2e7d32' : '#333'}">${p.nombre}</strong>
-                    </div>
-                    
-                    <label class="switch" style="position:relative; display:inline-block; width:46px; height:24px;">
-                        <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleCarrusel(${p.id}, this.checked)" style="opacity:0; width:0; height:0;">
-                        <span class="slider" style="
-                            position:absolute; inset:0; background-color:${isChecked ? '#4CAF50' : '#ccc'}; 
-                            border-radius:24px; transition:.3s; cursor:pointer;
-                        "></span>
-                        <span class="knob" style="
-                            position:absolute; content:''; height:18px; width:18px; left:3px; bottom:3px; 
-                            background-color:white; transition:.3s; border-radius:50%;
-                            transform: ${isChecked ? 'translateX(22px)' : 'translateX(0)'};
-                        "></span>
-                    </label>
-                </div>
-
-                <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center; margin-top:5px; padding-top:10px; border-top:1px solid #eee;">
-                    <textarea id="desc-${p.id}" placeholder="Frase promocional..." style="flex:1; border:1px solid #ddd; padding:8px; height:38px; resize:none; border-radius:4px; font-size:13px;">${p.descripcion_carrusel || ''}</textarea>
-                    
-                    <select id="tag-${p.id}" style="border:1px solid #ddd; padding:0 8px; height:38px; border-radius:4px; font-size:13px;">
-                        <option value="NINGUNO" ${p.carrusel_etiqueta === 'NINGUNO' ? 'selected' : ''}>Sin Etiqueta</option>
-                        <option value="NUEVO" ${p.carrusel_etiqueta === 'NUEVO' ? 'selected' : ''}>NUEVO</option>
-                        <option value="OFERTA" ${p.carrusel_etiqueta === 'OFERTA' ? 'selected' : ''}>OFERTA</option>
-                        <option value="DESTACADO" ${p.carrusel_etiqueta === 'DESTACADO' ? 'selected' : ''}>DESTACADO</option>
-                    </select>
-
-                    <button onclick="guardarInfoCarrusel(${p.id})" style="background:#333; color:white; border:none; padding:0 15px; height:38px; border-radius:4px; cursor:pointer; display:flex; align-items:center; gap:5px;">
-                        <i class="fa-solid fa-save"></i> Guardar
-                    </button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-    } catch (e) { console.error(e); }
-}
-
-window.toggleCarrusel = async function (id, val) {
-    try {
-        const res = await fetch(`/api/productos/toggle-carrusel/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenAdmin}` },
-            body: JSON.stringify({ en_carrusel: val })
-        });
-        if (res.ok) {
-            cargarProductosCarrusel(); // Recargar para reordenar y actualizar estilos
-        }
-    } catch (e) { Swal.fire("Error", "No se pudo cambiar estado", "error"); }
-};
-
-window.guardarInfoCarrusel = async function (id) {
-    const desc = document.getElementById(`desc-${id}`).value;
-    const tag = document.getElementById(`tag-${id}`).value;
-    try {
-        const res = await fetch(`/api/productos/${id}/carrusel`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${tokenAdmin}` },
-            body: JSON.stringify({ descripcion_carrusel: desc, carrusel_etiqueta: tag })
-        });
-        if (res.ok) {
-            const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
-            Toast.fire({ icon: 'success', title: 'Información actualizada' });
-        }
-    } catch (e) { Swal.fire("Error", "No se pudo guardar", "error"); }
-};
-
-// =========================================================
-// 3. GESTIÓN DE CATEGORÍAS
+// 2. GESTIÓN DE CATEGORÍAS
 // =========================================================
 async function cargarCategorias() {
     try {
@@ -454,7 +359,6 @@ window.editarCategoria = async function (id, nombreActual) {
             if (res.ok) {
                 Swal.fire("Actualizado", "", "success");
                 cargarCategorias();
-                // Si el filtro estaba en esta categoria, podriamos necesitar resetearlo o no, pero mejor dejarlo
             } else {
                 Swal.fire("Error", "No se pudo actualizar", "error");
             }
@@ -496,7 +400,7 @@ window.eliminarCategoria = async function (id) {
 };
 
 // =========================================================
-// 4. GESTIÓN DE VARIANTES
+// 3. GESTIÓN DE VARIANTES
 // =========================================================
 let prodVarianteId = null;
 
@@ -549,7 +453,7 @@ window.eliminarVariante = async function (id) {
 };
 
 // =========================================================
-// 5. ESTADO DEL LOCAL
+// 4. ESTADO DEL LOCAL
 // =========================================================
 async function cargarEstadoLocal() {
     try {
@@ -582,7 +486,7 @@ async function toggleEstadoLocal() {
 }
 
 // =========================================================
-// 6. PEDIDOS (HISTORIAL)
+// 5. PEDIDOS (HISTORIAL)
 // =========================================================
 async function buscarPedidoPorId() {
     const input = document.getElementById("buscar-compra-id");
@@ -594,7 +498,6 @@ async function buscarPedidoPorId() {
     contenedor.innerHTML = "Buscando...";
 
     try {
-        // Updated to use the new route that joins users
         const res = await fetch(`/api/pedidos/${id}`, { headers: { "Authorization": `Bearer ${tokenAdmin}` } });
         if (!res.ok) {
             contenedor.innerHTML = "<p style='color:red;'>Pedido no encontrado.</p>";
@@ -602,11 +505,9 @@ async function buscarPedidoPorId() {
         }
         const pedido = await res.json();
 
-        // Parsear detalles de manera segura
         let detalles = [];
         try { detalles = typeof pedido.detalles === 'string' ? JSON.parse(pedido.detalles) : pedido.detalles; } catch (e) { }
 
-        // Fallback if details are empty but products array exists (from new endpoint structure)
         if ((!detalles || detalles.length === 0) && pedido.productos) {
             detalles = pedido.productos;
         }
