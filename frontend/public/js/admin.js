@@ -18,6 +18,33 @@ document.addEventListener('DOMContentLoaded', () => {
     // 1. NAVEGACIÓN (SIDEBAR)
     const navBtns = document.querySelectorAll('.nav-btn');
     const sections = document.querySelectorAll('.dashboard-section');
+    // === LÓGICA MENÚ MÓVIL (HAMBURGUESA) ===
+    const btnMenu = document.getElementById("menu-toggle");
+    const navMenu = document.getElementById("sidebar-nav");
+    
+    if (btnMenu && navMenu) {
+        btnMenu.addEventListener("click", () => {
+            navMenu.classList.toggle("open");
+            // Cambiar icono opcionalmente
+            const icon = btnMenu.querySelector("i");
+            if (navMenu.classList.contains("open")) {
+                icon.classList.remove("fa-bars");
+                icon.classList.add("fa-times"); // X para cerrar
+            } else {
+                icon.classList.remove("fa-times");
+                icon.classList.add("fa-bars");
+            }
+        });
+    }
+
+    // === LOGOUT VERSIÓN MÓVIL ===
+    const btnLogoutMobile = document.getElementById("logout-mobile");
+    if (btnLogoutMobile) {
+        btnLogoutMobile.addEventListener("click", () => {
+            try { localStorage.removeItem("tokenAdmin"); } catch (e) { }
+            window.location.href = "login-admin.html";
+        });
+    }
 
     navBtns.forEach(btn => {
         btn.addEventListener('click', () => {

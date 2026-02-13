@@ -389,176 +389,126 @@ button[type="submit"]:hover {
   color: white;
 }
 
-/* === RESPONSIVE PARA TABLET Y CELULAR === */
-@media (max-width: 768px) {
-  .admin-layout {
-    flex-direction: column; /* Barra arriba, contenido abajo */
-    height: auto; /* Permitir scroll natural */
-    overflow: auto;
-  }
-
-  body {
-    overflow: auto; /* Habilitar scroll en el cuerpo */
-  }
-
-  /* Barra lateral ahora es barra superior */
-  .sidebar {
-    width: 100%;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem;
-    overflow-x: auto; /* Scroll horizontal si los botones no entran */
-  }
-
-  .sidebar .logo-area {
-    margin-bottom: 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-  
-  .sidebar .logo-area img { height: 30px; }
-  .sidebar .logo-area h2 { font-size: 1rem; margin: 0; display: none; } /* Ocultar texto en móvil */
-
-  .sidebar nav {
-    flex-direction: row;
-    flex: 1;
-    justify-content: center;
-  }
-
-  .nav-btn {
-    padding: 0.5rem;
-    font-size: 0.9rem;
-  }
-  
-  .nav-btn i { font-size: 1.2rem; }
-  /* Opcional: Ocultar texto de botones en pantallas muy chicas */
-  /* .nav-btn { font-size: 0; } .nav-btn i { font-size: 1.2rem; } */
-
-  .sidebar-footer {
-    padding-top: 0;
-    border-top: none;
-  }
-  
-  .logout-btn { padding: 0.5rem; width: auto; }
-  .logout-btn span { display: none; } /* Solo icono de salir */
-
-  /* Contenido principal */
-  .content-area {
-    padding: 1rem;
-    overflow: visible; /* Dejar que el body maneje el scroll */
-  }
-
-  /* Ajustes de Grilla y Tablas */
-  .form-row { flex-direction: column; gap: 0.5rem; }
-  
-  /* Hacer la tabla de variantes deslizable */
-  #seccionVariantes {
-    overflow-x: auto;
-  }
-  
-  .styled-table {
-    min-width: 500px; /* Forzar ancho mínimo para que aparezca scroll */
-  }
+/* =========================================
+   DISEÑO RESPONSIVE (SOLO CELULARES)
+   ========================================= */
+/* Ocultar controles móviles por defecto (PC y Tablet) */
+.mobile-controls {
+  display: none;
 }
 
-/* =========================================
-   DISEÑO RESPONSIVE (MÓVIL Y TABLET)
-   ========================================= */
-@media (max-width: 768px) {
-  /* 1. Layout General: Cambiar de lado a lado a arriba-abajo */
+/* Punto de quiebre: Celulares (menor a 768px) */
+/* Tablets (768px en adelante) mantendrán el diseño de escritorio */
+@media (max-width: 767px) {
+  
   .admin-layout {
     flex-direction: column;
-    height: auto; /* Permitir scroll natural en el body */
-    overflow: auto;
+    height: auto;
+    overflow-x: hidden;
   }
 
   body {
-    overflow-y: auto; /* Habilitar scroll */
+    overflow-y: auto;
   }
 
-  /* 2. Barra Lateral (Sidebar) ahora es Barra Superior */
+  /* La barra se vuelve superior */
   .sidebar {
     width: 100%;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px;
+    height: auto;
+    padding: 10px 15px;
+    flex-direction: column;
     position: relative;
-    z-index: 100;
+    z-index: 1000;
+    box-sizing: border-box;
   }
 
-  .sidebar .logo-area {
+  /* Cabecera Móvil: Logo izq, Botones der */
+  .sidebar-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .logo-area {
     margin-bottom: 0;
     display: flex;
     align-items: center;
     gap: 10px;
   }
-
-  .sidebar .logo-area img {
-    height: 35px; /* Logo más chico */
+  
+  .logo-area h2 {
+    display: block; /* Mostrar texto en móvil si entra */
+    font-size: 1.1rem;
+    margin: 0;
   }
 
-  .sidebar .logo-area h2 {
-    display: none; /* Ocultar texto "Admin" para ahorrar espacio */
+  /* Botones Móviles (Cerrar sesión y Hamburguesa) */
+  .mobile-controls {
+    display: flex;
+    gap: 15px;
   }
 
-  /* Navegación con scroll horizontal */
-  .sidebar nav {
-    flex-direction: row;
-    overflow-x: auto;
-    gap: 5px;
-    margin-left: 10px;
-    padding-bottom: 5px; /* Espacio para scrollbar si aparece */
+  .icon-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 5px;
+  }
+
+  /* Menú Navegación: Oculto por defecto */
+  #sidebar-nav {
+    display: none; /* OCULTO */
+    width: 100%;
+    flex-direction: column;
+    margin-top: 15px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+    padding-top: 10px;
+  }
+
+  /* Clase para mostrar el menú con JS */
+  #sidebar-nav.open {
+    display: flex; /* VISIBLE */
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .nav-btn {
-    padding: 8px 12px;
-    font-size: 0.9rem;
-    white-space: nowrap; /* Que no se rompa el texto */
-    background: rgba(255,255,255,0.1); /* Fondo sutil */
+    padding: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
   }
 
-  .sidebar-footer {
-    border-top: none;
-    padding: 0;
-    margin-left: 10px;
+  /* Ocultar el botón de logout gigante de abajo */
+  .desktop-only {
+    display: none;
   }
 
-  .logout-btn span {
-    display: none; /* Solo mostrar el icono de salir */
-  }
-  
-  .logout-btn {
-    padding: 10px;
-    width: auto;
-  }
-
-  /* 3. Contenido Principal */
+  /* Contenido y Tablas */
   .content-area {
     padding: 15px;
     overflow: visible;
   }
 
-  /* 4. Buscador y Filtros (El problema de "horribles") */
   .search-controls {
-    grid-template-columns: 1fr !important; /* Una sola columna */
-    gap: 10px !important;
+    grid-template-columns: 1fr !important;
   }
 
-  /* 5. Formularios apilados */
   .form-row {
     flex-direction: column;
-    gap: 10px;
   }
-
-  /* 6. Tablas con scroll (para que no rompan el ancho) */
+  
+  /* Scroll horizontal para tablas */
   #seccionVariantes, .panel-card {
     overflow-x: auto;
   }
   
   .styled-table {
-    min-width: 600px; /* Forzar ancho para permitir scroll horizontal */
+    min-width: 600px;
   }
 }
