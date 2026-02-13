@@ -78,6 +78,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (secVar) secVar.style.display = "none";
     });
 
+    const btnCerrarVar = document.getElementById("btnCerrarVariantes");
+    if (btnCerrarVar) {
+        btnCerrarVar.addEventListener("click", () => {
+            const secVar = document.getElementById("seccionVariantes");
+            if (secVar) secVar.style.display = "none";
+        });
+    }
+
     // Pedidos
     const btnBuscarPedido = document.getElementById("btn-buscar-compra");
     if (btnBuscarPedido) btnBuscarPedido.addEventListener("click", buscarPedidoPorId);
@@ -204,6 +212,10 @@ async function guardarProducto(e) {
 }
 
 window.editarProducto = function (id) {
+    // 1. Cerrar variantes anteriores para que no estorben
+    const secVar = document.getElementById("seccionVariantes");
+    if (secVar) secVar.style.display = "none";
+
     const p = productosCache.find(prod => prod.id === id);
     if (!p) return;
 
@@ -221,8 +233,6 @@ window.editarProducto = function (id) {
     const checkNuevo = document.querySelector('input[name="es_nuevo"]');
     if (checkNuevo) checkNuevo.checked = !!p.es_nuevo;
 
-    // ELIMINADO: const checkCarrusel ... (Ya no existe)
-
     // Imagen preview
     const imgPreview = document.getElementById("preview-imagen");
     if (imgPreview) {
@@ -234,7 +244,6 @@ window.editarProducto = function (id) {
     document.querySelectorAll('input[name="categorias"]').forEach(cb => cb.checked = false);
     if (p.categorias) {
         p.categorias.forEach(cat => {
-            // Ensure ID comparison matches types
             const cb = document.querySelector(`input[name="categorias"][value="${cat.id}"]`);
             if (cb) cb.checked = true;
         });
@@ -246,7 +255,13 @@ window.editarProducto = function (id) {
     const btnCancel = document.getElementById("cancelar-edicion-producto");
     if (btnCancel) btnCancel.style.display = "inline-block";
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // 2. SCROLL AUTOMÁTICO AL FORMULARIO (Mejorado)
+    setTimeout(() => {
+        const form = document.getElementById("formulario-producto");
+        if (form) {
+            form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 100);
 };
 
 function resetFormProducto() {

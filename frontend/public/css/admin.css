@@ -388,3 +388,77 @@ button[type="submit"]:hover {
   background-color: var(--color-primario);
   color: white;
 }
+
+/* === RESPONSIVE PARA TABLET Y CELULAR === */
+@media (max-width: 768px) {
+  .admin-layout {
+    flex-direction: column; /* Barra arriba, contenido abajo */
+    height: auto; /* Permitir scroll natural */
+    overflow: auto;
+  }
+
+  body {
+    overflow: auto; /* Habilitar scroll en el cuerpo */
+  }
+
+  /* Barra lateral ahora es barra superior */
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem;
+    overflow-x: auto; /* Scroll horizontal si los botones no entran */
+  }
+
+  .sidebar .logo-area {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .sidebar .logo-area img { height: 30px; }
+  .sidebar .logo-area h2 { font-size: 1rem; margin: 0; display: none; } /* Ocultar texto en móvil */
+
+  .sidebar nav {
+    flex-direction: row;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .nav-btn {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .nav-btn i { font-size: 1.2rem; }
+  /* Opcional: Ocultar texto de botones en pantallas muy chicas */
+  /* .nav-btn { font-size: 0; } .nav-btn i { font-size: 1.2rem; } */
+
+  .sidebar-footer {
+    padding-top: 0;
+    border-top: none;
+  }
+  
+  .logout-btn { padding: 0.5rem; width: auto; }
+  .logout-btn span { display: none; } /* Solo icono de salir */
+
+  /* Contenido principal */
+  .content-area {
+    padding: 1rem;
+    overflow: visible; /* Dejar que el body maneje el scroll */
+  }
+
+  /* Ajustes de Grilla y Tablas */
+  .form-row { flex-direction: column; gap: 0.5rem; }
+  
+  /* Hacer la tabla de variantes deslizable */
+  #seccionVariantes {
+    overflow-x: auto;
+  }
+  
+  .styled-table {
+    min-width: 500px; /* Forzar ancho mínimo para que aparezca scroll */
+  }
+}

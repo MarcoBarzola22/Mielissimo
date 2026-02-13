@@ -103,10 +103,13 @@
           </form>
         </div>
 
-        <!-- Variants Panel (Hidden until Edit Mode) -->
         <div id="seccionVariantes" class="panel-card"
           style="display: none; margin-top: 20px; border-left: 5px solid orange;">
-          <h3>Variantes del producto: <span id="nombre-producto-variante"></span></h3>
+          
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+            <h3 style="margin:0;">Variantes del producto: <span id="nombre-producto-variante"></span></h3>
+            <button type="button" id="btnCerrarVariantes" class="btn-del" style="padding:5px 15px; background-color: #666;">X Cerrar</button>
+          </div>
           <form id="formulario-variante" style="flex-direction: row; align-items: flex-end; gap: 10px;">
             <div>
               <label>Tipo (ej. Tamaño, Sabor)</label>
@@ -141,8 +144,7 @@
               </tr>
             </thead>
             <tbody>
-              <!-- Loaded via JS -->
-            </tbody>
+              </tbody>
           </table>
         </div>
 

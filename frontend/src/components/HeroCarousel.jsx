@@ -21,6 +21,7 @@ export default function HeroCarousel({ onSelectCategory }) {
             title: "Ofertas Maravillosas",
             subtitle: "Precios increíbles en productos seleccionados.",
             buttonText: "Ver Ofertas 🔥",
+            // CAMBIO AQUÍ: Acción para el botón de ofertas
             action: () => onSelectCategory && onSelectCategory({ id: 'ofertas', nombre: 'Ofertas 🔥' })
         },
         {
@@ -29,7 +30,8 @@ export default function HeroCarousel({ onSelectCategory }) {
             title: "Golosinas Exclusivas",
             subtitle: "Solo lo mejor para vos. ¡Descubrilas!",
             buttonText: "Ver Productos",
-            action: () => window.scrollTo({ top: 600, behavior: 'smooth' })
+            // CAMBIO AQUÍ: Acción para el botón de ver productos (Categoría Todas)
+            action: () => onSelectCategory && onSelectCategory({ id: 'todas', nombre: 'Ver Todo' })
         }
     ];
 
