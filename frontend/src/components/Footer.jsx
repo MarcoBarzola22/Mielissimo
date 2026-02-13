@@ -25,7 +25,7 @@ export default function Footer() {
 
                     {/* Redes Sociales (Sin Facebook) */}
                     <div className="flex space-x-6">
-                        <a href="https://instagram.com/mielissimo.dulces?igshid=OGQ5ZDc2ODk2ZA==" target="_blank" className="p-3 bg-white/10 rounded-full hover:bg-white hover:text-[#ef5579] transition-all transform hover:scale-110 shadow-lg backdrop-blur-sm" aria-label="Instagram">
+                        <a href="https://www.instagram.com/mielissimo__/" target="_blank" className="p-3 bg-white/10 rounded-full hover:bg-white hover:text-[#ef5579] transition-all transform hover:scale-110 shadow-lg backdrop-blur-sm" aria-label="Instagram">
                             <Instagram size={28} />
                         </a>
                         <a href="https://wa.me/" target="_blank" className="p-3 bg-white/10 rounded-full hover:bg-white hover:text-[#ef5579] transition-all transform hover:scale-110 shadow-lg backdrop-blur-sm" aria-label="WhatsApp">

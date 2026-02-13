@@ -462,3 +462,103 @@ button[type="submit"]:hover {
     min-width: 500px; /* Forzar ancho mínimo para que aparezca scroll */
   }
 }
+
+/* =========================================
+   DISEÑO RESPONSIVE (MÓVIL Y TABLET)
+   ========================================= */
+@media (max-width: 768px) {
+  /* 1. Layout General: Cambiar de lado a lado a arriba-abajo */
+  .admin-layout {
+    flex-direction: column;
+    height: auto; /* Permitir scroll natural en el body */
+    overflow: auto;
+  }
+
+  body {
+    overflow-y: auto; /* Habilitar scroll */
+  }
+
+  /* 2. Barra Lateral (Sidebar) ahora es Barra Superior */
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    position: relative;
+    z-index: 100;
+  }
+
+  .sidebar .logo-area {
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .sidebar .logo-area img {
+    height: 35px; /* Logo más chico */
+  }
+
+  .sidebar .logo-area h2 {
+    display: none; /* Ocultar texto "Admin" para ahorrar espacio */
+  }
+
+  /* Navegación con scroll horizontal */
+  .sidebar nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 5px;
+    margin-left: 10px;
+    padding-bottom: 5px; /* Espacio para scrollbar si aparece */
+  }
+
+  .nav-btn {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    white-space: nowrap; /* Que no se rompa el texto */
+    background: rgba(255,255,255,0.1); /* Fondo sutil */
+  }
+
+  .sidebar-footer {
+    border-top: none;
+    padding: 0;
+    margin-left: 10px;
+  }
+
+  .logout-btn span {
+    display: none; /* Solo mostrar el icono de salir */
+  }
+  
+  .logout-btn {
+    padding: 10px;
+    width: auto;
+  }
+
+  /* 3. Contenido Principal */
+  .content-area {
+    padding: 15px;
+    overflow: visible;
+  }
+
+  /* 4. Buscador y Filtros (El problema de "horribles") */
+  .search-controls {
+    grid-template-columns: 1fr !important; /* Una sola columna */
+    gap: 10px !important;
+  }
+
+  /* 5. Formularios apilados */
+  .form-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* 6. Tablas con scroll (para que no rompan el ancho) */
+  #seccionVariantes, .panel-card {
+    overflow-x: auto;
+  }
+  
+  .styled-table {
+    min-width: 600px; /* Forzar ancho para permitir scroll horizontal */
+  }
+}
