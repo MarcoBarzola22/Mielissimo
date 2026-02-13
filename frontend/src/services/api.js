@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+// En producción usa la variable de entorno. En local usa el proxy.
+const baseURL = import.meta.env.VITE_API_URL 
+  ? `${import.meta.env.VITE_API_URL}/api` 
+  : '/api';
+
 const api = axios.create({
-    baseURL: '/api', // Uses Vite Proxy in local dev
+    baseURL: baseURL,
 });
 
 export const fetchProducts = async () => {
