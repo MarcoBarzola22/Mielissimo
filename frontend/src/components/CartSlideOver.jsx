@@ -50,12 +50,12 @@ export default function CartSlideOver() {
                 const variantsInfo = item.variantes && item.variantes.length > 0
                     ? ` (${item.variantes.map(v => v.nombre).join(", ")})`
                     : "";
-                return `💗 ${item.cantidad} x ${item.nombre}${variantsInfo} = $${productTotal.toFixed(2)}`;
+                return `💗 ${item.cantidad} x ${item.nombre}${variantsInfo} = ARS $${productTotal.toFixed(2)}`;
             }).join("\n");
 
             let tipoEntregaInfo = "🏠 Retiro en local";
             if (tipoEnvio === 'envio') {
-                tipoEntregaInfo = `🚚 Envío a domicilio (${zona} - $${shippingCost})`;
+                tipoEntregaInfo = `🚚 Envío a domicilio (${zona} - ARS ${shippingCost})`;
             }
 
             const mensajeTexto =
@@ -67,7 +67,7 @@ Hola, quiero hacer un pedido en Mielíssimo 🍬💗
 Detalles del Pedido:
 ${detallesProductos}
 
-💲 *Total:* $${total.toFixed(2)}
+💲 *Total:* ARS ${total.toFixed(2)}
 
 👤 *Nombre:* ${nombreUsuario}
 ${tipoEntregaInfo}`;
@@ -147,7 +147,7 @@ ${tipoEntregaInfo}`;
                                                         className="px-2 py-1 text-gray-600 hover:bg-gray-100"
                                                     >+</button>
                                                 </div>
-                                                <p className="font-semibold text-[#ef5579]">${(item.precio * item.cantidad).toFixed(2)}</p>
+                                                <p className="font-semibold text-[#ef5579]">ARS ${(item.precio * item.cantidad).toFixed(2)}</p>
                                             </div>
                                         </div>
                                         <button
@@ -207,7 +207,7 @@ ${tipoEntregaInfo}`;
 
                                 <div className="flex justify-between items-center mb-4 text-lg font-bold">
                                     <span>Total</span>
-                                    <span>${total.toFixed(2)}</span>
+                                    <span>ARS ${total.toFixed(2)}</span>
                                 </div>
 
                                 <button

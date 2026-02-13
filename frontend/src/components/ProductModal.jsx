@@ -117,11 +117,11 @@ export default function ProductModal({ product, onClose }) {
                                 </p>
                             </div>
                             <div className="text-right shrink-0 ml-4">
-                                <span className="text-2xl font-bold text-[#ef5579] block">${finalPrice.toFixed(2)}</span>
+                               <span className="text-2xl font-bold text-[#ef5579] block">ARS ${finalPrice.toFixed(2)}</span>
                                 {esOferta && (
-                                    <span className="text-xs text-gray-400 line-through block decoration-1">
-                                        ${precio.toFixed(2)}
-                                    </span>
+                                   <span className="text-xs text-gray-400 line-through block decoration-1">
+    ARS ${precio.toFixed(2)}
+</span>
                                 )}
                             </div>
                         </div>

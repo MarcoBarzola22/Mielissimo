@@ -157,7 +157,7 @@ function renderProductos(lista) {
         div.innerHTML = `
             <img src="${prod.imagen || 'assets/placeholder.png'}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
             <div style="flex:1;">
-                <strong>${prod.nombre}</strong> - $${prod.precio}
+                <strong>${prod.nombre}</strong> - ARS $${prod.precio}
                 ${!prod.activo ? '<span style="color:red; font-size:0.8em;">(Pausado)</span>' : ''}
                 <div style="font-size:0.8em; color:#666;">
                     ${prod.categorias && prod.categorias.length > 0 ? prod.categorias.map(c => c.nombre).join(', ') : 'Sin categoría'}

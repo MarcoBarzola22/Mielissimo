@@ -74,11 +74,11 @@ export default function ProductCard({ product, onClick }) {
                         {hasValidOffer ? (
                             <>
                                 <span className="text-pink-200 line-through text-xs font-medium">
-                                    ${precio.toFixed(2)}
-                                </span>
-                                <span className="text-yellow-300 font-extrabold text-xl leading-none">
-                                    ${precioOferta.toFixed(2)}
-                                </span>
+    ARS ${precio.toFixed(2)}
+</span>
+<span className="text-yellow-300 font-extrabold text-xl leading-none">
+    ARS ${precioOferta.toFixed(2)}
+</span>
                             </>
                         ) : hasValidPrice ? (
                             <span className="text-white font-extrabold text-xl leading-none">
