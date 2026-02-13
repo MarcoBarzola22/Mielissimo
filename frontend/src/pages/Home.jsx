@@ -49,7 +49,7 @@ export default function Home() {
     return (
         <div className="bg-gray-50 flex flex-col">
             
-            {/* 1. Carrusel con lógica de botones */}
+            {/* 1. Carrusel (Ancho completo) */}
             <HeroCarousel 
                 onSelectCategory={(cat) => {
                     setActiveCategory(cat);
@@ -58,21 +58,22 @@ export default function Home() {
                 onScrollToProducts={scrollToProducts}
             />
 
+            {/* 2. CATEGORÍAS (Ahora fuera del div de abajo para que ocupe todo el ancho) */}
+            <CategoryPills
+                categories={categories}
+                activeCategory={activeCategory}
+                onSelectCategory={setActiveCategory}
+            />
+
+            {/* 3. CONTENEDOR CON PADDING (Para el resto de las cosas) */}
             <div className="flex-grow px-4 pb-10 pt-4"> 
                 
-                {/* 2. Banner ENTRE Carrusel y Categorías */}
-                {/* Si la tienda está abierta, esto no ocupa espacio */}
+                {/* Banner de estado */}
                 <div className="mb-6">
                     <StoreStatusBanner />
                 </div>
 
-                <CategoryPills
-                    categories={categories}
-                    activeCategory={activeCategory}
-                    onSelectCategory={setActiveCategory}
-                />
-
-                {/* Referencia para el scroll */}
+                {/* Referencia para el scroll y grilla de productos */}
                 <div ref={productsSectionRef} className="max-w-7xl mx-auto mt-8">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-2xl font-bold text-gray-800 border-l-4 border-[#ef5579] pl-3">

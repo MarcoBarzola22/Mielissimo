@@ -28,7 +28,7 @@ export default function CategoryPills({ categories, activeCategory, onSelectCate
 
                 <div
     ref={scrollContainerRef}
-    className="flex overflow-x-auto gap-3 scrollbar-hide pb-1 w-full px-4 md:px-12"
+    className="flex overflow-x-auto gap-3 scrollbar-hide pb-1 w-full px-10 md:px-12"
 >
                     {categories.map(cat => {
                         const isActive = activeCategory.id === cat.id;

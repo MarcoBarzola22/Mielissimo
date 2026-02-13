@@ -70,19 +70,21 @@ export default function ProductCard({ product, onClick }) {
 
                 <div className="flex items-end justify-between mt-2">
                     {/* PRICE CONTAINER - STRICT CHECKS */}
+                    {/* PRICE CONTAINER - STRICT CHECKS */}
                     <div className="flex flex-col">
                         {hasValidOffer ? (
                             <>
                                 <span className="text-pink-200 line-through text-xs font-medium">
-    ARS ${precio.toFixed(2)}
-</span>
-<span className="text-yellow-300 font-extrabold text-xl leading-none">
-    ARS ${precioOferta.toFixed(2)}
-</span>
+                                    ARS ${precio.toFixed(2)}
+                                </span>
+                                <span className="text-yellow-300 font-extrabold text-xl leading-none">
+                                    ARS ${precioOferta.toFixed(2)}
+                                </span>
                             </>
                         ) : hasValidPrice ? (
+                            /* CAMBIO AQUÍ: Agregado el ARS para el precio normal */
                             <span className="text-white font-extrabold text-xl leading-none">
-                                ${precio.toFixed(2)}
+                                ARS ${precio.toFixed(2)}
                             </span>
                         ) : null}
                     </div>
