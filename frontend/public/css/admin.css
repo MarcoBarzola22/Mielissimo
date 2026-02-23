@@ -512,3 +512,17 @@ button[type="submit"]:hover {
     min-width: 600px;
   }
 }
+
+/* Corrección para SweetAlert2 en edición de categorías */
+.swal2-popup {
+  font-family: 'Segoe UI', sans-serif !important;
+}
+.swal2-input {
+  box-sizing: border-box !important;
+  margin: 15px auto !important;
+  width: 90% !important;
+}
+.swal2-title {
+  color: #444 !important;
+  padding-top: 10px !important;
+}

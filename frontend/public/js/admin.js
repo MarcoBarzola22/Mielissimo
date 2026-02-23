@@ -160,7 +160,9 @@ function renderProductos(lista) {
                 <strong>${prod.nombre}</strong> - ARS $${prod.precio}
                 ${!prod.activo ? '<span style="color:red; font-size:0.8em;">(Pausado)</span>' : ''}
                 <div style="font-size:0.8em; color:#666;">
-                    ${prod.categorias && prod.categorias.length > 0 ? prod.categorias.map(c => c.nombre).join(', ') : 'Sin categoría'}
+                    ${prod.categorias && prod.categorias.length > 0 
+    ? [...new Set(prod.categorias.map(c => c.nombre))].join(', ') 
+    : 'Sin categoría'}
                 </div>
             </div>
             <div style="display:flex; gap:5px;">
