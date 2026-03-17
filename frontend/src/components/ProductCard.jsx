@@ -43,7 +43,7 @@ export default function ProductCard({ product, onClick }) {
                 <img
                     src={product.imagen || 'https://via.placeholder.com/300'}
                     alt={product.nombre}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    className="w-full h-full object-contain bg-white p-2 transition-transform duration-500 group-hover:scale-105"
                     loading="lazy"
                 />
 

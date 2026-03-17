@@ -79,20 +79,21 @@ export default function ProductModal({ product, onClose }) {
                 >
                     {/* === FIXED HEADER === */}
                     <div className="relative bg-white z-10 shadow-sm shrink-0">
-                        {/* Close Button */}
-                        <button
-                            onClick={onClose}
-                            className="absolute top-4 right-4 z-20 p-2 bg-black/10 hover:bg-black/20 rounded-full text-gray-700 transition-colors"
-                        >
-                            <X size={20} />
-                        </button>
+    {/* Close Button */}
+    <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-20 p-2 bg-black/10 hover:bg-black/20 rounded-full text-gray-700 transition-colors"
+    >
+        <X size={20} />
+    </button>
 
-                        <div className="w-full h-72 bg-gray-100 relative">
-                            <img
-                                src={product.imagen || 'https://via.placeholder.com/400'}
-                                alt={product.nombre}
-                                className="w-full h-full object-cover"
-                            />
+    {/* CAMBIO 1: bg-gray-100 por bg-white */}
+    <div className="w-full h-72 bg-white relative">
+        <img
+            src={product.imagen || 'https://via.placeholder.com/400'}
+            alt={product.nombre}
+            className="w-full h-full object-contain p-4"
+        />
                             {/* Badges */}
                             <div className="absolute top-0 left-0 p-4 flex flex-col gap-2 pointer-events-none">
                                 {isNew && (

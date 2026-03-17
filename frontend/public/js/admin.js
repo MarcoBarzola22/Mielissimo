@@ -155,7 +155,7 @@ function renderProductos(lista) {
         div.style = `display: flex; gap: 10px; padding: 10px; border-bottom: 1px solid #eee; align-items: center; ${!prod.activo ? 'opacity:0.6; background:#fff0f5;' : ''}`;
 
         div.innerHTML = `
-            <img src="${prod.imagen || 'assets/placeholder.png'}" style="width:50px; height:50px; object-fit:cover; border-radius:5px;">
+            <img src="${prod.imagen || 'assets/placeholder.png'}" style="width:50px; height:50px; object-fit:contain; background:white; border-radius:5px;">
             <div style="flex:1;">
                 <strong>${prod.nombre}</strong> - ARS $${prod.precio}
                 ${!prod.activo ? '<span style="color:red; font-size:0.8em;">(Pausado)</span>' : ''}
